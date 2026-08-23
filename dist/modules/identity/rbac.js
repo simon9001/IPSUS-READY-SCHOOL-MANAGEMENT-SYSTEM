@@ -48,6 +48,38 @@ export const PERMISSIONS = [
     { code: 'reports.view', module: 'reports', description: 'View IPSAS financial statements and management reports' },
     { code: 'reports.export', module: 'reports', description: 'Export/print financial reports' },
     { code: 'audit.view', module: 'audit', description: 'View the system audit trail' },
+    // Communication
+    { code: 'notices.manage', module: 'communication', description: 'Create and publish school notices/announcements' },
+    { code: 'notifications.send', module: 'communication', description: 'Send SMS/email notifications to parents and staff' },
+    // Deliberately not named *.view — this is not a staff "view everything"
+    // permission, it's parent-portal access scoped to their own children.
+    { code: 'portal.access', module: 'communication', description: "Parent portal access — view own linked children's records" },
+    // HR / Staff records
+    { code: 'staff.manage', module: 'hr', description: 'Maintain the staff registry' },
+    { code: 'staff.view', module: 'hr', description: 'View staff records' },
+    { code: 'leave.manage', module: 'hr', description: 'Record leave requests on behalf of staff' },
+    { code: 'leave.approve', module: 'hr', description: 'Approve or reject leave requests' },
+    { code: 'leave.view', module: 'hr', description: 'View leave requests and balances' },
+    { code: 'contracts.manage', module: 'hr', description: 'Maintain staff contracts' },
+    { code: 'contracts.view', module: 'hr', description: 'View staff contracts' },
+    { code: 'appraisals.manage', module: 'hr', description: 'Conduct and record staff appraisals' },
+    { code: 'appraisals.view', module: 'hr', description: 'View staff appraisal records' },
+    { code: 'staff_discipline.manage', module: 'hr', description: 'Record staff disciplinary actions' },
+    { code: 'staff_discipline.view', module: 'hr', description: 'View staff disciplinary records' },
+    // Admissions
+    { code: 'admissions.manage', module: 'admissions', description: 'Capture placements/transfers, process applications, conduct interviews, and decide admissions' },
+    { code: 'admissions.view', module: 'admissions', description: 'View admission records' },
+    // Student conduct
+    { code: 'discipline.manage', module: 'student_discipline', description: 'Log student discipline incidents' },
+    { code: 'discipline.view', module: 'student_discipline', description: 'View student discipline records' },
+    { code: 'conduct_points.manage', module: 'student_discipline', description: 'Award or deduct student merit/demerit points' },
+    { code: 'conduct_points.view', module: 'student_discipline', description: 'View student conduct point ledgers/scores' },
+    { code: 'disciplinary_cases.manage', module: 'student_discipline', description: 'Run the formal suspension/expulsion process (hearings, BOM review, decisions)' },
+    { code: 'disciplinary_cases.view', module: 'student_discipline', description: 'View disciplinary case records' },
+    { code: 'counseling.manage', module: 'student_discipline', description: 'Record confidential guidance & counseling sessions' },
+    // Deliberately not *.view — counseling notes are confidential and must
+    // NOT be swept into the generic VIEW_ONLY grant given to BOM/auditors.
+    { code: 'counseling.access', module: 'student_discipline', description: 'View confidential counseling records — counselor and principal only' },
 ];
 const VIEW_ONLY = PERMISSIONS.filter((p) => p.code.endsWith('.view')).map((p) => p.code);
 export const ROLES = [
@@ -68,6 +100,10 @@ export const ROLES = [
             'payroll.approve', 'payroll.view',
             'fees.view', 'grants.view', 'assets.view', 'inventory.view',
             'reports.view', 'reports.export', 'audit.view',
+            'notices.manage', 'notifications.send',
+            'staff.view', 'leave.approve', 'leave.view', 'contracts.view', 'appraisals.view', 'staff_discipline.view',
+            'admissions.manage', 'admissions.view',
+            'discipline.view', 'conduct_points.view', 'disciplinary_cases.manage', 'disciplinary_cases.view', 'counseling.access',
         ],
     },
     {
@@ -84,6 +120,7 @@ export const ROLES = [
             'assets.manage', 'assets.view', 'inventory.view',
             'banking.manage', 'banking.reconcile', 'imprest.issue', 'imprest.retire',
             'reports.view', 'reports.export',
+            'notifications.send',
         ],
     },
     {
@@ -133,5 +170,41 @@ export const ROLES = [
         name: 'External Auditor (incl. Office of the Auditor-General)',
         description: 'Time-boxed read-only access granted for the annual statutory audit.',
         permissions: [...VIEW_ONLY, 'audit.view'],
+    },
+    {
+        code: 'parent',
+        name: 'Parent / Guardian',
+        description: 'Portal access to view their own linked children\'s fee statements, report cards, and attendance. No staff-side access.',
+        permissions: ['portal.access'],
+    },
+    {
+        code: 'hr_officer',
+        name: 'HR Officer',
+        description: 'Maintains staff records, leave, contracts, appraisals, and disciplinary records for all staff (TSC and BOM).',
+        permissions: [
+            'staff.manage', 'staff.view',
+            'leave.manage', 'leave.view',
+            'contracts.manage', 'contracts.view',
+            'appraisals.manage', 'appraisals.view',
+            'staff_discipline.manage', 'staff_discipline.view',
+        ],
+    },
+    {
+        code: 'registrar',
+        name: 'Registrar / Admissions Officer',
+        description: 'Captures government placements and inter-school transfers, and runs the direct-application interview process.',
+        permissions: ['admissions.manage', 'admissions.view'],
+    },
+    {
+        code: 'teacher',
+        name: 'Teacher',
+        description: 'Day-to-day classroom conduct tracking: logging incidents and awarding/deducting merit-demerit points. Does not run formal disciplinary cases.',
+        permissions: ['discipline.manage', 'discipline.view', 'conduct_points.manage', 'conduct_points.view'],
+    },
+    {
+        code: 'counselor',
+        name: 'Guidance Counselor',
+        description: 'Runs confidential guidance & counseling sessions. Separate from punitive discipline records.',
+        permissions: ['counseling.manage', 'counseling.access', 'discipline.view'],
     },
 ];

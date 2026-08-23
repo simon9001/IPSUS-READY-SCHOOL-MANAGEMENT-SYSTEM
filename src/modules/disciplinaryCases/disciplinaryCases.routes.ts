@@ -1,0 +1,31 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { disciplinaryCasesController } from './disciplinaryCases.controller.js'
+import {
+  bomReviewSchema,
+  decideCaseSchema,
+  openCaseSchema,
+  recordHearingSchema,
+  recordParentAttendanceSchema,
+  reinstateCaseSchema,
+  summonParentSchema,
+} from './disciplinaryCases.schema.js'
+
+export const disciplinaryCasesRoutes = new Hono()
+
+disciplinaryCasesRoutes.get('/', disciplinaryCasesController.list)
+disciplinaryCasesRoutes.get('/students/:studentId', disciplinaryCasesController.listByStudent)
+disciplinaryCasesRoutes.get('/:id', disciplinaryCasesController.getById)
+disciplinaryCasesRoutes.post('/', zValidator('json', openCaseSchema), disciplinaryCasesController.open)
+
+disciplinaryCasesRoutes.post('/:id/summon-parent', zValidator('json', summonParentSchema), disciplinaryCasesController.summonParent)
+disciplinaryCasesRoutes.post(
+  '/:id/parent-attendance',
+  zValidator('json', recordParentAttendanceSchema),
+  disciplinaryCasesController.recordParentAttendance,
+)
+disciplinaryCasesRoutes.post('/:id/hearing', zValidator('json', recordHearingSchema), disciplinaryCasesController.recordHearing)
+disciplinaryCasesRoutes.post('/:id/bom-review', zValidator('json', bomReviewSchema), disciplinaryCasesController.bomReview)
+disciplinaryCasesRoutes.post('/:id/decide', zValidator('json', decideCaseSchema), disciplinaryCasesController.decide)
+disciplinaryCasesRoutes.post('/:id/reinstate', zValidator('json', reinstateCaseSchema), disciplinaryCasesController.reinstate)
+disciplinaryCasesRoutes.post('/:id/close', disciplinaryCasesController.close)

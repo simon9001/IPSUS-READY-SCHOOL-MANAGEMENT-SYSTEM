@@ -1,0 +1,12 @@
+import { Hono } from 'hono';
+import { zValidator } from '../../common/validate.js';
+import { subjectsController } from './subjects.controller.js';
+import { assignTeacherSchema, createSubjectSchema, offerSubjectToClassSchema } from './subjects.schema.js';
+export const subjectsRoutes = new Hono();
+subjectsRoutes.get('/', subjectsController.list);
+subjectsRoutes.get('/:id', subjectsController.getById);
+subjectsRoutes.post('/', zValidator('json', createSubjectSchema), subjectsController.create);
+subjectsRoutes.get('/classes/:classId/offerings', subjectsController.listOfferingsByClass);
+subjectsRoutes.post('/offerings', zValidator('json', offerSubjectToClassSchema), subjectsController.offerToClass);
+subjectsRoutes.get('/classes/:classId/assignments', subjectsController.listAssignments);
+subjectsRoutes.post('/assignments', zValidator('json', assignTeacherSchema), subjectsController.assignTeacher);

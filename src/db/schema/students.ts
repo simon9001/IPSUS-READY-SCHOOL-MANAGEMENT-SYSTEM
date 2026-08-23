@@ -13,11 +13,15 @@ export const streams = pgTable('streams', {
 })
 
 export const boardingStatusEnum = pgEnum('boarding_status', ['day', 'boarder'])
-export const studentStatusEnum = pgEnum('student_status', ['active', 'transferred', 'graduated', 'withdrawn'])
+export const studentStatusEnum = pgEnum('student_status', ['active', 'transferred', 'graduated', 'withdrawn', 'suspended', 'expelled'])
 
 export const students = pgTable('students', {
   id: serial('id').primaryKey(),
   admissionNo: varchar('admission_no', { length: 30 }).notNull().unique(),
+  // NEMIS Unique Personal Identifier — follows the learner across their
+  // whole schooling life, not just this school. Set from the admissions
+  // record (government placement or inter-school transfer) when present.
+  nemisUpi: varchar('nemis_upi', { length: 30 }).unique(),
   firstName: varchar('first_name', { length: 80 }).notNull(),
   lastName: varchar('last_name', { length: 80 }).notNull(),
   otherNames: varchar('other_names', { length: 80 }),
