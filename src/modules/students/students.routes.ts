@@ -1,0 +1,17 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { studentsController } from './students.controller.js'
+import { createClassSchema, createStreamSchema, createStudentSchema, updateStudentSchema } from './students.schema.js'
+
+export const studentsRoutes = new Hono()
+
+studentsRoutes.get('/classes', studentsController.listClasses)
+studentsRoutes.post('/classes', zValidator('json', createClassSchema), studentsController.createClass)
+studentsRoutes.get('/classes/:classId/streams', studentsController.listStreams)
+studentsRoutes.post('/streams', zValidator('json', createStreamSchema), studentsController.createStream)
+studentsRoutes.get('/classes/:classId/students', studentsController.listByClass)
+
+studentsRoutes.get('/', studentsController.list)
+studentsRoutes.get('/:id', studentsController.getById)
+studentsRoutes.post('/', zValidator('json', createStudentSchema), studentsController.create)
+studentsRoutes.patch('/:id', zValidator('json', updateStudentSchema), studentsController.update)

@@ -1,0 +1,12 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { fundsController } from './funds.controller.js'
+import { createFundSchema, updateFundSchema } from './funds.schema.js'
+
+export const fundsRoutes = new Hono()
+
+fundsRoutes.get('/', fundsController.list)
+fundsRoutes.get('/:id', fundsController.getById)
+fundsRoutes.post('/', zValidator('json', createFundSchema), fundsController.create)
+fundsRoutes.patch('/:id', zValidator('json', updateFundSchema), fundsController.update)
+fundsRoutes.post('/:id/deactivate', fundsController.deactivate)

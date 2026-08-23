@@ -1,0 +1,36 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { procurementController } from './procurement.controller.js'
+import {
+  approveRequisitionSchema,
+  createGrnSchema,
+  createPurchaseOrderSchema,
+  createRequisitionSchema,
+  createSupplierInvoiceSchema,
+  createSupplierPaymentSchema,
+  createSupplierSchema,
+} from './procurement.schema.js'
+
+export const procurementRoutes = new Hono()
+
+procurementRoutes.get('/suppliers', procurementController.listSuppliers)
+procurementRoutes.get('/suppliers/:id', procurementController.getSupplierById)
+procurementRoutes.post('/suppliers', zValidator('json', createSupplierSchema), procurementController.createSupplier)
+
+procurementRoutes.get('/requisitions', procurementController.listRequisitions)
+procurementRoutes.get('/requisitions/:id', procurementController.getRequisitionById)
+procurementRoutes.post('/requisitions', zValidator('json', createRequisitionSchema), procurementController.createRequisition)
+procurementRoutes.post('/requisitions/:id/approve', zValidator('json', approveRequisitionSchema), procurementController.approveRequisition)
+procurementRoutes.post('/requisitions/:id/reject', procurementController.rejectRequisition)
+
+procurementRoutes.get('/purchase-orders', procurementController.listPurchaseOrders)
+procurementRoutes.get('/purchase-orders/:id', procurementController.getPurchaseOrderById)
+procurementRoutes.post('/purchase-orders', zValidator('json', createPurchaseOrderSchema), procurementController.createPurchaseOrder)
+
+procurementRoutes.post('/goods-received-notes', zValidator('json', createGrnSchema), procurementController.createGrn)
+
+procurementRoutes.get('/invoices', procurementController.listSupplierInvoices)
+procurementRoutes.get('/invoices/:id', procurementController.getSupplierInvoiceById)
+procurementRoutes.post('/invoices', zValidator('json', createSupplierInvoiceSchema), procurementController.createSupplierInvoice)
+
+procurementRoutes.post('/payments', zValidator('json', createSupplierPaymentSchema), procurementController.createSupplierPayment)

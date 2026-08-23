@@ -1,0 +1,12 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { accountsController } from './accounts.controller.js'
+import { createAccountSchema, updateAccountSchema } from './accounts.schema.js'
+
+export const accountsRoutes = new Hono()
+
+accountsRoutes.get('/', accountsController.list)
+accountsRoutes.get('/:id', accountsController.getById)
+accountsRoutes.post('/', zValidator('json', createAccountSchema), accountsController.create)
+accountsRoutes.patch('/:id', zValidator('json', updateAccountSchema), accountsController.update)
+accountsRoutes.post('/:id/deactivate', accountsController.deactivate)
