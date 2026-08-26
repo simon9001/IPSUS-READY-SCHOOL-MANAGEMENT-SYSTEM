@@ -1,6 +1,6 @@
 import { examsRepository } from './exams.repository.js'
-import { NotFoundError } from '../../common/errors.js'
-import type { CreateExamInput, CreateGradingScaleInput, RecordExamResultInput } from './exams.schema.js'
+import { ConflictError, NotFoundError } from '../../common/errors.js'
+import type { AddExamTimetableEntryInput, CreateExamInput, CreateGradingScaleInput, RecordExamResultInput } from './exams.schema.js'
 import type { GradingBand, ReportCard } from './exams.types.js'
 
 function findBand(bands: GradingBand[], percentage: number) {
@@ -31,6 +31,15 @@ export const examsService = {
     const exam = await examsRepository.findExamById(id)
     if (!exam) throw new NotFoundError(`Exam ${id} not found`)
     return exam
+  },
+
+  getTimetable: (examId: number) => examsRepository.findTimetableByExam(examId),
+
+  async addTimetableEntry(input: AddExamTimetableEntryInput) {
+    await this.getExamById(input.examId)
+    const existing = (await examsRepository.findTimetableByExam(input.examId)).find((e) => e.subjectId === input.subjectId)
+    if (existing) throw new ConflictError('This subject already has a sitting scheduled for this exam')
+    return examsRepository.addTimetableEntry(input)
   },
 
   createExam: (input: CreateExamInput) => examsRepository.createExam(input),
@@ -103,4 +112,7 @@ export const examsService = {
       classSize: ranked.length,
     }
   },
+
+  getAllResultsForStudent: (studentId: number) => examsRepository.findAllResultsByStudent(studentId),
+  getResultsForExam: (examId: number) => examsRepository.findResultsByExam(examId),
 }

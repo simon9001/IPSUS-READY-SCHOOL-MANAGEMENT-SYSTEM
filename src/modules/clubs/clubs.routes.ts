@@ -1,0 +1,21 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { clubsController } from './clubs.controller.js'
+import { addParticipantSchema, createClubSchema, createCompetitionSchema, joinClubSchema } from './clubs.schema.js'
+
+export const clubsRoutes = new Hono()
+
+clubsRoutes.get('/', clubsController.listClubs)
+clubsRoutes.get('/:id', clubsController.getClubById)
+clubsRoutes.post('/', zValidator('json', createClubSchema), clubsController.createClub)
+
+clubsRoutes.get('/:clubId/members', clubsController.listMembersByClub)
+clubsRoutes.get('/students/:studentId/memberships', clubsController.listMembershipsByStudent)
+clubsRoutes.post('/memberships', zValidator('json', joinClubSchema), clubsController.joinClub)
+
+clubsRoutes.get('/competitions', clubsController.listCompetitions)
+clubsRoutes.get('/competitions/:id', clubsController.getCompetitionById)
+clubsRoutes.post('/competitions', zValidator('json', createCompetitionSchema), clubsController.createCompetition)
+
+clubsRoutes.get('/competitions/:competitionId/participants', clubsController.listParticipantsByCompetition)
+clubsRoutes.post('/competitions/participants', zValidator('json', addParticipantSchema), clubsController.addParticipant)

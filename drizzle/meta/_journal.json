@@ -43,6 +43,27 @@
       "when": 1787519059328,
       "tag": "0005_brainy_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787600218939,
+      "tag": "0006_closed_scourge",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787601516837,
+      "tag": "0007_brown_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787602590771,
+      "tag": "0008_productive_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

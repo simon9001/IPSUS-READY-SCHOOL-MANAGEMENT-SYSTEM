@@ -1,0 +1,17 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { libraryController } from './library.controller.js'
+import { borrowBookSchema, createBookSchema, payFineSchema, returnBookSchema } from './library.schema.js'
+
+export const libraryRoutes = new Hono()
+
+libraryRoutes.get('/books', libraryController.listBooks)
+libraryRoutes.get('/books/:id', libraryController.getBookById)
+libraryRoutes.post('/books', zValidator('json', createBookSchema), libraryController.createBook)
+
+libraryRoutes.get('/students/:studentId/borrowings', libraryController.listBorrowingsByStudent)
+libraryRoutes.get('/overdue', libraryController.listOverdue)
+
+libraryRoutes.post('/borrowings', zValidator('json', borrowBookSchema), libraryController.borrow)
+libraryRoutes.post('/borrowings/:id/return', zValidator('json', returnBookSchema), libraryController.returnBook)
+libraryRoutes.post('/borrowings/:id/pay-fine', zValidator('json', payFineSchema), libraryController.payFine)

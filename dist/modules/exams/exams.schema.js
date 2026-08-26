@@ -29,3 +29,11 @@ export const recordExamResultSchema = z.object({
 export const bulkRecordExamResultsSchema = z.object({
     results: z.array(recordExamResultSchema).min(1),
 });
+export const addExamTimetableEntrySchema = z.object({
+    examId: z.number().int().positive(),
+    subjectId: z.number().int().positive(),
+    examDate: z.string().date(),
+    startTime: z.string().min(1).max(10),
+    endTime: z.string().min(1).max(10),
+    venue: z.string().max(100).optional(),
+});

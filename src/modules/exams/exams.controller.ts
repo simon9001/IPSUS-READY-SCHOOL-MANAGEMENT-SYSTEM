@@ -2,7 +2,13 @@ import type { Context } from 'hono'
 import { examsService } from './exams.service.js'
 import { ok, created } from '../../common/response.js'
 import { getValidated } from '../../common/validate.js'
-import type { BulkRecordExamResultsInput, CreateExamInput, CreateGradingScaleInput, RecordExamResultInput } from './exams.schema.js'
+import type {
+  AddExamTimetableEntryInput,
+  BulkRecordExamResultsInput,
+  CreateExamInput,
+  CreateGradingScaleInput,
+  RecordExamResultInput,
+} from './exams.schema.js'
 
 export const examsController = {
   listScales: async (c: Context) => ok(c, await examsService.listScales()),
@@ -24,4 +30,8 @@ export const examsController = {
 
   reportCard: async (c: Context) =>
     ok(c, await examsService.reportCard(Number(c.req.param('examId')), Number(c.req.param('studentId')))),
+
+  getTimetable: async (c: Context) => ok(c, await examsService.getTimetable(Number(c.req.param('examId')))),
+  addTimetableEntry: async (c: Context) =>
+    created(c, await examsService.addTimetableEntry(getValidated<AddExamTimetableEntryInput>(c, 'json'))),
 }

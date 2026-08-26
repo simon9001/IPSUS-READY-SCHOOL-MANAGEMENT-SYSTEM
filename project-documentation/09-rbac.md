@@ -1,6 +1,6 @@
 # RBAC — Roles & Permissions
 
-Custom-built, not a third-party auth provider. Defined in `src/modules/identity/rbac.ts`, seeded into the database by `src/db/seed.ts`. **63 permissions, 16 roles.**
+Custom-built, not a third-party auth provider. Defined in `src/modules/identity/rbac.ts`, seeded into the database by `src/db/seed.ts`. **80 permissions, 21 roles.**
 
 ## The permission model
 
@@ -11,11 +11,12 @@ Custom-built, not a third-party auth provider. Defined in `src/modules/identity/
 
 `rbac.ts` computes `VIEW_ONLY` as every permission whose code ends in `.view`, and several broad-oversight roles (`bom_member`, `internal_auditor`, `external_auditor`, `system_admin`) are granted that entire set automatically. This is convenient — add a new `*.view` permission anywhere in the system, and auditors/BOM automatically see it — but it means **naming a permission `something.view` is itself a decision**, not just a description.
 
-Two permissions were deliberately named to **avoid** this sweep:
+Three permissions were deliberately named to **avoid** this sweep:
 - **`portal.access`** (not `portal.view`) — this isn't "view everything," it's "may use the parent portal at all," and actual data access is separately gated by `guardiansService.assertGuardianOfStudent` (an ownership check, not a permission check).
 - **`counseling.access`** (not `counseling.view`) — confidential counseling notes must not become automatically visible to BOM members or auditors just because they hold a generic view-everything role. Only the `counselor` role and the Principal have this explicitly.
+- **`health.access`** (not `health.view`) — same reasoning as counseling: medical records are confidential. Only the `school_nurse` role and the Principal have this explicitly.
 
-If you add a new sensitive permission in the future, ask whether it should behave like these two before defaulting to a `*.view` name.
+If you add a new sensitive permission in the future, ask whether it should behave like these before defaulting to a `*.view` name.
 
 ## Roles
 
@@ -35,8 +36,13 @@ If you add a new sensitive permission in the future, ask whether it should behav
 | `parent` | Guardian portal user | `portal.access` only — everything else is the ownership check, not a permission |
 | `hr_officer` | HR | Full manage+view across staff, leave, contracts, appraisals, staff discipline |
 | `registrar` | Admissions officer | `admissions.manage`/`admissions.view` only |
-| `teacher` | Classroom teacher | Day-to-day student conduct: discipline logging, conduct points — **not** disciplinary cases |
+| `teacher` | Classroom teacher | Day-to-day student conduct: discipline logging, conduct points — **not** disciplinary cases; also clubs (patrons) and timetable view |
 | `counselor` | Guidance counselor | Confidential counseling access, plus discipline view for context |
+| `boarding_officer` | Matron/Boarding Master | Dormitories, bed allocation, boarding attendance |
+| `school_nurse` | School nurse | Confidential medical records (`health.access`, same exception pattern as counseling) |
+| `transport_officer` | Transport | Bus routes, stops, student allocations |
+| `timetable_coordinator` | Timetabling | Builds/edits class and exam timetables |
+| `librarian` | Library | Catalog, borrowing/returns, fines |
 
 ## Permission groups by module
 
@@ -58,10 +64,13 @@ If you add a new sensitive permission in the future, ask whether it should behav
 | `hr` | 11 | staff, leave (incl. approve), contracts, appraisals, staff discipline |
 | `admissions` | 2 | manage/view |
 | `student_discipline` | 8 | discipline, conduct_points, disciplinary_cases, counseling (incl. **counseling.access**, exception, see above) |
+| `welfare` | 6 | boarding, health (incl. **health.access**, exception, see above), transport |
+| `academic_ops` | 6 | timetable, library, clubs |
+| `compliance` | 5 | compliance reports, documents, **dashboard.view** |
 
 ## Known gaps
 
-- **Academic module has no dedicated permissions.** `teachers`, `subjects`, `exams`, `attendance`, and `promotions` endpoints exist with no permission codes gating them at all — this module was built before the RBAC-per-module habit was established, and it was flagged as a gap by the user rather than caught proactively. It doesn't block anything today (no auth middleware is wired up to check permissions yet regardless), but before wiring up real auth, add permission codes for this module following the same pattern as HR/Admissions/Student Conduct.
+- **Core academic module still has no dedicated permissions.** `teachers`, `subjects`, `exams`, `attendance`, and `promotions` endpoints exist with no permission codes gating them at all — this module was built before the RBAC-per-module habit was established, and it was flagged as a gap by the user rather than caught proactively. Notably, this gap is now inconsistent within the same domain: the `exams` module's later extension (exam timetabling) and the separate `timetable`/`library`/`clubs` modules that were built afterward *do* have permissions (`timetable.*`, under `academic_ops`), while the original exam/attendance/promotion actions they sit next to still don't. It doesn't block anything today (no auth middleware is wired up to check permissions yet regardless), but before wiring up real auth, add permission codes for the original academic module following the same pattern used everywhere since.
 - **No live enforcement.** `src/common/auth.ts` defines `requirePermission(code)` as a middleware, but it is not attached to any route yet — see [01-architecture.md](01-architecture.md#no-authentication-middleware--deliberately). All of the above is the *design*, ready to be enforced once real auth middleware exists.
 
 ## Seeding

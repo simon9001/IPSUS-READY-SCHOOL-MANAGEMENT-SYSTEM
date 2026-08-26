@@ -1,7 +1,10 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { AppError } from './common/errors.js'
+import { authRoutes } from './modules/auth/auth.routes.js'
+import { attachUser } from './modules/auth/auth.middleware.js'
 import { accountsRoutes } from './modules/accounts/accounts.routes.js'
 import { fundsRoutes } from './modules/funds/funds.routes.js'
 import { periodsRoutes } from './modules/periods/periods.routes.js'
@@ -34,13 +37,26 @@ import { admissionsRoutes } from './modules/admissions/admissions.routes.js'
 import { conductPointsRoutes } from './modules/conductPoints/conductPoints.routes.js'
 import { disciplinaryCasesRoutes } from './modules/disciplinaryCases/disciplinaryCases.routes.js'
 import { counselingRoutes } from './modules/counseling/counseling.routes.js'
+import { boardingRoutes } from './modules/boarding/boarding.routes.js'
+import { healthRoutes } from './modules/health/health.routes.js'
+import { transportRoutes } from './modules/transport/transport.routes.js'
+import { timetableRoutes } from './modules/timetable/timetable.routes.js'
+import { libraryRoutes } from './modules/library/library.routes.js'
+import { clubsRoutes } from './modules/clubs/clubs.routes.js'
+import { complianceRoutes } from './modules/compliance/compliance.routes.js'
+import { documentsRoutes } from './modules/documents/documents.routes.js'
+import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js'
 
 const app = new Hono()
+
+app.use('*', cors({ origin: (origin) => origin ?? '*', credentials: true }))
+app.use('*', attachUser)
 
 app.get('/', (c) => {
   return c.text('Kenyan High School Accounting System API')
 })
 
+app.route('/api/auth', authRoutes)
 app.route('/api/accounts', accountsRoutes)
 app.route('/api/funds', fundsRoutes)
 app.route('/api/periods', periodsRoutes)
@@ -74,6 +90,15 @@ app.route('/api/admissions', admissionsRoutes)
 app.route('/api/conduct-points', conductPointsRoutes)
 app.route('/api/disciplinary-cases', disciplinaryCasesRoutes)
 app.route('/api/counseling', counselingRoutes)
+app.route('/api/boarding', boardingRoutes)
+app.route('/api/health', healthRoutes)
+app.route('/api/transport', transportRoutes)
+app.route('/api/timetable', timetableRoutes)
+app.route('/api/library', libraryRoutes)
+app.route('/api/clubs', clubsRoutes)
+app.route('/api/compliance', complianceRoutes)
+app.route('/api/documents', documentsRoutes)
+app.route('/api/dashboard', dashboardRoutes)
 
 app.onError((err, c) => {
   if (err instanceof AppError) {

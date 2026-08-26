@@ -1,0 +1,24 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { boardingController } from './boarding.controller.js'
+import {
+  allocateBedSchema,
+  bulkMarkBoardingAttendanceSchema,
+  createDormitorySchema,
+  markBoardingAttendanceSchema,
+  vacateBedSchema,
+} from './boarding.schema.js'
+
+export const boardingRoutes = new Hono()
+
+boardingRoutes.get('/dormitories', boardingController.listDormitories)
+boardingRoutes.get('/dormitories/:id', boardingController.getDormitoryById)
+boardingRoutes.post('/dormitories', zValidator('json', createDormitorySchema), boardingController.createDormitory)
+boardingRoutes.get('/dormitories/:dormitoryId/allocations', boardingController.listAllocationsByDormitory)
+
+boardingRoutes.post('/allocations', zValidator('json', allocateBedSchema), boardingController.allocateBed)
+boardingRoutes.post('/allocations/:id/vacate', zValidator('json', vacateBedSchema), boardingController.vacateBed)
+
+boardingRoutes.get('/attendance/students/:studentId', boardingController.listAttendanceByStudent)
+boardingRoutes.post('/attendance', zValidator('json', markBoardingAttendanceSchema), boardingController.markAttendance)
+boardingRoutes.post('/attendance/bulk', zValidator('json', bulkMarkBoardingAttendanceSchema), boardingController.markAttendanceBulk)

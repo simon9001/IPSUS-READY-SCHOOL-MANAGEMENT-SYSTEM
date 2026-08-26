@@ -1,4 +1,4 @@
-import type { gradingScales, gradingBands, exams, examResults } from '../../db/schema/index.js'
+import type { gradingScales, gradingBands, exams, examResults, examTimetableEntries } from '../../db/schema/index.js'
 
 export type GradingScale = typeof gradingScales.$inferSelect
 export type NewGradingScale = typeof gradingScales.$inferInsert
@@ -8,6 +8,8 @@ export type Exam = typeof exams.$inferSelect
 export type NewExam = typeof exams.$inferInsert
 export type ExamResult = typeof examResults.$inferSelect
 export type NewExamResult = typeof examResults.$inferInsert
+export type ExamTimetableEntry = typeof examTimetableEntries.$inferSelect
+export type NewExamTimetableEntry = typeof examTimetableEntries.$inferInsert
 
 export interface ReportCardSubjectRow {
   subjectId: number

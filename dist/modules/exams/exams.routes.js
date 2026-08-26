@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '../../common/validate.js';
 import { examsController } from './exams.controller.js';
-import { bulkRecordExamResultsSchema, createExamSchema, createGradingScaleSchema, recordExamResultSchema, } from './exams.schema.js';
+import { addExamTimetableEntrySchema, bulkRecordExamResultsSchema, createExamSchema, createGradingScaleSchema, recordExamResultSchema, } from './exams.schema.js';
 export const examsRoutes = new Hono();
 examsRoutes.get('/grading-scales', examsController.listScales);
 examsRoutes.get('/grading-scales/:id', examsController.getScaleById);
@@ -12,3 +12,5 @@ examsRoutes.post('/', zValidator('json', createExamSchema), examsController.crea
 examsRoutes.post('/results', zValidator('json', recordExamResultSchema), examsController.recordResult);
 examsRoutes.post('/results/bulk', zValidator('json', bulkRecordExamResultsSchema), examsController.bulkRecordResults);
 examsRoutes.get('/:examId/report-cards/:studentId', examsController.reportCard);
+examsRoutes.get('/:examId/timetable', examsController.getTimetable);
+examsRoutes.post('/timetable', zValidator('json', addExamTimetableEntrySchema), examsController.addTimetableEntry);

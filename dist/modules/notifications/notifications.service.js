@@ -1,9 +1,7 @@
 import { notificationsRepository } from './notifications.repository.js';
 import { consoleNotificationProvider } from './notifications.provider.js';
 import { NotFoundError, ValidationError } from '../../common/errors.js';
-function renderTemplate(template, data) {
-    return template.replace(/\{\{(\w+)\}\}/g, (_match, key) => data[key] ?? '');
-}
+import { renderTemplate } from '../../common/template.js';
 export function createNotificationsService(provider = consoleNotificationProvider) {
     return {
         listTemplates: () => notificationsRepository.findAllTemplates(),

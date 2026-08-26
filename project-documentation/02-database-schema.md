@@ -1,6 +1,6 @@
 # Database Schema
 
-76 tables across 33 schema files in `src/db/schema/`, applied via 6 incremental Drizzle migrations in `drizzle/`. Every table below is grouped by the domain it belongs to; the schema file name is given so it's easy to find in code.
+97 tables across 41 schema files in `src/db/schema/`, applied via 9 incremental Drizzle migrations in `drizzle/`. Every table below is grouped by the domain it belongs to; the schema file name is given so it's easy to find in code.
 
 ## Identity & Access Control (`identity.ts`, `audit.ts`) — 8 tables
 
@@ -9,8 +9,8 @@ Custom auth — no third-party auth provider. Parent/guardian accounts (see Comm
 | Table | Purpose |
 |---|---|
 | `users` | Every login account — staff and parents alike. `passwordHash` (bcrypt), lockout fields, `mustChangePassword` |
-| `roles` | Fixed catalogue of 16 roles (see [09-rbac.md](09-rbac.md)) |
-| `permissions` | 60+ dot-namespaced permission codes (e.g. `ledger.journal.post`) |
+| `roles` | Fixed catalogue of 21 roles (see [09-rbac.md](09-rbac.md)) |
+| `permissions` | 80 dot-namespaced permission codes (e.g. `ledger.journal.post`) |
 | `role_permissions` | Role ↔ permission junction |
 | `user_roles` | User ↔ role junction; supports multiple roles per user and an optional scope (`scopeType`/`scopeId`) for future narrowing, e.g. a class teacher scoped to one class |
 | `refresh_tokens` | Hashed refresh tokens, for whenever session/JWT auth is built |
@@ -63,7 +63,7 @@ The financial spine every other financial module posts through.
 
 `bank_accounts`, `bank_reconciliations`/`bank_reconciliation_items`, `imprest_requests`/`imprest_retirements`.
 
-## Academic Records (`teachers.ts`, `subjects.ts`, `exams.ts`, `attendance.ts`, `discipline.ts`, `promotions.ts`) — 13 tables
+## Academic Records (`teachers.ts`, `subjects.ts`, `exams.ts`, `attendance.ts`, `discipline.ts`, `promotions.ts`) — 14 tables
 
 | Table | Purpose |
 |---|---|
@@ -71,6 +71,7 @@ The financial spine every other financial module posts through.
 | `subjects`, `class_subjects`, `teacher_assignments` | Subject catalog, per-class offerings, term-scoped teacher-to-class assignments |
 | `grading_scales`, `grading_bands` | Flexible grade bands — works for 8-4-4/KCSE letter grades or CBC rubric bands, whichever the school uses |
 | `exams`, `exam_results` | Exams per class/term, marks per student/subject, auto-graded against the exam's grading scale |
+| `exam_timetable_entries` | Added later (see Academic Operations below) — one `exams` row can span several subject-specific sittings across days |
 | `attendance_records` | Daily attendance, one row per student per day |
 | `discipline_records` | Punitive incident log — see also `conduct_points.ts` and `disciplinary_cases.ts` below for the fuller conduct system |
 | `promotions` | Promotion/repeat/transfer/graduate/withdraw decisions — updates the student's `classId` or `status` as a side effect |
@@ -105,8 +106,37 @@ The financial spine every other financial module posts through.
 | `disciplinary_cases` | The formal suspension/expulsion process — parent summons, hearing, **BOM review (required before an expulsion decision)**, decision, suspension dates, re-admission date |
 | `counseling_sessions` | Confidential guidance & counseling records, deliberately separate from punitive discipline |
 
+## Welfare & Facilities (`boarding.ts`, `health.ts`, `transport.ts`) — 9 tables
+
+| Table | Purpose |
+|---|---|
+| `dormitories`, `bed_allocations` | Dormitory registry (with warden link to `staff`) and per-student bed assignment, capacity-checked |
+| `boarding_attendance` | Nightly boarding presence — distinct from `attendance_records` (day/class attendance); an `absent` status triggers a guardian alert |
+| `medical_conditions`, `clinic_visits`, `medication_administrations` | Confidential health records; a `clinic_visits.referredToHospital` flag triggers a guardian alert |
+| `bus_routes`, `route_stops`, `student_transport_allocations` | Transport routes/stops and capacity-checked student allocations |
+
+## Academic Operations & Student Life (`timetable.ts`, `library.ts`, `clubs.ts`) — 10 tables
+
+| Table | Purpose |
+|---|---|
+| `lesson_periods` | Fixed daily period times (e.g. "Period 1" = 08:00–08:40), independent of which day |
+| `timetable_entries` | The class timetable grid — class/stream + subject + teacher + day + lesson period + term, guarded against double-booking a class *or* a teacher in the same slot |
+| `library_books`, `book_borrowings` | Catalog and borrowing; availability is computed live (`totalCopies` − active borrows), not stored; late returns compute a fine automatically |
+| `clubs`, `club_memberships` | Clubs/sports/societies and student membership, with a `staff` patron link |
+| `competitions`, `competition_participants` | Kenya's real competition tiers (school→zonal→county→regional→national), with per-student results/achievements |
+
+## Compliance, Documents & Dashboard (`compliance.ts`, `documents.ts`) — 3 tables
+
+| Table | Purpose |
+|---|---|
+| `compliance_reports` | NEMIS/TSC/MoE regulatory returns — `reportData` is a **frozen JSON snapshot** taken at generation time, since a filed return is a historical record and must not silently change if underlying data (e.g. a later-withdrawn student) changes afterward. Draft → submitted lifecycle carries the government's reference number |
+| `document_templates`, `generated_documents` | Reusable `{{placeholder}}` letter templates (shares the rendering logic in `src/common/template.ts` with `notifications`) and the issued-document log — covers rendered letters *and* structured documents like transcripts (stored as JSON in `content`), each with a unique verifiable `referenceNumber` |
+
+The dashboard module has no tables of its own — like `portal`, it's pure aggregation over other modules' services (Trial Balance + fee status + enrollment + most-recent-exam mean marks in one call).
+
 ## Cross-cutting design notes
 
 - **Self-referencing FK**: `accounts.parentId` references `accounts.id` (Chart of Accounts hierarchy) — the only self-referencing table in the schema, requires `AnyPgColumn` typing in Drizzle to avoid a circular-type error.
 - **Enum extension in place**: `student_status` was extended after the fact (`ALTER TYPE ... ADD VALUE 'suspended'`/`'expelled'`) rather than being redefined — Postgres enums can only be added to, never have values removed, without a table rewrite.
 - **Long FK constraint names**: two auto-generated constraint names exceed Postgres's 63-character identifier limit and get silently truncated (a `NOTICE`, not an error) — cosmetic only, not a functional issue.
+- **The one deliberate exception to "computed live, never stored"**: `compliance_reports.reportData` freezes a JSON snapshot at generation time rather than being recomputed on every read. This is intentional and different from the Trial Balance/leave-balance/conduct-score pattern elsewhere — a filed government return is a historical record of what was actually submitted, and must not silently change if the underlying data changes later (e.g. a student who was active at filing time is later marked withdrawn).

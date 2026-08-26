@@ -99,6 +99,31 @@ export const PERMISSIONS: PermissionDef[] = [
   // Deliberately not *.view — counseling notes are confidential and must
   // NOT be swept into the generic VIEW_ONLY grant given to BOM/auditors.
   { code: 'counseling.access', module: 'student_discipline', description: 'View confidential counseling records — counselor and principal only' },
+
+  // Welfare & Facilities
+  { code: 'boarding.manage', module: 'welfare', description: 'Manage dormitories, bed allocations, and boarding attendance' },
+  { code: 'boarding.view', module: 'welfare', description: 'View boarding records' },
+  { code: 'health.manage', module: 'welfare', description: 'Record medical conditions, clinic visits, and medication administration' },
+  // Deliberately not *.view — same reasoning as counseling.access: medical
+  // records are confidential and must not be swept into VIEW_ONLY.
+  { code: 'health.access', module: 'welfare', description: 'View confidential medical records — school nurse and principal only' },
+  { code: 'transport.manage', module: 'welfare', description: 'Manage bus routes, stops, and student transport allocations' },
+  { code: 'transport.view', module: 'welfare', description: 'View transport records' },
+
+  // Academic Operations & Student Life
+  { code: 'timetable.manage', module: 'academic_ops', description: 'Build and edit class/exam timetables' },
+  { code: 'timetable.view', module: 'academic_ops', description: 'View timetables and teacher workload' },
+  { code: 'library.manage', module: 'academic_ops', description: 'Manage the library catalog and borrowing/returns' },
+  { code: 'library.view', module: 'academic_ops', description: 'View library records' },
+  { code: 'clubs.manage', module: 'academic_ops', description: 'Manage clubs, memberships, and competitions' },
+  { code: 'clubs.view', module: 'academic_ops', description: 'View clubs and competition records' },
+
+  // Compliance, Documents, Dashboard
+  { code: 'compliance.manage', module: 'compliance', description: 'Generate and submit NEMIS/TSC/MoE regulatory returns' },
+  { code: 'compliance.view', module: 'compliance', description: 'View compliance reports' },
+  { code: 'documents.manage', module: 'compliance', description: 'Generate official documents: certificates, transcripts, letters' },
+  { code: 'documents.view', module: 'compliance', description: 'View/reprint issued documents' },
+  { code: 'dashboard.view', module: 'compliance', description: 'View the combined financial/enrollment/academic dashboard' },
 ]
 
 export interface RoleDef {
@@ -132,6 +157,9 @@ export const ROLES: RoleDef[] = [
       'staff.view', 'leave.approve', 'leave.view', 'contracts.view', 'appraisals.view', 'staff_discipline.view',
       'admissions.manage', 'admissions.view',
       'discipline.view', 'conduct_points.view', 'disciplinary_cases.manage', 'disciplinary_cases.view', 'counseling.access',
+      'boarding.view', 'health.access', 'transport.view',
+      'timetable.view', 'library.view', 'clubs.view',
+      'compliance.manage', 'compliance.view', 'documents.manage', 'documents.view', 'dashboard.view',
     ],
   },
   {
@@ -221,18 +249,48 @@ export const ROLES: RoleDef[] = [
     code: 'registrar',
     name: 'Registrar / Admissions Officer',
     description: 'Captures government placements and inter-school transfers, and runs the direct-application interview process.',
-    permissions: ['admissions.manage', 'admissions.view'],
+    permissions: ['admissions.manage', 'admissions.view', 'compliance.manage', 'compliance.view', 'documents.manage', 'documents.view'],
   },
   {
     code: 'teacher',
     name: 'Teacher',
     description: 'Day-to-day classroom conduct tracking: logging incidents and awarding/deducting merit-demerit points. Does not run formal disciplinary cases.',
-    permissions: ['discipline.manage', 'discipline.view', 'conduct_points.manage', 'conduct_points.view'],
+    permissions: ['discipline.manage', 'discipline.view', 'conduct_points.manage', 'conduct_points.view', 'timetable.view', 'clubs.manage', 'clubs.view'],
   },
   {
     code: 'counselor',
     name: 'Guidance Counselor',
     description: 'Runs confidential guidance & counseling sessions. Separate from punitive discipline records.',
     permissions: ['counseling.manage', 'counseling.access', 'discipline.view'],
+  },
+  {
+    code: 'boarding_officer',
+    name: 'Boarding Master/Matron',
+    description: 'Manages dormitories, bed allocations, and nightly boarding attendance.',
+    permissions: ['boarding.manage', 'boarding.view'],
+  },
+  {
+    code: 'school_nurse',
+    name: 'School Nurse',
+    description: 'Records confidential medical conditions, clinic visits, and medication administration.',
+    permissions: ['health.manage', 'health.access'],
+  },
+  {
+    code: 'transport_officer',
+    name: 'Transport Officer',
+    description: 'Manages bus routes, stops, and student transport allocations.',
+    permissions: ['transport.manage', 'transport.view'],
+  },
+  {
+    code: 'timetable_coordinator',
+    name: 'Timetable Coordinator',
+    description: 'Builds and maintains class and exam timetables.',
+    permissions: ['timetable.manage', 'timetable.view'],
+  },
+  {
+    code: 'librarian',
+    name: 'Librarian',
+    description: 'Manages the library catalog and borrowing/returns.',
+    permissions: ['library.manage', 'library.view'],
   },
 ]

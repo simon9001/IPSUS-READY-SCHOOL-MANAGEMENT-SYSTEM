@@ -67,7 +67,7 @@ The user is building their own authentication system. Rather than guess at its s
 ```
 Accounts/
 ├── src/
-│   ├── common/              — shared errors, response helpers, Zod validator wrapper, auth stub
+│   ├── common/              — shared errors, response helpers, Zod validator wrapper, auth stub, {{template}} renderer
 │   ├── db/
 │   │   ├── schema/          — one Drizzle schema file per domain (accounts.ts, fees.ts, exams.ts, ...)
 │   │   ├── client.ts        — Postgres connection (self-configuring .env load, Supabase-pooler-safe settings)
@@ -85,4 +85,5 @@ Accounts/
 - **Money fields** are `numeric(14,2)` in Postgres, represented as `string` by Drizzle (not `number`) — services generally accept `string | number` from input and normalize with `String(value)` before insert, to avoid floating-point rounding.
 - **IDs referenced across modules are numeric FKs**, never string codes, except where a module explicitly needs a human-facing reference (e.g. `entryNo`, `admissionNo`, `nemisUpi`).
 - **Enums are Postgres enums** (`pgEnum`), not free-text columns with app-level validation — extending one (e.g. adding `'suspended'` to `student_status`) generates a real `ALTER TYPE ... ADD VALUE` migration.
-- **Computed reports are never stored** — Trial Balance, Budget vs Actual, leave balances, conduct-point scores are all computed on read from the underlying ledger/transaction tables, not cached in a redundant column.
+- **Computed reports are never stored — with one deliberate exception.** Trial Balance, Budget vs Actual, leave balances, conduct-point scores, and library availability are all computed on read, not cached. `compliance_reports.reportData` is the one exception: a filed government return freezes a JSON snapshot at generation time, because a submitted return is a historical record and must not silently change if the underlying data changes later (see [14-module-cross-cutting.md](14-module-cross-cutting.md)).
+- **`common/` holds HTTP-layer plumbing (`errors.ts`, `response.ts`, `validate.ts`, `auth.ts`) plus genuinely shared business logic once a second module needs it** — `template.ts` (the `{{placeholder}}` renderer) started inline in `notifications.service.ts` and was extracted only once `documents` needed the identical logic. Don't pre-extract a helper "just in case"; wait for the second real caller.

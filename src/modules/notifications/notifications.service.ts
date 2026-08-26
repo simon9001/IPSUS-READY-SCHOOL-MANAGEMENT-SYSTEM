@@ -1,11 +1,8 @@
 import { notificationsRepository } from './notifications.repository.js'
 import { consoleNotificationProvider, type NotificationProvider } from './notifications.provider.js'
 import { NotFoundError, ValidationError } from '../../common/errors.js'
+import { renderTemplate } from '../../common/template.js'
 import type { CreateTemplateInput, SendNotificationInput } from './notifications.schema.js'
-
-function renderTemplate(template: string, data: Record<string, string>): string {
-  return template.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => data[key] ?? '')
-}
 
 export function createNotificationsService(provider: NotificationProvider = consoleNotificationProvider) {
   return {

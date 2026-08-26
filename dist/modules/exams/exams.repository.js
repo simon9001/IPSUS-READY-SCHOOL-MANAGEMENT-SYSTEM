@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client.js';
-import { examResults, exams, gradingBands, gradingScales, subjects } from '../../db/schema/index.js';
+import { examResults, examTimetableEntries, exams, gradingBands, gradingScales, subjects } from '../../db/schema/index.js';
 export const examsRepository = {
     findAllScales: () => db.select().from(gradingScales),
     findScaleById: (id) => db.select().from(gradingScales).where(eq(gradingScales.id, id)).then((rows) => rows[0]),
@@ -31,4 +31,12 @@ export const examsRepository = {
         .innerJoin(subjects, eq(examResults.subjectId, subjects.id))
         .where(and(eq(examResults.examId, examId), eq(examResults.studentId, studentId))),
     findResultsByExam: (examId) => db.select().from(examResults).where(eq(examResults.examId, examId)),
+    findAllResultsByStudent: (studentId) => db
+        .select({ result: examResults, examName: exams.name, subjectCode: subjects.code, subjectName: subjects.name })
+        .from(examResults)
+        .innerJoin(exams, eq(examResults.examId, exams.id))
+        .innerJoin(subjects, eq(examResults.subjectId, subjects.id))
+        .where(eq(examResults.studentId, studentId)),
+    findTimetableByExam: (examId) => db.select().from(examTimetableEntries).where(eq(examTimetableEntries.examId, examId)),
+    addTimetableEntry: (data) => db.insert(examTimetableEntries).values(data).returning().then((rows) => rows[0]),
 };

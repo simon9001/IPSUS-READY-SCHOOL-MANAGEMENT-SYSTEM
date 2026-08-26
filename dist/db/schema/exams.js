@@ -30,6 +30,17 @@ export const exams = pgTable('exams', {
     status: examStatusEnum('status').notNull().default('scheduled'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+// A single `exams` row (e.g. "Term 1 Mid-Term") sits across several days,
+// one subject examined per sitting — this is the exam timetable itself.
+export const examTimetableEntries = pgTable('exam_timetable_entries', {
+    id: serial('id').primaryKey(),
+    examId: integer('exam_id').notNull().references(() => exams.id, { onDelete: 'cascade' }),
+    subjectId: integer('subject_id').notNull().references(() => subjects.id),
+    examDate: date('exam_date').notNull(),
+    startTime: varchar('start_time', { length: 10 }).notNull(),
+    endTime: varchar('end_time', { length: 10 }).notNull(),
+    venue: varchar('venue', { length: 100 }),
+}, (t) => [unique().on(t.examId, t.subjectId)]);
 export const examResults = pgTable('exam_results', {
     id: serial('id').primaryKey(),
     examId: integer('exam_id').notNull().references(() => exams.id, { onDelete: 'cascade' }),

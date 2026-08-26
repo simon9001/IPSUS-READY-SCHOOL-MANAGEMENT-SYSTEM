@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
 import { examsController } from './exams.controller.js'
 import {
+  addExamTimetableEntrySchema,
   bulkRecordExamResultsSchema,
   createExamSchema,
   createGradingScaleSchema,
@@ -22,3 +23,6 @@ examsRoutes.post('/results', zValidator('json', recordExamResultSchema), examsCo
 examsRoutes.post('/results/bulk', zValidator('json', bulkRecordExamResultsSchema), examsController.bulkRecordResults)
 
 examsRoutes.get('/:examId/report-cards/:studentId', examsController.reportCard)
+
+examsRoutes.get('/:examId/timetable', examsController.getTimetable)
+examsRoutes.post('/timetable', zValidator('json', addExamTimetableEntrySchema), examsController.addTimetableEntry)

@@ -14,4 +14,6 @@ export const examsController = {
         return created(c, await examsService.bulkRecordResults(results));
     },
     reportCard: async (c) => ok(c, await examsService.reportCard(Number(c.req.param('examId')), Number(c.req.param('studentId')))),
+    getTimetable: async (c) => ok(c, await examsService.getTimetable(Number(c.req.param('examId')))),
+    addTimetableEntry: async (c) => created(c, await examsService.addTimetableEntry(getValidated(c, 'json'))),
 };

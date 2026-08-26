@@ -1,5 +1,5 @@
 import { examsRepository } from './exams.repository.js';
-import { NotFoundError } from '../../common/errors.js';
+import { ConflictError, NotFoundError } from '../../common/errors.js';
 function findBand(bands, percentage) {
     return bands.find((b) => percentage >= Number(b.minMarks) && percentage <= Number(b.maxMarks));
 }
@@ -22,6 +22,14 @@ export const examsService = {
         if (!exam)
             throw new NotFoundError(`Exam ${id} not found`);
         return exam;
+    },
+    getTimetable: (examId) => examsRepository.findTimetableByExam(examId),
+    async addTimetableEntry(input) {
+        await this.getExamById(input.examId);
+        const existing = (await examsRepository.findTimetableByExam(input.examId)).find((e) => e.subjectId === input.subjectId);
+        if (existing)
+            throw new ConflictError('This subject already has a sitting scheduled for this exam');
+        return examsRepository.addTimetableEntry(input);
     },
     createExam: (input) => examsRepository.createExam(input),
     async recordResult(input) {
@@ -86,4 +94,6 @@ export const examsService = {
             classSize: ranked.length,
         };
     },
+    getAllResultsForStudent: (studentId) => examsRepository.findAllResultsByStudent(studentId),
+    getResultsForExam: (examId) => examsRepository.findResultsByExam(examId),
 };
