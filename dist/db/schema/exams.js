@@ -1,7 +1,7 @@
 import { pgTable, serial, varchar, integer, numeric, date, text, boolean, pgEnum, timestamp, unique } from 'drizzle-orm/pg-core';
 import { classes } from './students.js';
 import { fiscalPeriods } from './periods.js';
-import { subjects } from './subjects.js';
+import { subjects, subjectStrands } from './subjects.js';
 import { students } from './students.js';
 import { users } from './identity.js';
 export const gradingScales = pgTable('grading_scales', {
@@ -54,3 +54,20 @@ export const examResults = pgTable('exam_results', {
     enteredBy: integer('entered_by').notNull().references(() => users.id),
     enteredAt: timestamp('entered_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique().on(t.examId, t.studentId, t.subjectId)]);
+// Strand-level result, for subjects assessed under CBC competency rubrics.
+// `marks` is nullable — a pure rubric entry (e.g. "Meets Expectation") can be
+// recorded with no numeric score at all, unlike the subject-level result
+// above which always carries a mark.
+export const examStrandResults = pgTable('exam_strand_results', {
+    id: serial('id').primaryKey(),
+    examId: integer('exam_id').notNull().references(() => exams.id, { onDelete: 'cascade' }),
+    studentId: integer('student_id').notNull().references(() => students.id),
+    strandId: integer('strand_id').notNull().references(() => subjectStrands.id),
+    marks: numeric('marks', { precision: 5, scale: 2 }),
+    maxMarks: numeric('max_marks', { precision: 5, scale: 2 }).notNull().default('100'),
+    grade: varchar('grade', { length: 30 }), // rubric level (e.g. "Exceeds Expectation") or a banded letter grade
+    points: numeric('points', { precision: 4, scale: 2 }),
+    remarks: text('remarks'),
+    enteredBy: integer('entered_by').notNull().references(() => users.id),
+    enteredAt: timestamp('entered_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique().on(t.examId, t.studentId, t.strandId)]);

@@ -8,6 +8,7 @@ import type {
   CreateExamInput,
   CreateGradingScaleInput,
   RecordExamResultInput,
+  RecordStrandResultInput,
 } from './exams.schema.js'
 
 export const examsController = {
@@ -27,6 +28,11 @@ export const examsController = {
     const { results } = getValidated<BulkRecordExamResultsInput>(c, 'json')
     return created(c, await examsService.bulkRecordResults(results))
   },
+
+  recordStrandResult: async (c: Context) =>
+    created(c, await examsService.recordStrandResult(getValidated<RecordStrandResultInput>(c, 'json'))),
+  getStrandResults: async (c: Context) =>
+    ok(c, await examsService.getStrandResults(Number(c.req.param('examId')), Number(c.req.param('studentId')))),
 
   reportCard: async (c: Context) =>
     ok(c, await examsService.reportCard(Number(c.req.param('examId')), Number(c.req.param('studentId')))),

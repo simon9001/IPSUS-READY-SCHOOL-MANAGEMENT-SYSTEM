@@ -1,6 +1,6 @@
 import { examsRepository } from './exams.repository.js'
 import { ConflictError, NotFoundError } from '../../common/errors.js'
-import type { AddExamTimetableEntryInput, CreateExamInput, CreateGradingScaleInput, RecordExamResultInput } from './exams.schema.js'
+import type { AddExamTimetableEntryInput, CreateExamInput, CreateGradingScaleInput, RecordExamResultInput, RecordStrandResultInput } from './exams.schema.js'
 import type { GradingBand, ReportCard } from './exams.types.js'
 
 function findBand(bands: GradingBand[], percentage: number) {
@@ -72,6 +72,39 @@ export const examsService = {
     }
     return recorded
   },
+
+  /** CBC strand-level entry: bands a numeric mark same as recordResult, or
+   *  stores a directly-assigned rubric grade (e.g. "Meets Expectation") when
+   *  no mark is given — the strand has no marks-mandatory assumption. */
+  async recordStrandResult(input: RecordStrandResultInput) {
+    const exam = await examsRepository.findExamById(input.examId)
+    if (!exam) throw new NotFoundError(`Exam ${input.examId} not found`)
+
+    let grade = input.grade ?? null
+    let points: string | null = null
+
+    if (input.marks !== undefined) {
+      const bands = await examsRepository.findBandsForScale(exam.gradingScaleId)
+      const percentage = (Number(input.marks) / Number(input.maxMarks)) * 100
+      const band = findBand(bands, percentage)
+      grade = input.grade ?? band?.grade ?? null
+      points = band?.points ?? null
+    }
+
+    return examsRepository.upsertStrandResult({
+      examId: input.examId,
+      studentId: input.studentId,
+      strandId: input.strandId,
+      marks: input.marks !== undefined ? String(input.marks) : undefined,
+      maxMarks: String(input.maxMarks),
+      grade,
+      points,
+      remarks: input.remarks,
+      enteredBy: input.enteredBy,
+    })
+  },
+
+  getStrandResults: (examId: number, studentId: number) => examsRepository.findStrandResultsByExamAndStudent(examId, studentId),
 
   async reportCard(examId: number, studentId: number): Promise<ReportCard> {
     const exam = await examsRepository.findExamById(examId)

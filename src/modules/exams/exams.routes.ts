@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { examsController } from './exams.controller.js'
 import {
   addExamTimetableEntrySchema,
@@ -7,22 +8,26 @@ import {
   createExamSchema,
   createGradingScaleSchema,
   recordExamResultSchema,
+  recordStrandResultSchema,
 } from './exams.schema.js'
 
 export const examsRoutes = new Hono()
 
-examsRoutes.get('/grading-scales', examsController.listScales)
-examsRoutes.get('/grading-scales/:id', examsController.getScaleById)
-examsRoutes.post('/grading-scales', zValidator('json', createGradingScaleSchema), examsController.createScale)
+examsRoutes.get('/grading-scales', requirePermission('exams.view'), examsController.listScales)
+examsRoutes.get('/grading-scales/:id', requirePermission('exams.view'), examsController.getScaleById)
+examsRoutes.post('/grading-scales', requirePermission('exams.manage'), zValidator('json', createGradingScaleSchema), examsController.createScale)
 
-examsRoutes.get('/', examsController.listExams)
-examsRoutes.get('/:id', examsController.getExamById)
-examsRoutes.post('/', zValidator('json', createExamSchema), examsController.createExam)
+examsRoutes.get('/', requirePermission('exams.view'), examsController.listExams)
+examsRoutes.get('/:id', requirePermission('exams.view'), examsController.getExamById)
+examsRoutes.post('/', requirePermission('exams.manage'), zValidator('json', createExamSchema), examsController.createExam)
 
-examsRoutes.post('/results', zValidator('json', recordExamResultSchema), examsController.recordResult)
-examsRoutes.post('/results/bulk', zValidator('json', bulkRecordExamResultsSchema), examsController.bulkRecordResults)
+examsRoutes.post('/results', requirePermission('exams.manage'), zValidator('json', recordExamResultSchema), examsController.recordResult)
+examsRoutes.post('/results/bulk', requirePermission('exams.manage'), zValidator('json', bulkRecordExamResultsSchema), examsController.bulkRecordResults)
 
-examsRoutes.get('/:examId/report-cards/:studentId', examsController.reportCard)
+examsRoutes.post('/strand-results', requirePermission('exams.manage'), zValidator('json', recordStrandResultSchema), examsController.recordStrandResult)
+examsRoutes.get('/:examId/strand-results/:studentId', requirePermission('exams.view'), examsController.getStrandResults)
 
-examsRoutes.get('/:examId/timetable', examsController.getTimetable)
-examsRoutes.post('/timetable', zValidator('json', addExamTimetableEntrySchema), examsController.addTimetableEntry)
+examsRoutes.get('/:examId/report-cards/:studentId', requirePermission('exams.view'), examsController.reportCard)
+
+examsRoutes.get('/:examId/timetable', requirePermission('exams.view'), examsController.getTimetable)
+examsRoutes.post('/timetable', requirePermission('exams.manage'), zValidator('json', addExamTimetableEntrySchema), examsController.addTimetableEntry)

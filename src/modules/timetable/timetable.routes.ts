@@ -1,16 +1,17 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { timetableController } from './timetable.controller.js'
 import { createLessonPeriodSchema, createTimetableEntrySchema } from './timetable.schema.js'
 
 export const timetableRoutes = new Hono()
 
-timetableRoutes.get('/lesson-periods', timetableController.listLessonPeriods)
-timetableRoutes.post('/lesson-periods', zValidator('json', createLessonPeriodSchema), timetableController.createLessonPeriod)
+timetableRoutes.get('/lesson-periods', requirePermission('timetable.view'), timetableController.listLessonPeriods)
+timetableRoutes.post('/lesson-periods', requirePermission('timetable.manage'), zValidator('json', createLessonPeriodSchema), timetableController.createLessonPeriod)
 
-timetableRoutes.get('/classes/:classId', timetableController.getClassTimetable)
-timetableRoutes.get('/teachers/:teacherId', timetableController.getTeacherTimetable)
-timetableRoutes.get('/teachers/:teacherId/workload', timetableController.teacherWorkload)
+timetableRoutes.get('/classes/:classId', requirePermission('timetable.view'), timetableController.getClassTimetable)
+timetableRoutes.get('/teachers/:teacherId', requirePermission('timetable.view'), timetableController.getTeacherTimetable)
+timetableRoutes.get('/teachers/:teacherId/workload', requirePermission('timetable.view'), timetableController.teacherWorkload)
 
-timetableRoutes.post('/entries', zValidator('json', createTimetableEntrySchema), timetableController.createEntry)
-timetableRoutes.delete('/entries/:id', timetableController.deleteEntry)
+timetableRoutes.post('/entries', requirePermission('timetable.manage'), zValidator('json', createTimetableEntrySchema), timetableController.createEntry)
+timetableRoutes.delete('/entries/:id', requirePermission('timetable.manage'), timetableController.deleteEntry)

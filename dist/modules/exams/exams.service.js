@@ -58,6 +58,35 @@ export const examsService = {
         }
         return recorded;
     },
+    /** CBC strand-level entry: bands a numeric mark same as recordResult, or
+     *  stores a directly-assigned rubric grade (e.g. "Meets Expectation") when
+     *  no mark is given — the strand has no marks-mandatory assumption. */
+    async recordStrandResult(input) {
+        const exam = await examsRepository.findExamById(input.examId);
+        if (!exam)
+            throw new NotFoundError(`Exam ${input.examId} not found`);
+        let grade = input.grade ?? null;
+        let points = null;
+        if (input.marks !== undefined) {
+            const bands = await examsRepository.findBandsForScale(exam.gradingScaleId);
+            const percentage = (Number(input.marks) / Number(input.maxMarks)) * 100;
+            const band = findBand(bands, percentage);
+            grade = input.grade ?? band?.grade ?? null;
+            points = band?.points ?? null;
+        }
+        return examsRepository.upsertStrandResult({
+            examId: input.examId,
+            studentId: input.studentId,
+            strandId: input.strandId,
+            marks: input.marks !== undefined ? String(input.marks) : undefined,
+            maxMarks: String(input.maxMarks),
+            grade,
+            points,
+            remarks: input.remarks,
+            enteredBy: input.enteredBy,
+        });
+    },
+    getStrandResults: (examId, studentId) => examsRepository.findStrandResultsByExamAndStudent(examId, studentId),
     async reportCard(examId, studentId) {
         const exam = await examsRepository.findExamById(examId);
         if (!exam)

@@ -35,6 +35,24 @@ export const bulkRecordExamResultsSchema = z.object({
   results: z.array(recordExamResultSchema).min(1),
 })
 
+// CBC strand-level assessment: either a numeric mark (banded against the
+// exam's grading scale, same as a subject-level result) or a directly
+// assigned rubric level (e.g. "Meets Expectation") with no mark at all.
+export const recordStrandResultSchema = z
+  .object({
+    examId: z.number().int().positive(),
+    studentId: z.number().int().positive(),
+    strandId: z.number().int().positive(),
+    marks: z.union([z.string(), z.number()]).optional(),
+    maxMarks: z.union([z.string(), z.number()]).default(100),
+    grade: z.string().max(30).optional(),
+    remarks: z.string().optional(),
+    enteredBy: z.number().int().positive(),
+  })
+  .refine((v) => v.marks !== undefined || v.grade !== undefined, {
+    message: 'Either marks or a rubric grade is required',
+  })
+
 export const addExamTimetableEntrySchema = z.object({
   examId: z.number().int().positive(),
   subjectId: z.number().int().positive(),
@@ -48,4 +66,5 @@ export type CreateGradingScaleInput = z.infer<typeof createGradingScaleSchema>
 export type CreateExamInput = z.infer<typeof createExamSchema>
 export type RecordExamResultInput = z.infer<typeof recordExamResultSchema>
 export type BulkRecordExamResultsInput = z.infer<typeof bulkRecordExamResultsSchema>
+export type RecordStrandResultInput = z.infer<typeof recordStrandResultSchema>
 export type AddExamTimetableEntryInput = z.infer<typeof addExamTimetableEntrySchema>

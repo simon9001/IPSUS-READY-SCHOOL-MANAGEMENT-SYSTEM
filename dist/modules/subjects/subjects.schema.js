@@ -4,6 +4,11 @@ export const createSubjectSchema = z.object({
     name: z.string().min(1).max(100),
     isCompulsory: z.boolean().default(true),
 });
+export const createStrandSchema = z.object({
+    subjectId: z.number().int().positive(),
+    name: z.string().min(1).max(150),
+    description: z.string().optional(),
+});
 export const offerSubjectToClassSchema = z.object({
     classId: z.number().int().positive(),
     subjectId: z.number().int().positive(),

@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { zValidator } from '../../common/validate.js';
+import { requirePermission } from '../../common/auth.js';
 import { accountsController } from './accounts.controller.js';
 import { createAccountSchema, updateAccountSchema } from './accounts.schema.js';
 export const accountsRoutes = new Hono();
-accountsRoutes.get('/', accountsController.list);
-accountsRoutes.get('/:id', accountsController.getById);
-accountsRoutes.post('/', zValidator('json', createAccountSchema), accountsController.create);
-accountsRoutes.patch('/:id', zValidator('json', updateAccountSchema), accountsController.update);
-accountsRoutes.post('/:id/deactivate', accountsController.deactivate);
+accountsRoutes.get('/', requirePermission('ledger.journal.view'), accountsController.list);
+accountsRoutes.get('/:id', requirePermission('ledger.journal.view'), accountsController.getById);
+accountsRoutes.post('/', requirePermission('ledger.accounts.manage'), zValidator('json', createAccountSchema), accountsController.create);
+accountsRoutes.patch('/:id', requirePermission('ledger.accounts.manage'), zValidator('json', updateAccountSchema), accountsController.update);
+accountsRoutes.post('/:id/deactivate', requirePermission('ledger.accounts.manage'), accountsController.deactivate);

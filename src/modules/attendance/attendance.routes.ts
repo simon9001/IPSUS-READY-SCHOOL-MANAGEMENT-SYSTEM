@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { attendanceController } from './attendance.controller.js'
 import { bulkMarkAttendanceSchema, markAttendanceSchema } from './attendance.schema.js'
 
 export const attendanceRoutes = new Hono()
 
-attendanceRoutes.get('/students/:studentId', attendanceController.listByStudent)
-attendanceRoutes.get('/classes/:classId', attendanceController.listByClassAndDate)
-attendanceRoutes.post('/', zValidator('json', markAttendanceSchema), attendanceController.mark)
-attendanceRoutes.post('/bulk', zValidator('json', bulkMarkAttendanceSchema), attendanceController.markBulk)
+attendanceRoutes.get('/students/:studentId', requirePermission('attendance.view'), attendanceController.listByStudent)
+attendanceRoutes.get('/classes/:classId', requirePermission('attendance.view'), attendanceController.listByClassAndDate)
+attendanceRoutes.post('/', requirePermission('attendance.manage'), zValidator('json', markAttendanceSchema), attendanceController.mark)
+attendanceRoutes.post('/bulk', requirePermission('attendance.manage'), zValidator('json', bulkMarkAttendanceSchema), attendanceController.markBulk)

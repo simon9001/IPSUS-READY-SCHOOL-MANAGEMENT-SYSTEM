@@ -1,21 +1,22 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { clubsController } from './clubs.controller.js'
 import { addParticipantSchema, createClubSchema, createCompetitionSchema, joinClubSchema } from './clubs.schema.js'
 
 export const clubsRoutes = new Hono()
 
-clubsRoutes.get('/', clubsController.listClubs)
-clubsRoutes.get('/:id', clubsController.getClubById)
-clubsRoutes.post('/', zValidator('json', createClubSchema), clubsController.createClub)
+clubsRoutes.get('/', requirePermission('clubs.view'), clubsController.listClubs)
+clubsRoutes.get('/:id', requirePermission('clubs.view'), clubsController.getClubById)
+clubsRoutes.post('/', requirePermission('clubs.manage'), zValidator('json', createClubSchema), clubsController.createClub)
 
-clubsRoutes.get('/:clubId/members', clubsController.listMembersByClub)
-clubsRoutes.get('/students/:studentId/memberships', clubsController.listMembershipsByStudent)
-clubsRoutes.post('/memberships', zValidator('json', joinClubSchema), clubsController.joinClub)
+clubsRoutes.get('/:clubId/members', requirePermission('clubs.view'), clubsController.listMembersByClub)
+clubsRoutes.get('/students/:studentId/memberships', requirePermission('clubs.view'), clubsController.listMembershipsByStudent)
+clubsRoutes.post('/memberships', requirePermission('clubs.manage'), zValidator('json', joinClubSchema), clubsController.joinClub)
 
-clubsRoutes.get('/competitions', clubsController.listCompetitions)
-clubsRoutes.get('/competitions/:id', clubsController.getCompetitionById)
-clubsRoutes.post('/competitions', zValidator('json', createCompetitionSchema), clubsController.createCompetition)
+clubsRoutes.get('/competitions', requirePermission('clubs.view'), clubsController.listCompetitions)
+clubsRoutes.get('/competitions/:id', requirePermission('clubs.view'), clubsController.getCompetitionById)
+clubsRoutes.post('/competitions', requirePermission('clubs.manage'), zValidator('json', createCompetitionSchema), clubsController.createCompetition)
 
-clubsRoutes.get('/competitions/:competitionId/participants', clubsController.listParticipantsByCompetition)
-clubsRoutes.post('/competitions/participants', zValidator('json', addParticipantSchema), clubsController.addParticipant)
+clubsRoutes.get('/competitions/:competitionId/participants', requirePermission('clubs.view'), clubsController.listParticipantsByCompetition)
+clubsRoutes.post('/competitions/participants', requirePermission('clubs.manage'), zValidator('json', addParticipantSchema), clubsController.addParticipant)

@@ -1,17 +1,18 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { studentsController } from './students.controller.js'
 import { createClassSchema, createStreamSchema, createStudentSchema, updateStudentSchema } from './students.schema.js'
 
 export const studentsRoutes = new Hono()
 
-studentsRoutes.get('/classes', studentsController.listClasses)
-studentsRoutes.post('/classes', zValidator('json', createClassSchema), studentsController.createClass)
-studentsRoutes.get('/classes/:classId/streams', studentsController.listStreams)
-studentsRoutes.post('/streams', zValidator('json', createStreamSchema), studentsController.createStream)
-studentsRoutes.get('/classes/:classId/students', studentsController.listByClass)
+studentsRoutes.get('/classes', requirePermission('students.view'), studentsController.listClasses)
+studentsRoutes.post('/classes', requirePermission('students.manage'), zValidator('json', createClassSchema), studentsController.createClass)
+studentsRoutes.get('/classes/:classId/streams', requirePermission('students.view'), studentsController.listStreams)
+studentsRoutes.post('/streams', requirePermission('students.manage'), zValidator('json', createStreamSchema), studentsController.createStream)
+studentsRoutes.get('/classes/:classId/students', requirePermission('students.view'), studentsController.listByClass)
 
-studentsRoutes.get('/', studentsController.list)
-studentsRoutes.get('/:id', studentsController.getById)
-studentsRoutes.post('/', zValidator('json', createStudentSchema), studentsController.create)
-studentsRoutes.patch('/:id', zValidator('json', updateStudentSchema), studentsController.update)
+studentsRoutes.get('/', requirePermission('students.view'), studentsController.list)
+studentsRoutes.get('/:id', requirePermission('students.view'), studentsController.getById)
+studentsRoutes.post('/', requirePermission('students.manage'), zValidator('json', createStudentSchema), studentsController.create)
+studentsRoutes.patch('/:id', requirePermission('students.manage'), zValidator('json', updateStudentSchema), studentsController.update)

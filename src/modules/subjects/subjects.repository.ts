@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { classSubjects, subjects, teacherAssignments } from '../../db/schema/index.js'
-import type { NewClassSubject, NewSubject, NewTeacherAssignment } from './subjects.types.js'
+import { classSubjects, subjects, subjectStrands, teacherAssignments } from '../../db/schema/index.js'
+import type { NewClassSubject, NewSubject, NewSubjectStrand, NewTeacherAssignment } from './subjects.types.js'
 
 export const subjectsRepository = {
   findAll: () => db.select().from(subjects),
@@ -10,6 +10,11 @@ export const subjectsRepository = {
   findByCode: (code: string) =>
     db.select().from(subjects).where(eq(subjects.code, code)).then((rows) => rows[0]),
   create: (data: NewSubject) => db.insert(subjects).values(data).returning().then((rows) => rows[0]),
+
+  findStrandsBySubject: (subjectId: number) => db.select().from(subjectStrands).where(eq(subjectStrands.subjectId, subjectId)),
+  findStrandByName: (subjectId: number, name: string) =>
+    db.select().from(subjectStrands).where(and(eq(subjectStrands.subjectId, subjectId), eq(subjectStrands.name, name))).then((rows) => rows[0]),
+  createStrand: (data: NewSubjectStrand) => db.insert(subjectStrands).values(data).returning().then((rows) => rows[0]),
 
   findOfferingsByClass: (classId: number) => db.select().from(classSubjects).where(eq(classSubjects.classId, classId)),
   findOffering: (classId: number, subjectId: number) =>

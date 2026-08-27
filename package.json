@@ -9,7 +9,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "db:seed-demo-users": "tsx src/db/seed-demo-users.ts",
+    "db:sync-rbac": "tsx src/db/sync-rbac.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

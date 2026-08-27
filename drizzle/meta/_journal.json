@@ -64,6 +64,13 @@
       "when": 1787602590771,
       "tag": "0008_productive_squadron_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787774358360,
+      "tag": "0009_sticky_solo",
+      "breakpoints": true
     }
   ]
 }

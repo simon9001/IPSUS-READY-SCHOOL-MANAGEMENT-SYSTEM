@@ -13,6 +13,8 @@ export const examsController = {
         const { results } = getValidated(c, 'json');
         return created(c, await examsService.bulkRecordResults(results));
     },
+    recordStrandResult: async (c) => created(c, await examsService.recordStrandResult(getValidated(c, 'json'))),
+    getStrandResults: async (c) => ok(c, await examsService.getStrandResults(Number(c.req.param('examId')), Number(c.req.param('studentId')))),
     reportCard: async (c) => ok(c, await examsService.reportCard(Number(c.req.param('examId')), Number(c.req.param('studentId')))),
     getTimetable: async (c) => ok(c, await examsService.getTimetable(Number(c.req.param('examId')))),
     addTimetableEntry: async (c) => created(c, await examsService.addTimetableEntry(getValidated(c, 'json'))),

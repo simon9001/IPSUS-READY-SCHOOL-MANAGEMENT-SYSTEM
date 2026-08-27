@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { contractsController } from './contracts.controller.js'
 import { createContractSchema, updateContractStatusSchema } from './contracts.schema.js'
 
 export const contractsRoutes = new Hono()
 
-contractsRoutes.get('/staff/:staffId', contractsController.listByStaff)
-contractsRoutes.get('/:id', contractsController.getById)
-contractsRoutes.post('/', zValidator('json', createContractSchema), contractsController.create)
-contractsRoutes.patch('/:id/status', zValidator('json', updateContractStatusSchema), contractsController.updateStatus)
+contractsRoutes.get('/staff/:staffId', requirePermission('contracts.view'), contractsController.listByStaff)
+contractsRoutes.get('/:id', requirePermission('contracts.view'), contractsController.getById)
+contractsRoutes.post('/', requirePermission('contracts.manage'), zValidator('json', createContractSchema), contractsController.create)
+contractsRoutes.patch('/:id/status', requirePermission('contracts.manage'), zValidator('json', updateContractStatusSchema), contractsController.updateStatus)

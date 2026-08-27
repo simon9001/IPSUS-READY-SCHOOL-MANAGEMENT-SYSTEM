@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client.js';
-import { examResults, examTimetableEntries, exams, gradingBands, gradingScales, subjects } from '../../db/schema/index.js';
+import { examResults, examStrandResults, examTimetableEntries, exams, gradingBands, gradingScales, subjectStrands, subjects } from '../../db/schema/index.js';
 export const examsRepository = {
     findAllScales: () => db.select().from(gradingScales),
     findScaleById: (id) => db.select().from(gradingScales).where(eq(gradingScales.id, id)).then((rows) => rows[0]),
@@ -37,6 +37,20 @@ export const examsRepository = {
         .innerJoin(exams, eq(examResults.examId, exams.id))
         .innerJoin(subjects, eq(examResults.subjectId, subjects.id))
         .where(eq(examResults.studentId, studentId)),
+    upsertStrandResult: (data) => db
+        .insert(examStrandResults)
+        .values(data)
+        .onConflictDoUpdate({
+        target: [examStrandResults.examId, examStrandResults.studentId, examStrandResults.strandId],
+        set: { marks: data.marks, maxMarks: data.maxMarks, grade: data.grade, points: data.points, remarks: data.remarks, enteredBy: data.enteredBy, enteredAt: new Date() },
+    })
+        .returning()
+        .then((rows) => rows[0]),
+    findStrandResultsByExamAndStudent: (examId, studentId) => db
+        .select({ result: examStrandResults, strandName: subjectStrands.name, subjectId: subjectStrands.subjectId })
+        .from(examStrandResults)
+        .innerJoin(subjectStrands, eq(examStrandResults.strandId, subjectStrands.id))
+        .where(and(eq(examStrandResults.examId, examId), eq(examStrandResults.studentId, studentId))),
     findTimetableByExam: (examId) => db.select().from(examTimetableEntries).where(eq(examTimetableEntries.examId, examId)),
     addTimetableEntry: (data) => db.insert(examTimetableEntries).values(data).returning().then((rows) => rows[0]),
 };

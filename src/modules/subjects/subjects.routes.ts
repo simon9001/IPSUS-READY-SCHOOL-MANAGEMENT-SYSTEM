@@ -1,16 +1,20 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { subjectsController } from './subjects.controller.js'
-import { assignTeacherSchema, createSubjectSchema, offerSubjectToClassSchema } from './subjects.schema.js'
+import { assignTeacherSchema, createStrandSchema, createSubjectSchema, offerSubjectToClassSchema } from './subjects.schema.js'
 
 export const subjectsRoutes = new Hono()
 
-subjectsRoutes.get('/', subjectsController.list)
-subjectsRoutes.get('/:id', subjectsController.getById)
-subjectsRoutes.post('/', zValidator('json', createSubjectSchema), subjectsController.create)
+subjectsRoutes.get('/', requirePermission('subjects.view'), subjectsController.list)
+subjectsRoutes.get('/:id', requirePermission('subjects.view'), subjectsController.getById)
+subjectsRoutes.post('/', requirePermission('subjects.manage'), zValidator('json', createSubjectSchema), subjectsController.create)
 
-subjectsRoutes.get('/classes/:classId/offerings', subjectsController.listOfferingsByClass)
-subjectsRoutes.post('/offerings', zValidator('json', offerSubjectToClassSchema), subjectsController.offerToClass)
+subjectsRoutes.get('/:subjectId/strands', requirePermission('subjects.view'), subjectsController.listStrands)
+subjectsRoutes.post('/strands', requirePermission('subjects.manage'), zValidator('json', createStrandSchema), subjectsController.createStrand)
 
-subjectsRoutes.get('/classes/:classId/assignments', subjectsController.listAssignments)
-subjectsRoutes.post('/assignments', zValidator('json', assignTeacherSchema), subjectsController.assignTeacher)
+subjectsRoutes.get('/classes/:classId/offerings', requirePermission('subjects.view'), subjectsController.listOfferingsByClass)
+subjectsRoutes.post('/offerings', requirePermission('subjects.manage'), zValidator('json', offerSubjectToClassSchema), subjectsController.offerToClass)
+
+subjectsRoutes.get('/classes/:classId/assignments', requirePermission('subjects.view'), subjectsController.listAssignments)
+subjectsRoutes.post('/assignments', requirePermission('subjects.manage'), zValidator('json', assignTeacherSchema), subjectsController.assignTeacher)

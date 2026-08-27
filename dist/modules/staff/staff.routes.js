@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { zValidator } from '../../common/validate.js';
+import { requirePermission } from '../../common/auth.js';
 import { staffController } from './staff.controller.js';
 import { createStaffSchema, updateStaffSchema } from './staff.schema.js';
 export const staffRoutes = new Hono();
-staffRoutes.get('/', staffController.list);
-staffRoutes.get('/:id', staffController.getById);
-staffRoutes.post('/', zValidator('json', createStaffSchema), staffController.create);
-staffRoutes.patch('/:id', zValidator('json', updateStaffSchema), staffController.update);
+staffRoutes.get('/', requirePermission('staff.view'), staffController.list);
+staffRoutes.get('/:id', requirePermission('staff.view'), staffController.getById);
+staffRoutes.post('/', requirePermission('staff.manage'), zValidator('json', createStaffSchema), staffController.create);
+staffRoutes.patch('/:id', requirePermission('staff.manage'), zValidator('json', updateStaffSchema), staffController.update);

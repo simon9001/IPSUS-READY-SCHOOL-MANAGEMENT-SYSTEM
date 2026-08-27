@@ -1,13 +1,14 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { conductPointsController } from './conductPoints.controller.js'
 import { awardPointsSchema, createRuleSchema } from './conductPoints.schema.js'
 
 export const conductPointsRoutes = new Hono()
 
-conductPointsRoutes.get('/rules', conductPointsController.listRules)
-conductPointsRoutes.post('/rules', zValidator('json', createRuleSchema), conductPointsController.createRule)
+conductPointsRoutes.get('/rules', requirePermission('conduct_points.view'), conductPointsController.listRules)
+conductPointsRoutes.post('/rules', requirePermission('conduct_points.manage'), zValidator('json', createRuleSchema), conductPointsController.createRule)
 
-conductPointsRoutes.get('/students/:studentId', conductPointsController.listByStudent)
-conductPointsRoutes.get('/students/:studentId/score', conductPointsController.score)
-conductPointsRoutes.post('/', zValidator('json', awardPointsSchema), conductPointsController.award)
+conductPointsRoutes.get('/students/:studentId', requirePermission('conduct_points.view'), conductPointsController.listByStudent)
+conductPointsRoutes.get('/students/:studentId/score', requirePermission('conduct_points.view'), conductPointsController.score)
+conductPointsRoutes.post('/', requirePermission('conduct_points.manage'), zValidator('json', awardPointsSchema), conductPointsController.award)

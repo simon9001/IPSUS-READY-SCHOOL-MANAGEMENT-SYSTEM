@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { examResults, examTimetableEntries, exams, gradingBands, gradingScales, subjects } from '../../db/schema/index.js'
-import type { NewExam, NewExamResult, NewExamTimetableEntry, NewGradingBand, NewGradingScale } from './exams.types.js'
+import { examResults, examStrandResults, examTimetableEntries, exams, gradingBands, gradingScales, subjectStrands, subjects } from '../../db/schema/index.js'
+import type { NewExam, NewExamResult, NewExamStrandResult, NewExamTimetableEntry, NewGradingBand, NewGradingScale } from './exams.types.js'
 
 export const examsRepository = {
   findAllScales: () => db.select().from(gradingScales),
@@ -51,6 +51,24 @@ export const examsRepository = {
       .innerJoin(exams, eq(examResults.examId, exams.id))
       .innerJoin(subjects, eq(examResults.subjectId, subjects.id))
       .where(eq(examResults.studentId, studentId)),
+
+  upsertStrandResult: (data: NewExamStrandResult) =>
+    db
+      .insert(examStrandResults)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [examStrandResults.examId, examStrandResults.studentId, examStrandResults.strandId],
+        set: { marks: data.marks, maxMarks: data.maxMarks, grade: data.grade, points: data.points, remarks: data.remarks, enteredBy: data.enteredBy, enteredAt: new Date() },
+      })
+      .returning()
+      .then((rows) => rows[0]),
+
+  findStrandResultsByExamAndStudent: (examId: number, studentId: number) =>
+    db
+      .select({ result: examStrandResults, strandName: subjectStrands.name, subjectId: subjectStrands.subjectId })
+      .from(examStrandResults)
+      .innerJoin(subjectStrands, eq(examStrandResults.strandId, subjectStrands.id))
+      .where(and(eq(examStrandResults.examId, examId), eq(examStrandResults.studentId, studentId))),
 
   findTimetableByExam: (examId: number) => db.select().from(examTimetableEntries).where(eq(examTimetableEntries.examId, examId)),
   addTimetableEntry: (data: NewExamTimetableEntry) =>

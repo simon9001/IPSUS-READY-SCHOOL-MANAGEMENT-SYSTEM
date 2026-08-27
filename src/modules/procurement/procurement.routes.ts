@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
 import { procurementController } from './procurement.controller.js'
 import {
   approveRequisitionSchema,
@@ -13,24 +14,24 @@ import {
 
 export const procurementRoutes = new Hono()
 
-procurementRoutes.get('/suppliers', procurementController.listSuppliers)
-procurementRoutes.get('/suppliers/:id', procurementController.getSupplierById)
-procurementRoutes.post('/suppliers', zValidator('json', createSupplierSchema), procurementController.createSupplier)
+procurementRoutes.get('/suppliers', requirePermission('procurement.view'), procurementController.listSuppliers)
+procurementRoutes.get('/suppliers/:id', requirePermission('procurement.view'), procurementController.getSupplierById)
+procurementRoutes.post('/suppliers', requirePermission('procurement.lpo.manage'), zValidator('json', createSupplierSchema), procurementController.createSupplier)
 
-procurementRoutes.get('/requisitions', procurementController.listRequisitions)
-procurementRoutes.get('/requisitions/:id', procurementController.getRequisitionById)
-procurementRoutes.post('/requisitions', zValidator('json', createRequisitionSchema), procurementController.createRequisition)
-procurementRoutes.post('/requisitions/:id/approve', zValidator('json', approveRequisitionSchema), procurementController.approveRequisition)
-procurementRoutes.post('/requisitions/:id/reject', procurementController.rejectRequisition)
+procurementRoutes.get('/requisitions', requirePermission('procurement.view'), procurementController.listRequisitions)
+procurementRoutes.get('/requisitions/:id', requirePermission('procurement.view'), procurementController.getRequisitionById)
+procurementRoutes.post('/requisitions', requirePermission('procurement.requisition.create'), zValidator('json', createRequisitionSchema), procurementController.createRequisition)
+procurementRoutes.post('/requisitions/:id/approve', requirePermission('procurement.requisition.approve'), zValidator('json', approveRequisitionSchema), procurementController.approveRequisition)
+procurementRoutes.post('/requisitions/:id/reject', requirePermission('procurement.requisition.approve'), procurementController.rejectRequisition)
 
-procurementRoutes.get('/purchase-orders', procurementController.listPurchaseOrders)
-procurementRoutes.get('/purchase-orders/:id', procurementController.getPurchaseOrderById)
-procurementRoutes.post('/purchase-orders', zValidator('json', createPurchaseOrderSchema), procurementController.createPurchaseOrder)
+procurementRoutes.get('/purchase-orders', requirePermission('procurement.view'), procurementController.listPurchaseOrders)
+procurementRoutes.get('/purchase-orders/:id', requirePermission('procurement.view'), procurementController.getPurchaseOrderById)
+procurementRoutes.post('/purchase-orders', requirePermission('procurement.lpo.manage'), zValidator('json', createPurchaseOrderSchema), procurementController.createPurchaseOrder)
 
-procurementRoutes.post('/goods-received-notes', zValidator('json', createGrnSchema), procurementController.createGrn)
+procurementRoutes.post('/goods-received-notes', requirePermission('procurement.lpo.manage'), zValidator('json', createGrnSchema), procurementController.createGrn)
 
-procurementRoutes.get('/invoices', procurementController.listSupplierInvoices)
-procurementRoutes.get('/invoices/:id', procurementController.getSupplierInvoiceById)
-procurementRoutes.post('/invoices', zValidator('json', createSupplierInvoiceSchema), procurementController.createSupplierInvoice)
+procurementRoutes.get('/invoices', requirePermission('procurement.view'), procurementController.listSupplierInvoices)
+procurementRoutes.get('/invoices/:id', requirePermission('procurement.view'), procurementController.getSupplierInvoiceById)
+procurementRoutes.post('/invoices', requirePermission('procurement.invoice.manage'), zValidator('json', createSupplierInvoiceSchema), procurementController.createSupplierInvoice)
 
-procurementRoutes.post('/payments', zValidator('json', createSupplierPaymentSchema), procurementController.createSupplierPayment)
+procurementRoutes.post('/payments', requirePermission('procurement.payment.create'), zValidator('json', createSupplierPaymentSchema), procurementController.createSupplierPayment)

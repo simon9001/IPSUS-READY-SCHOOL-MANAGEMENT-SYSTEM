@@ -14,6 +14,14 @@ export const subjectsService = {
             throw new ConflictError(`Subject code ${input.code} already exists`);
         return subjectsRepository.create(input);
     },
+    listStrands: (subjectId) => subjectsRepository.findStrandsBySubject(subjectId),
+    async createStrand(input) {
+        await this.getById(input.subjectId);
+        const existing = await subjectsRepository.findStrandByName(input.subjectId, input.name);
+        if (existing)
+            throw new ConflictError(`Strand "${input.name}" already exists for this subject`);
+        return subjectsRepository.createStrand(input);
+    },
     listOfferingsByClass: (classId) => subjectsRepository.findOfferingsByClass(classId),
     async offerToClass(input) {
         const existing = await subjectsRepository.findOffering(input.classId, input.subjectId);

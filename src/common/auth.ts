@@ -19,3 +19,15 @@ export function requirePermission(code: string) {
     await next()
   }
 }
+
+// For the handful of routes meant to be readable by any logged-in staff
+// member (e.g. school notices) where no dedicated `.view` permission exists
+// in the catalog — still blocks unauthenticated requests, unlike leaving the
+// route ungated entirely.
+export function requireAuth() {
+  return async (c: Context, next: Next) => {
+    const user = c.get('user') as AuthUser | undefined
+    if (!user) throw new ForbiddenError('Authentication required')
+    await next()
+  }
+}

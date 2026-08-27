@@ -1,6 +1,6 @@
 import { subjectsRepository } from './subjects.repository.js'
 import { ConflictError, NotFoundError } from '../../common/errors.js'
-import type { AssignTeacherInput, CreateSubjectInput, OfferSubjectToClassInput } from './subjects.schema.js'
+import type { AssignTeacherInput, CreateStrandInput, CreateSubjectInput, OfferSubjectToClassInput } from './subjects.schema.js'
 
 export const subjectsService = {
   list: () => subjectsRepository.findAll(),
@@ -15,6 +15,15 @@ export const subjectsService = {
     const existing = await subjectsRepository.findByCode(input.code)
     if (existing) throw new ConflictError(`Subject code ${input.code} already exists`)
     return subjectsRepository.create(input)
+  },
+
+  listStrands: (subjectId: number) => subjectsRepository.findStrandsBySubject(subjectId),
+
+  async createStrand(input: CreateStrandInput) {
+    await this.getById(input.subjectId)
+    const existing = await subjectsRepository.findStrandByName(input.subjectId, input.name)
+    if (existing) throw new ConflictError(`Strand "${input.name}" already exists for this subject`)
+    return subjectsRepository.createStrand(input)
   },
 
   listOfferingsByClass: (classId: number) => subjectsRepository.findOfferingsByClass(classId),

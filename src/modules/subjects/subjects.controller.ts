@@ -2,13 +2,17 @@ import type { Context } from 'hono'
 import { subjectsService } from './subjects.service.js'
 import { ok, created } from '../../common/response.js'
 import { getValidated } from '../../common/validate.js'
-import type { AssignTeacherInput, CreateSubjectInput, OfferSubjectToClassInput } from './subjects.schema.js'
+import type { AssignTeacherInput, CreateStrandInput, CreateSubjectInput, OfferSubjectToClassInput } from './subjects.schema.js'
 
 export const subjectsController = {
   list: async (c: Context) => ok(c, await subjectsService.list()),
   getById: async (c: Context) => ok(c, await subjectsService.getById(Number(c.req.param('id')))),
   create: async (c: Context) =>
     created(c, await subjectsService.create(getValidated<CreateSubjectInput>(c, 'json'))),
+
+  listStrands: async (c: Context) => ok(c, await subjectsService.listStrands(Number(c.req.param('subjectId')))),
+  createStrand: async (c: Context) =>
+    created(c, await subjectsService.createStrand(getValidated<CreateStrandInput>(c, 'json'))),
 
   listOfferingsByClass: async (c: Context) =>
     ok(c, await subjectsService.listOfferingsByClass(Number(c.req.param('classId')))),
