@@ -2,9 +2,16 @@ import jwt from 'jsonwebtoken';
 import { authRepository } from './auth.repository.js';
 import { verifyPassword } from '../identity/password.js';
 import { ForbiddenError, NotFoundError, ValidationError } from '../../common/errors.js';
-// Dev-only fallback — set a real JWT_SECRET in .env before any real deployment.
-const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-only-insecure-secret-change-me';
+// Fails fast at startup rather than silently signing tokens with a fallback
+// secret that would otherwise sit in source control — see .env.example for
+// how to generate one.
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not set. Add it to .env — see .env.example.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_TTL = '8h';
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 async function toAuthenticatedUser(userId, email, fullName) {
     const { roles, permissions } = await authRepository.findRolesAndPermissions(userId);
     return { id: userId, email, fullName, roles, permissions };
@@ -19,8 +26,14 @@ export const authService = {
         if (user.lockedUntil && user.lockedUntil > new Date())
             throw new ForbiddenError('Account is temporarily locked');
         const valid = await verifyPassword(input.password, user.passwordHash);
-        if (!valid)
+        if (!valid) {
+            const attempts = user.failedLoginAttempts + 1;
+            const lockedUntil = attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null;
+            await authRepository.recordFailedLogin(user.id, attempts, lockedUntil);
+            if (lockedUntil)
+                throw new ForbiddenError(`Too many failed attempts — account locked for 15 minutes`);
             throw new ValidationError('Invalid email or password');
+        }
         await authRepository.recordLogin(user.id);
         const authenticatedUser = await toAuthenticatedUser(user.id, user.email, user.fullName);
         const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL });

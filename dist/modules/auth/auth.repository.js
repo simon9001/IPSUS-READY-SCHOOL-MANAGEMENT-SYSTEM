@@ -21,5 +21,6 @@ export const authRepository = {
             permissions: [...new Set(permissionRows.map((p) => p.code))],
         };
     },
-    recordLogin: (userId) => db.update(users).set({ lastLoginAt: new Date(), failedLoginAttempts: 0 }).where(eq(users.id, userId)),
+    recordLogin: (userId) => db.update(users).set({ lastLoginAt: new Date(), failedLoginAttempts: 0, lockedUntil: null }).where(eq(users.id, userId)),
+    recordFailedLogin: (userId, failedLoginAttempts, lockedUntil) => db.update(users).set({ failedLoginAttempts, lockedUntil }).where(eq(users.id, userId)),
 };

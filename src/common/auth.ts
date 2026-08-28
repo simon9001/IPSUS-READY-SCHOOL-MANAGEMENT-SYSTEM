@@ -31,3 +31,18 @@ export function requireAuth() {
     await next()
   }
 }
+
+// Ownership check for routes shaped like /:userId/... — having the right
+// permission (e.g. portal.access) proves you're SOME guardian, not that
+// you're THIS one. Without this, any guardian's token could read any other
+// guardian's linked-children data just by changing the URL's :userId (IDOR).
+export function requireSelf(paramName: string) {
+  return async (c: Context, next: Next) => {
+    const user = c.get('user') as AuthUser | undefined
+    const routeUserId = Number(c.req.param(paramName))
+    if (!user || user.id !== routeUserId) {
+      throw new ForbiddenError('You can only access your own records')
+    }
+    await next()
+  }
+}

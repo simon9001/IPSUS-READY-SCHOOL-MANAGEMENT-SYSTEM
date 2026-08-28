@@ -30,5 +30,8 @@ export const authRepository = {
   },
 
   recordLogin: (userId: number) =>
-    db.update(users).set({ lastLoginAt: new Date(), failedLoginAttempts: 0 }).where(eq(users.id, userId)),
+    db.update(users).set({ lastLoginAt: new Date(), failedLoginAttempts: 0, lockedUntil: null }).where(eq(users.id, userId)),
+
+  recordFailedLogin: (userId: number, failedLoginAttempts: number, lockedUntil: Date | null) =>
+    db.update(users).set({ failedLoginAttempts, lockedUntil }).where(eq(users.id, userId)),
 }

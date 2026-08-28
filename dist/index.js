@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { AppError } from './common/errors.js';
+import { requestLogger, logError, metricsHandler } from './common/observability.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { attachUser } from './modules/auth/auth.middleware.js';
 import { accountsRoutes } from './modules/accounts/accounts.routes.js';
@@ -47,10 +48,16 @@ import { documentsRoutes } from './modules/documents/documents.routes.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 const app = new Hono();
 app.use('*', cors({ origin: (origin) => origin ?? '*', credentials: true }));
+app.use('*', requestLogger);
 app.use('*', attachUser);
 app.get('/', (c) => {
     return c.text('Kenyan High School Accounting System API');
 });
+// Prometheus scrape target. Left unauthenticated (standard for a metrics
+// endpoint — the scraper has no user login to send) — restrict it at the
+// network/reverse-proxy level before this is ever reachable from outside
+// your own infrastructure.
+app.get('/metrics', metricsHandler);
 app.route('/api/auth', authRoutes);
 app.route('/api/accounts', accountsRoutes);
 app.route('/api/funds', fundsRoutes);
@@ -96,9 +103,10 @@ app.route('/api/documents', documentsRoutes);
 app.route('/api/dashboard', dashboardRoutes);
 app.onError((err, c) => {
     if (err instanceof AppError) {
+        logError(c, err, err.statusCode);
         return c.json({ success: false, error: err.message }, err.statusCode);
     }
-    console.error(err);
+    logError(c, err, 500);
     return c.json({ success: false, error: 'Internal server error' }, 500);
 });
 const port = Number(process.env.PORT ?? 3000);
