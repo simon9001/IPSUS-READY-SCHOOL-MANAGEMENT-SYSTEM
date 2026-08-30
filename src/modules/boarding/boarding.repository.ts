@@ -17,6 +17,14 @@ export const boardingRepository = {
     return row?.count ?? 0
   },
 
+  async countActiveAllocations() {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(bedAllocations)
+      .where(eq(bedAllocations.status, 'active'))
+    return row?.count ?? 0
+  },
+
   findBedOccupant: (dormitoryId: number, bedNumber: string) =>
     db
       .select()

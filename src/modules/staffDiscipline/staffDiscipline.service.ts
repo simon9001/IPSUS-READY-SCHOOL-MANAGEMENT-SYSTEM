@@ -3,6 +3,7 @@ import { NotFoundError } from '../../common/errors.js'
 import type { CreateStaffDisciplineRecordInput } from './staffDiscipline.schema.js'
 
 export const staffDisciplineService = {
+  listRecent: (limit: number) => staffDisciplineRepository.findRecent(limit),
   listByStaff: (staffId: number) => staffDisciplineRepository.findByStaff(staffId),
 
   async getById(id: number) {

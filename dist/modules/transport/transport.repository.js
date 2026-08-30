@@ -14,6 +14,13 @@ export const transportRepository = {
             .where(and(eq(studentTransportAllocations.routeId, routeId), eq(studentTransportAllocations.status, 'active')));
         return row?.count ?? 0;
     },
+    async countActiveAllocations() {
+        const [row] = await db
+            .select({ count: sql `count(*)::int` })
+            .from(studentTransportAllocations)
+            .where(eq(studentTransportAllocations.status, 'active'));
+        return row?.count ?? 0;
+    },
     findActiveAllocationForStudent: (studentId) => db
         .select()
         .from(studentTransportAllocations)

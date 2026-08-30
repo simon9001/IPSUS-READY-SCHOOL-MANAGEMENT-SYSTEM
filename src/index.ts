@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { AppError } from './common/errors.js'
 import { requestLogger, logError, metricsHandler } from './common/observability.js'
+import { assertDatabaseConnection } from './db/client.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { attachUser } from './modules/auth/auth.middleware.js'
 import { accountsRoutes } from './modules/accounts/accounts.routes.js'
@@ -47,10 +48,22 @@ import { clubsRoutes } from './modules/clubs/clubs.routes.js'
 import { complianceRoutes } from './modules/compliance/compliance.routes.js'
 import { documentsRoutes } from './modules/documents/documents.routes.js'
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js'
+import { usersRoutes, rolesRoutes, auditLogRoutes } from './modules/identity/identity.routes.js'
 
 const app = new Hono()
 
-app.use('*', cors({ origin: (origin) => origin ?? '*', credentials: true }))
+// CORS_ORIGIN is required so credentialed requests (Authorization header)
+// are only ever accepted from known frontend origins, not reflected back
+// for any caller.
+const allowedOrigins = (process.env.CORS_ORIGIN ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+if (allowedOrigins.length === 0) {
+  throw new Error('CORS_ORIGIN is not set — add it to .env (see .env.example)')
+}
+
+app.use('*', cors({ origin: allowedOrigins, credentials: true }))
 app.use('*', requestLogger)
 app.use('*', attachUser)
 
@@ -107,6 +120,9 @@ app.route('/api/clubs', clubsRoutes)
 app.route('/api/compliance', complianceRoutes)
 app.route('/api/documents', documentsRoutes)
 app.route('/api/dashboard', dashboardRoutes)
+app.route('/api/users', usersRoutes)
+app.route('/api/roles', rolesRoutes)
+app.route('/api/audit-log', auditLogRoutes)
 
 app.onError((err, c) => {
   if (err instanceof AppError) {
@@ -118,6 +134,18 @@ app.onError((err, c) => {
 })
 
 const port = Number(process.env.PORT ?? 3000)
+
+// Refuse to start listening at all until the database is actually reachable
+// — no request should ever be able to hit this server and only then
+// discover the DB connection is broken.
+try {
+  await assertDatabaseConnection()
+  console.log('Database connection OK')
+} catch (err) {
+  console.error('Failed to connect to the database — server will not start.')
+  console.error(err instanceof Error ? err.message : err)
+  process.exit(1)
+}
 
 serve({
   fetch: app.fetch,

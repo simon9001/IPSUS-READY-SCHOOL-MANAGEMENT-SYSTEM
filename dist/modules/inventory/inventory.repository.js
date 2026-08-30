@@ -6,5 +6,6 @@ export const inventoryRepository = {
     findItemById: (id) => db.select().from(inventoryItems).where(eq(inventoryItems.id, id)).then((rows) => rows[0]),
     createItem: (data) => db.insert(inventoryItems).values(data).returning().then((rows) => rows[0]),
     findMovementsByItem: (itemId) => db.select().from(stockMovements).where(eq(stockMovements.itemId, itemId)),
+    findAllMovements: () => db.select().from(stockMovements),
     createMovement: (data) => db.insert(stockMovements).values(data).returning().then((rows) => rows[0]),
 };

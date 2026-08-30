@@ -12,6 +12,7 @@ export const boardingService = {
     },
     createDormitory: (input) => boardingRepository.createDormitory(input),
     listAllocationsByDormitory: (dormitoryId) => boardingRepository.findAllocationsByDormitory(dormitoryId),
+    countActiveAllocations: () => boardingRepository.countActiveAllocations(),
     async allocateBed(input) {
         const student = await boardingRepository.findStudentBoardingStatus(input.studentId);
         if (!student)

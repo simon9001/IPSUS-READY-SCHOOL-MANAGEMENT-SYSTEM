@@ -18,6 +18,7 @@ export const transportService = {
   addStop: (input: AddStopInput) => transportRepository.addStop(input),
 
   listAllocationsByRoute: (routeId: number) => transportRepository.findAllocationsByRoute(routeId),
+  countActiveAllocations: () => transportRepository.countActiveAllocations(),
 
   async allocate(input: AllocateTransportInput) {
     const existing = await transportRepository.findActiveAllocationForStudent(input.studentId)

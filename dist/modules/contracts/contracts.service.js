@@ -1,6 +1,7 @@
 import { contractsRepository } from './contracts.repository.js';
 import { NotFoundError } from '../../common/errors.js';
 export const contractsService = {
+    list: () => contractsRepository.findAll(),
     listByStaff: (staffId) => contractsRepository.findByStaff(staffId),
     async getById(id) {
         const contract = await contractsRepository.findById(id);

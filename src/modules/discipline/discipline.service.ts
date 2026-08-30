@@ -5,6 +5,7 @@ import { NotFoundError } from '../../common/errors.js'
 import type { CreateDisciplineRecordInput } from './discipline.schema.js'
 
 export const disciplineService = {
+  listRecent: (limit: number) => disciplineRepository.findRecent(limit),
   listByStudent: (studentId: number) => disciplineRepository.findByStudent(studentId),
 
   async getById(id: number) {

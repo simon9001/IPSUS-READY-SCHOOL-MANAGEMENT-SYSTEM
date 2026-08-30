@@ -4,6 +4,7 @@ import { staffContracts } from '../../db/schema/index.js'
 import type { NewStaffContract } from './contracts.types.js'
 
 export const contractsRepository = {
+  findAll: () => db.select().from(staffContracts),
   findByStaff: (staffId: number) => db.select().from(staffContracts).where(eq(staffContracts.staffId, staffId)),
   findById: (id: number) =>
     db.select().from(staffContracts).where(eq(staffContracts.id, id)).then((rows) => rows[0]),

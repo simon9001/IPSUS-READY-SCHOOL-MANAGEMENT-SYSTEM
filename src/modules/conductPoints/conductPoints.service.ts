@@ -4,6 +4,7 @@ import type { AwardPointsInput, CreateRuleInput } from './conductPoints.schema.j
 import type { ConductScore } from './conductPoints.types.js'
 
 export const conductPointsService = {
+  listRecent: (limit: number) => conductPointsRepository.findRecent(limit),
   listRules: () => conductPointsRepository.findAllRules(),
   createRule: (input: CreateRuleInput) => conductPointsRepository.createRule(input),
 

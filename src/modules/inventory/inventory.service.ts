@@ -16,6 +16,7 @@ export const inventoryService = {
     inventoryRepository.createItem({ ...input, reorderLevel: input.reorderLevel !== undefined ? String(input.reorderLevel) : undefined }),
 
   listMovements: (itemId: number) => inventoryRepository.findMovementsByItem(itemId),
+  listAllMovements: () => inventoryRepository.findAllMovements(),
 
   async receiveStock(input: ReceiveStockInput) {
     const item = await this.getItemById(input.itemId)

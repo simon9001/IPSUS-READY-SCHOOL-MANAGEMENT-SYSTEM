@@ -6,6 +6,7 @@ export const healthService = {
     listConditionsByStudent: (studentId) => healthRepository.findConditionsByStudent(studentId),
     createCondition: (input) => healthRepository.createCondition(input),
     listVisitsByStudent: (studentId) => healthRepository.findVisitsByStudent(studentId),
+    listRecentVisits: (limit) => healthRepository.findRecentVisits(limit),
     async getVisitById(id) {
         const visit = await healthRepository.findVisitById(id);
         if (!visit)

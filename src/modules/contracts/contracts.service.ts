@@ -3,6 +3,7 @@ import { NotFoundError } from '../../common/errors.js'
 import type { CreateContractInput, UpdateContractStatusInput } from './contracts.schema.js'
 
 export const contractsService = {
+  list: () => contractsRepository.findAll(),
   listByStaff: (staffId: number) => contractsRepository.findByStaff(staffId),
 
   async getById(id: number) {

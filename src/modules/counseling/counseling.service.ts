@@ -3,6 +3,7 @@ import { NotFoundError } from '../../common/errors.js'
 import type { CreateCounselingSessionInput } from './counseling.schema.js'
 
 export const counselingService = {
+  list: () => counselingRepository.findAll(),
   listByStudent: (studentId: number) => counselingRepository.findByStudent(studentId),
 
   async getById(id: number) {

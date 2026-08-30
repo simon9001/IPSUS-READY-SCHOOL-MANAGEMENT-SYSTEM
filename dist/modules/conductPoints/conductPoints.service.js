@@ -1,6 +1,7 @@
 import { conductPointsRepository } from './conductPoints.repository.js';
 import { NotFoundError, ValidationError } from '../../common/errors.js';
 export const conductPointsService = {
+    listRecent: (limit) => conductPointsRepository.findRecent(limit),
     listRules: () => conductPointsRepository.findAllRules(),
     createRule: (input) => conductPointsRepository.createRule(input),
     listByStudent: (studentId) => conductPointsRepository.findByStudent(studentId),

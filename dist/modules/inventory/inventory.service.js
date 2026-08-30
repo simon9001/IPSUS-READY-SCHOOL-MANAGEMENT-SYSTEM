@@ -11,6 +11,7 @@ export const inventoryService = {
     },
     createItem: (input) => inventoryRepository.createItem({ ...input, reorderLevel: input.reorderLevel !== undefined ? String(input.reorderLevel) : undefined }),
     listMovements: (itemId) => inventoryRepository.findMovementsByItem(itemId),
+    listAllMovements: () => inventoryRepository.findAllMovements(),
     async receiveStock(input) {
         const item = await this.getItemById(input.itemId);
         const amount = Number(input.quantity) * Number(input.unitCost);

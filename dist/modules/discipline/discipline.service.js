@@ -3,6 +3,7 @@ import { studentsRepository } from '../students/students.repository.js';
 import { guardiansService } from '../guardians/guardians.service.js';
 import { NotFoundError } from '../../common/errors.js';
 export const disciplineService = {
+    listRecent: (limit) => disciplineRepository.findRecent(limit),
     listByStudent: (studentId) => disciplineRepository.findByStudent(studentId),
     async getById(id) {
         const record = await disciplineRepository.findById(id);

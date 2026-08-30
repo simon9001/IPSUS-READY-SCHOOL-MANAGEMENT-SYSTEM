@@ -1,0 +1,22 @@
+import { Hono } from 'hono'
+import { zValidator } from '../../common/validate.js'
+import { requirePermission } from '../../common/auth.js'
+import { identityController } from './identity.controller.js'
+import { assignRoleSchema, createUserSchema, resetPasswordSchema, updateUserSchema } from './identity.schema.js'
+
+export const usersRoutes = new Hono()
+
+usersRoutes.get('/', requirePermission('users.manage'), identityController.listUsers)
+usersRoutes.get('/:id', requirePermission('users.manage'), identityController.getUserById)
+usersRoutes.post('/', requirePermission('users.manage'), zValidator('json', createUserSchema), identityController.createUser)
+usersRoutes.patch('/:id', requirePermission('users.manage'), zValidator('json', updateUserSchema), identityController.updateUser)
+usersRoutes.post('/:id/reset-password', requirePermission('users.manage'), zValidator('json', resetPasswordSchema), identityController.resetPassword)
+
+usersRoutes.post('/:userId/roles', requirePermission('roles.manage'), zValidator('json', assignRoleSchema), identityController.assignRole)
+usersRoutes.delete('/:userId/roles/:roleId', requirePermission('roles.manage'), identityController.removeRole)
+
+export const rolesRoutes = new Hono()
+rolesRoutes.get('/', requirePermission('roles.manage'), identityController.listRoles)
+
+export const auditLogRoutes = new Hono()
+auditLogRoutes.get('/', requirePermission('audit.view'), identityController.listAuditLog)

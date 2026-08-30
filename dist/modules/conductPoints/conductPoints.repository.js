@@ -1,7 +1,8 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client.js';
 import { conductPointRules, conductPoints } from '../../db/schema/index.js';
 export const conductPointsRepository = {
+    findRecent: (limit) => db.select().from(conductPoints).orderBy(desc(conductPoints.awardedAt)).limit(limit),
     findAllRules: () => db.select().from(conductPointRules),
     findRuleById: (id) => db.select().from(conductPointRules).where(eq(conductPointRules.id, id)).then((rows) => rows[0]),
     createRule: (data) => db.insert(conductPointRules).values(data).returning().then((rows) => rows[0]),

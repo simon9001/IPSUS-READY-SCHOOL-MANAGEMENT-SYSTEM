@@ -20,6 +20,14 @@ export const transportRepository = {
     return row?.count ?? 0
   },
 
+  async countActiveAllocations() {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(studentTransportAllocations)
+      .where(eq(studentTransportAllocations.status, 'active'))
+    return row?.count ?? 0
+  },
+
   findActiveAllocationForStudent: (studentId: number) =>
     db
       .select()

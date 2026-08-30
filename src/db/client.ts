@@ -27,3 +27,12 @@ const queryClient = postgres(connectionString, {
   debug: process.env.DB_DEBUG === '1' ? (_c: unknown, query: string, params: unknown) => console.log('[sql]', query, params) : undefined,
 })
 export const db = drizzle(queryClient, { schema })
+
+// postgres.js connects lazily — the client above doesn't actually open a
+// socket until the first query runs, so a wrong/unreachable DATABASE_URL
+// would otherwise let the server start and accept traffic, only failing
+// once a request happened to touch the database. Call this before serve()
+// so a bad connection stops the process at startup instead.
+export async function assertDatabaseConnection(): Promise<void> {
+  await queryClient`select 1`
+}
