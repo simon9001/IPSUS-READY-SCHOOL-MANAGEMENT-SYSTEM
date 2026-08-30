@@ -11,6 +11,7 @@ export const identityController = {
     updateUser: async (c) => ok(c, await identityService.updateUser(Number(c.req.param('id')), getValidated(c, 'json'), actorId(c))),
     resetPassword: async (c) => ok(c, await identityService.resetPassword(Number(c.req.param('id')), getValidated(c, 'json'), actorId(c))),
     listRoles: async (c) => ok(c, await identityService.listRoles()),
+    listPermissions: async (c) => ok(c, await identityService.listPermissions()),
     assignRole: async (c) => ok(c, await identityService.assignRole(Number(c.req.param('userId')), getValidated(c, 'json'), actorId(c))),
     removeRole: async (c) => ok(c, await identityService.removeRole(Number(c.req.param('userId')), Number(c.req.param('roleId')), actorId(c))),
     listAuditLog: async (c) => {

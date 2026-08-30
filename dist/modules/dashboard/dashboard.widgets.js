@@ -27,6 +27,8 @@ import { complianceService } from '../compliance/compliance.service.js';
 import { documentsService } from '../documents/documents.service.js';
 import { noticesService } from '../notices/notices.service.js';
 import { identityService } from '../identity/identity.service.js';
+import { systemService } from '../system/system.service.js';
+import { periodsService } from '../periods/periods.service.js';
 const hasGate = (permissions, gate) => Array.isArray(gate) ? gate.some((p) => permissions.includes(p)) : permissions.includes(gate);
 const money = (n) => `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const daysUntil = (asOfDate, date) => Math.round((new Date(date).getTime() - new Date(asOfDate).getTime()) / 86_400_000);
@@ -282,7 +284,10 @@ export const WIDGETS = [
     {
         id: 'inventory-low-stock',
         section: 'attention',
-        requiredPermission: 'inventory.view',
+        // The action permission, not inventory.view — VIEW_ONLY hands .view to
+        // auditors and BOM members, and "needs your attention" should only reach
+        // someone who can actually reorder. Same for library-overdue below.
+        requiredPermission: 'inventory.manage',
         async build() {
             const [items, movements] = await Promise.all([inventoryService.listItems(), inventoryService.listAllMovements()]);
             const balanceByItem = new Map();
@@ -308,7 +313,7 @@ export const WIDGETS = [
     {
         id: 'library-overdue',
         section: 'attention',
-        requiredPermission: 'library.view',
+        requiredPermission: 'library.manage',
         async build({ asOfDate }) {
             const overdue = await libraryService.listOverdue(asOfDate);
             return {
@@ -317,6 +322,184 @@ export const WIDGETS = [
                 kind: 'list',
                 emptyText: 'Nothing overdue.',
                 rows: overdue.map((b) => ({ label: `Borrowing #${b.id}`, sublabel: `Due ${b.dueDate}`, tone: 'warning' })),
+            };
+        },
+    },
+    // ---- Administration: the four things only system_admin can act on.
+    // Gated on the admin's own action permissions rather than on any *.view
+    // code, so these never appear for the auditor/BOM roles that hold the
+    // whole VIEW_ONLY sweep.
+    {
+        id: 'accounts-needing-attention',
+        section: 'attention',
+        requiredPermission: 'users.manage',
+        async build() {
+            const flagged = await systemService.flaggedAccounts();
+            return {
+                id: 'accounts-needing-attention',
+                title: 'User Accounts Needing Attention',
+                kind: 'list',
+                emptyText: 'Every account is active, assigned, and in use.',
+                rows: flagged.map((a) => ({
+                    label: a.fullName,
+                    sublabel: `${a.reason}${a.detail ? ` — ${a.detail}` : ''}`,
+                    value: a.email,
+                    tone: a.reason === 'Locked out' ? 'danger' : 'warning',
+                })),
+            };
+        },
+    },
+    {
+        id: 'rbac-drift',
+        section: 'attention',
+        requiredPermission: 'roles.manage',
+        async build() {
+            const drift = await systemService.rbacDrift();
+            const rows = [];
+            if (drift.missingPermissions.length > 0) {
+                rows.push({ label: `${drift.missingPermissions.length} permission(s) not in the database`, sublabel: drift.missingPermissions.slice(0, 4).join(', '), tone: 'danger' });
+            }
+            if (drift.missingRoles.length > 0) {
+                rows.push({ label: `${drift.missingRoles.length} role(s) not in the database`, sublabel: drift.missingRoles.slice(0, 4).join(', '), tone: 'danger' });
+            }
+            if (drift.missingRolePermissions.length > 0) {
+                rows.push({ label: `${drift.missingRolePermissions.length} role grant(s) not applied`, sublabel: 'Run pnpm db:sync-rbac to apply them', tone: 'warning' });
+            }
+            if (drift.orphanPermissions.length > 0) {
+                rows.push({ label: `${drift.orphanPermissions.length} permission(s) no longer in rbac.ts`, sublabel: drift.orphanPermissions.slice(0, 4).join(', '), tone: 'warning' });
+            }
+            if (drift.orphanRoles.length > 0) {
+                rows.push({ label: `${drift.orphanRoles.length} role(s) no longer in rbac.ts`, sublabel: drift.orphanRoles.slice(0, 4).join(', '), tone: 'warning' });
+            }
+            return { id: 'rbac-drift', title: 'RBAC Catalogue Drift', kind: 'list', emptyText: 'Database matches rbac.ts.', rows };
+        },
+    },
+    {
+        id: 'segregation-conflicts',
+        section: 'attention',
+        requiredPermission: 'roles.manage',
+        async build() {
+            const conflicts = await systemService.segregationConflicts();
+            return {
+                id: 'segregation-conflicts',
+                title: 'Segregation of Duties Conflicts',
+                kind: 'list',
+                emptyText: 'No user holds both sides of a maker-checker pair.',
+                rows: conflicts.map((conflict) => ({
+                    label: conflict.fullName,
+                    sublabel: conflict.rule,
+                    value: conflict.email,
+                    tone: 'danger',
+                })),
+            };
+        },
+    },
+    {
+        id: 'periods-needing-close',
+        section: 'attention',
+        requiredPermission: 'ledger.periods.manage',
+        async build({ asOfDate }) {
+            const periods = await periodsService.list();
+            // An open period past its end date still accepts postings — journal
+            // entries can land in a term that is supposed to be finished.
+            const overdue = periods.filter((p) => p.status === 'open' && p.endDate < asOfDate);
+            return {
+                id: 'periods-needing-close',
+                title: 'Fiscal Periods Past Their End Date',
+                kind: 'list',
+                emptyText: 'No period is overdue for closing.',
+                rows: overdue.map((p) => ({
+                    label: p.name,
+                    sublabel: `Ended ${p.endDate} — still open to postings`,
+                    value: `${Math.abs(daysUntil(asOfDate, p.endDate))} days ago`,
+                    tone: 'warning',
+                })),
+            };
+        },
+    },
+    // ---------------- SYSTEM ----------------
+    {
+        id: 'user-accounts',
+        section: 'system',
+        requiredPermission: 'users.manage',
+        async build() {
+            const stats = await systemService.userStats();
+            return {
+                id: 'user-accounts',
+                title: 'User Accounts',
+                kind: 'stats',
+                stats: [
+                    { label: 'Total', value: String(stats.total) },
+                    { label: 'Active', value: String(stats.active), tone: 'success' },
+                    { label: 'Suspended', value: String(stats.suspended), tone: stats.suspended > 0 ? 'warning' : 'default' },
+                    { label: 'Locked Out Now', value: String(stats.lockedOut), tone: stats.lockedOut > 0 ? 'danger' : 'default' },
+                    { label: 'Never Signed In', value: String(stats.neverLoggedIn), tone: stats.neverLoggedIn > 0 ? 'warning' : 'default' },
+                    { label: 'Pending Password Change', value: String(stats.mustChangePassword) },
+                ],
+            };
+        },
+    },
+    {
+        id: 'role-coverage',
+        section: 'system',
+        requiredPermission: 'roles.manage',
+        async build() {
+            const usage = await systemService.roleUsage();
+            const unused = usage.filter((r) => r.userCount === 0);
+            const largest = [...usage].sort((a, b) => b.userCount - a.userCount)[0];
+            return {
+                id: 'role-coverage',
+                title: 'Role Coverage',
+                kind: 'stats',
+                stats: [
+                    { label: 'Roles Defined', value: String(usage.length) },
+                    { label: 'Roles With No Users', value: String(unused.length), tone: unused.length > 0 ? 'warning' : 'default' },
+                    { label: 'Largest Role', value: largest ? `${largest.name} (${largest.userCount})` : 'None' },
+                ],
+            };
+        },
+    },
+    {
+        id: 'fiscal-periods',
+        section: 'system',
+        requiredPermission: 'ledger.periods.manage',
+        async build({ asOfDate }) {
+            const periods = await periodsService.list();
+            const current = periods.find((p) => p.startDate <= asOfDate && p.endDate >= asOfDate);
+            return {
+                id: 'fiscal-periods',
+                title: 'Fiscal Periods',
+                kind: 'stats',
+                stats: [
+                    { label: 'Current Period', value: current ? current.name : 'None covers today', tone: current ? 'default' : 'warning' },
+                    { label: 'Open', value: String(periods.filter((p) => p.status === 'open').length) },
+                    { label: 'Closed', value: String(periods.filter((p) => p.status === 'closed').length) },
+                ],
+            };
+        },
+    },
+    {
+        id: 'system-runtime',
+        section: 'system',
+        requiredPermission: 'users.manage',
+        async build() {
+            const runtime = await systemService.runtime();
+            const hours = Math.floor(runtime.uptimeSeconds / 3600);
+            const minutes = Math.floor((runtime.uptimeSeconds % 3600) / 60);
+            return {
+                id: 'system-runtime',
+                title: 'Server',
+                kind: 'stats',
+                stats: [
+                    {
+                        label: 'Database',
+                        value: runtime.databaseReachable ? `Connected (${runtime.databaseLatencyMs}ms)` : 'Unreachable',
+                        tone: runtime.databaseReachable ? 'success' : 'danger',
+                    },
+                    { label: 'Uptime', value: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m` },
+                    { label: 'Node', value: runtime.nodeVersion },
+                    { label: 'Heap Used', value: `${runtime.heapUsedMb} MB` },
+                ],
             };
         },
     },
@@ -668,6 +851,7 @@ export const WIDGETS = [
 ];
 export const SECTION_TITLES = {
     attention: 'Needs Your Attention',
+    system: 'System',
     financial: 'Financial',
     students: 'Students & Academics',
     hr: 'HR & Staff',
@@ -675,5 +859,5 @@ export const SECTION_TITLES = {
     compliance: 'Compliance',
     general: 'General',
 };
-export const SECTION_ORDER = ['attention', 'financial', 'students', 'hr', 'welfare', 'compliance', 'general'];
+export const SECTION_ORDER = ['attention', 'system', 'financial', 'students', 'hr', 'welfare', 'compliance', 'general'];
 export { hasGate };

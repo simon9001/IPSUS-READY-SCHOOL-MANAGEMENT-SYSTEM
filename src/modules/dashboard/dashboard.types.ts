@@ -17,7 +17,7 @@ export type DashboardWidget =
   | { id: string; title: string; kind: 'stats'; stats: StatItem[] }
   | { id: string; title: string; kind: 'list'; emptyText: string; rows: ListRow[] }
 
-export type DashboardSectionId = 'attention' | 'financial' | 'students' | 'hr' | 'welfare' | 'compliance' | 'general'
+export type DashboardSectionId = 'attention' | 'system' | 'financial' | 'students' | 'hr' | 'welfare' | 'compliance' | 'general'
 
 export interface DashboardSection {
   id: DashboardSectionId

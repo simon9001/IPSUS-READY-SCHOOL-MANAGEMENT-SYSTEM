@@ -20,6 +20,7 @@ export const identityController = {
     ok(c, await identityService.resetPassword(Number(c.req.param('id')), getValidated<ResetPasswordInput>(c, 'json'), actorId(c))),
 
   listRoles: async (c: Context) => ok(c, await identityService.listRoles()),
+  listPermissions: async (c: Context) => ok(c, await identityService.listPermissions()),
 
   assignRole: async (c: Context) =>
     ok(c, await identityService.assignRole(Number(c.req.param('userId')), getValidated<AssignRoleInput>(c, 'json'), actorId(c))),

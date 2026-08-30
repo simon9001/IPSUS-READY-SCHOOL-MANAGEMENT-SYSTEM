@@ -17,6 +17,7 @@ usersRoutes.delete('/:userId/roles/:roleId', requirePermission('roles.manage'), 
 
 export const rolesRoutes = new Hono()
 rolesRoutes.get('/', requirePermission('roles.manage'), identityController.listRoles)
+rolesRoutes.get('/permissions', requirePermission('roles.manage'), identityController.listPermissions)
 
 export const auditLogRoutes = new Hono()
 auditLogRoutes.get('/', requirePermission('audit.view'), identityController.listAuditLog)

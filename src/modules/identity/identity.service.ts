@@ -85,6 +85,11 @@ export const identityService = {
     )
   },
 
+  /** The permission catalogue as the database actually holds it — what the
+   *  Roles page shows alongside each role's grants. Compare against rbac.ts
+   *  via the system module's drift check, not here. */
+  listPermissions: () => identityRepository.findAllPermissions(),
+
   async assignRole(userId: number, input: AssignRoleInput, actorUserId: number) {
     const [user, role] = await Promise.all([
       identityRepository.findUserById(userId),

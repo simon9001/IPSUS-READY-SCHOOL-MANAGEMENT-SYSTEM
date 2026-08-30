@@ -159,8 +159,13 @@ export const ROLES: RoleDef[] = [
   {
     code: 'system_admin',
     name: 'System Administrator',
+    // Deliberately narrow: this role manages accounts, roles, fiscal periods,
+    // and the audit trail — it is not a general-purpose "see everything"
+    // role, so it does NOT get VIEW_ONLY. Someone who also needs to view
+    // financial/academic/HR data should be assigned that module's own
+    // *.view permission directly, or an additional role.
     description: 'Manages user accounts, roles, and system configuration. Not typically a financial approver.',
-    permissions: ['users.manage', 'roles.manage', 'ledger.periods.manage', 'audit.view', ...VIEW_ONLY],
+    permissions: ['users.manage', 'roles.manage', 'ledger.periods.manage', 'audit.view', 'dashboard.view'],
   },
   {
     code: 'principal',

@@ -73,6 +73,8 @@ export const identityRepository = {
 
   findRoleById: (id: number) => db.select().from(roles).where(eq(roles.id, id)).then((rows) => rows[0]),
 
+  findAllPermissions: () => db.select().from(permissions).orderBy(permissions.module, permissions.code),
+
   findPermissionsForRole: (roleId: number) =>
     db
       .select({ code: permissions.code })

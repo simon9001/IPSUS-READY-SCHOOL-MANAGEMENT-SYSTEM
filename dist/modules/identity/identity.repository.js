@@ -49,6 +49,7 @@ export const identityRepository = {
     removeRole: (userId, roleId) => db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId))),
     findAllRoles: () => db.select().from(roles).orderBy(roles.name),
     findRoleById: (id) => db.select().from(roles).where(eq(roles.id, id)).then((rows) => rows[0]),
+    findAllPermissions: () => db.select().from(permissions).orderBy(permissions.module, permissions.code),
     findPermissionsForRole: (roleId) => db
         .select({ code: permissions.code })
         .from(rolePermissions)
