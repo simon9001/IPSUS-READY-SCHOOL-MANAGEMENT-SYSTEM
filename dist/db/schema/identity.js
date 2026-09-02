@@ -6,6 +6,7 @@ export const users = pgTable('users', {
     passwordHash: text('password_hash').notNull(),
     fullName: varchar('full_name', { length: 150 }).notNull(),
     phone: varchar('phone', { length: 30 }),
+    avatarUrl: text('avatar_url'),
     status: userStatusEnum('status').notNull().default('active'),
     mustChangePassword: boolean('must_change_password').notNull().default(true),
     failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),

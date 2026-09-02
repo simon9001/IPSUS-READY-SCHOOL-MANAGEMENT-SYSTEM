@@ -1,5 +1,6 @@
 import { budgetsRepository } from './budgets.repository.js'
 import { ConflictError, NotFoundError } from '../../common/errors.js'
+import { broadcastChange } from '../../common/events.js'
 import type { AddBudgetLineInput, CreateBudgetInput } from './budgets.schema.js'
 import type { BudgetVsActualRow } from './budgets.types.js'
 
@@ -13,26 +14,35 @@ export const budgetsService = {
     return { ...budget, lines }
   },
 
-  create: (input: CreateBudgetInput) => {
+  create: async (input: CreateBudgetInput) => {
     const { lines, ...budget } = input
-    return budgetsRepository.create(
+    const created = await budgetsRepository.create(
       { ...budget, status: 'draft' },
       lines.map((line) => ({ ...line, amount: String(line.amount) })),
     )
+    broadcastChange('budgets', 'created')
+    broadcastChange('dashboard', 'updated')
+    return created
   },
 
   async addLine(budgetId: number, input: AddBudgetLineInput) {
     const budget = await budgetsRepository.findById(budgetId)
     if (!budget) throw new NotFoundError(`Budget ${budgetId} not found`)
     if (budget.status === 'approved') throw new ConflictError(`Budget ${budgetId} is already approved`)
-    return budgetsRepository.addLine(budgetId, { ...input, amount: String(input.amount) })
+    const line = await budgetsRepository.addLine(budgetId, { ...input, amount: String(input.amount) })
+    broadcastChange('budgets', 'line_added')
+    broadcastChange('dashboard', 'updated')
+    return line
   },
 
   async approve(id: number, approvedBy: number) {
     const budget = await budgetsRepository.findById(id)
     if (!budget) throw new NotFoundError(`Budget ${id} not found`)
     if (budget.status === 'approved') throw new ConflictError(`Budget ${id} is already approved`)
-    return budgetsRepository.approve(id, approvedBy)
+    const approved = await budgetsRepository.approve(id, approvedBy)
+    broadcastChange('budgets', 'approved')
+    broadcastChange('dashboard', 'updated')
+    return approved
   },
 
   async budgetVsActual(id: number): Promise<BudgetVsActualRow[]> {

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { authRepository } from './auth.repository.js';
-import { verifyPassword } from '../identity/password.js';
+import { hashPassword, verifyPassword } from '../identity/password.js';
+import { uploadToCloudinary } from '../../common/cloudinary.js';
 import { ForbiddenError, NotFoundError, ValidationError } from '../../common/errors.js';
 // Fails fast at startup rather than silently signing tokens with a fallback
 // secret that would otherwise sit in source control — see .env.example for
@@ -12,9 +13,20 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_TTL = '8h';
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
-async function toAuthenticatedUser(userId, email, fullName) {
-    const { roles, permissions } = await authRepository.findRolesAndPermissions(userId);
-    return { id: userId, email, fullName, roles, permissions };
+async function toAuthenticatedUser(user) {
+    const { roles, permissions } = await authRepository.findRolesAndPermissions(user.id);
+    return {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        phone: user.phone,
+        avatarUrl: user.avatarUrl,
+        status: user.status,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+        roles,
+        permissions,
+    };
 }
 export const authService = {
     async login(input) {
@@ -35,7 +47,7 @@ export const authService = {
             throw new ValidationError('Invalid email or password');
         }
         await authRepository.recordLogin(user.id);
-        const authenticatedUser = await toAuthenticatedUser(user.id, user.email, user.fullName);
+        const authenticatedUser = await toAuthenticatedUser(user);
         const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL });
         return { token, user: authenticatedUser };
     },
@@ -49,6 +61,33 @@ export const authService = {
         const user = await authRepository.findUserById(userId);
         if (!user)
             throw new NotFoundError(`User ${userId} not found`);
-        return toAuthenticatedUser(user.id, user.email, user.fullName);
+        return toAuthenticatedUser(user);
+    },
+    async updateProfile(userId, input) {
+        const user = await authRepository.findUserById(userId);
+        if (!user)
+            throw new NotFoundError(`User ${userId} not found`);
+        let finalAvatarUrl = input.avatarUrl;
+        // If an image data URI is sent, upload it to Cloudinary and store the secure HTTPS CDN link
+        if (input.avatarUrl && input.avatarUrl.startsWith('data:image/')) {
+            finalAvatarUrl = await uploadToCloudinary(input.avatarUrl, 'school_passports');
+        }
+        const updated = await authRepository.updateUser(userId, {
+            fullName: input.fullName?.trim() || undefined,
+            phone: input.phone?.trim() || undefined,
+            avatarUrl: finalAvatarUrl !== undefined ? finalAvatarUrl : undefined,
+        });
+        return toAuthenticatedUser(updated);
+    },
+    async changePassword(userId, input) {
+        const user = await authRepository.findUserById(userId);
+        if (!user)
+            throw new NotFoundError(`User ${userId} not found`);
+        const valid = await verifyPassword(input.currentPassword, user.passwordHash);
+        if (!valid)
+            throw new ValidationError('Current password does not match');
+        const newHash = await hashPassword(input.newPassword);
+        await authRepository.updatePassword(userId, newHash);
+        return { message: 'Password changed successfully' };
     },
 };

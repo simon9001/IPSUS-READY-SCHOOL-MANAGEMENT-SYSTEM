@@ -1,5 +1,6 @@
 import { budgetsRepository } from './budgets.repository.js';
 import { ConflictError, NotFoundError } from '../../common/errors.js';
+import { broadcastChange } from '../../common/events.js';
 export const budgetsService = {
     list: () => budgetsRepository.findAll(),
     async getById(id) {
@@ -9,9 +10,12 @@ export const budgetsService = {
         const lines = await budgetsRepository.findLines(id);
         return { ...budget, lines };
     },
-    create: (input) => {
+    create: async (input) => {
         const { lines, ...budget } = input;
-        return budgetsRepository.create({ ...budget, status: 'draft' }, lines.map((line) => ({ ...line, amount: String(line.amount) })));
+        const created = await budgetsRepository.create({ ...budget, status: 'draft' }, lines.map((line) => ({ ...line, amount: String(line.amount) })));
+        broadcastChange('budgets', 'created');
+        broadcastChange('dashboard', 'updated');
+        return created;
     },
     async addLine(budgetId, input) {
         const budget = await budgetsRepository.findById(budgetId);
@@ -19,7 +23,10 @@ export const budgetsService = {
             throw new NotFoundError(`Budget ${budgetId} not found`);
         if (budget.status === 'approved')
             throw new ConflictError(`Budget ${budgetId} is already approved`);
-        return budgetsRepository.addLine(budgetId, { ...input, amount: String(input.amount) });
+        const line = await budgetsRepository.addLine(budgetId, { ...input, amount: String(input.amount) });
+        broadcastChange('budgets', 'line_added');
+        broadcastChange('dashboard', 'updated');
+        return line;
     },
     async approve(id, approvedBy) {
         const budget = await budgetsRepository.findById(id);
@@ -27,7 +34,10 @@ export const budgetsService = {
             throw new NotFoundError(`Budget ${id} not found`);
         if (budget.status === 'approved')
             throw new ConflictError(`Budget ${id} is already approved`);
-        return budgetsRepository.approve(id, approvedBy);
+        const approved = await budgetsRepository.approve(id, approvedBy);
+        broadcastChange('budgets', 'approved');
+        broadcastChange('dashboard', 'updated');
+        return approved;
     },
     async budgetVsActual(id) {
         const budget = await budgetsRepository.findById(id);

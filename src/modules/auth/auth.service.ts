@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken'
 import { authRepository } from './auth.repository.js'
-import { verifyPassword } from '../identity/password.js'
+import { hashPassword, verifyPassword } from '../identity/password.js'
+import { uploadToCloudinary } from '../../common/cloudinary.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../../common/errors.js'
-import type { LoginInput } from './auth.schema.js'
+import type { ChangePasswordInput, LoginInput, UpdateProfileInput } from './auth.schema.js'
 import type { AppTokenPayload, AuthenticatedUser, LoginResult } from './auth.types.js'
 
 // Fails fast at startup rather than silently signing tokens with a fallback
@@ -16,9 +17,29 @@ const TOKEN_TTL = '8h'
 const MAX_FAILED_LOGIN_ATTEMPTS = 5
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000
 
-async function toAuthenticatedUser(userId: number, email: string, fullName: string): Promise<AuthenticatedUser> {
-  const { roles, permissions } = await authRepository.findRolesAndPermissions(userId)
-  return { id: userId, email, fullName, roles, permissions }
+async function toAuthenticatedUser(user: {
+  id: number
+  email: string
+  fullName: string
+  phone?: string | null
+  avatarUrl?: string | null
+  status?: string
+  lastLoginAt?: Date | null
+  createdAt?: Date
+}): Promise<AuthenticatedUser> {
+  const { roles, permissions } = await authRepository.findRolesAndPermissions(user.id)
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    phone: user.phone,
+    avatarUrl: user.avatarUrl,
+    status: user.status,
+    lastLoginAt: user.lastLoginAt,
+    createdAt: user.createdAt,
+    roles,
+    permissions,
+  }
 }
 
 export const authService = {
@@ -39,7 +60,7 @@ export const authService = {
     }
 
     await authRepository.recordLogin(user.id)
-    const authenticatedUser = await toAuthenticatedUser(user.id, user.email, user.fullName)
+    const authenticatedUser = await toAuthenticatedUser(user)
     const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL })
 
     return { token, user: authenticatedUser }
@@ -54,6 +75,39 @@ export const authService = {
   async me(userId: number): Promise<AuthenticatedUser> {
     const user = await authRepository.findUserById(userId)
     if (!user) throw new NotFoundError(`User ${userId} not found`)
-    return toAuthenticatedUser(user.id, user.email, user.fullName)
+    return toAuthenticatedUser(user)
+  },
+
+  async updateProfile(userId: number, input: UpdateProfileInput): Promise<AuthenticatedUser> {
+    const user = await authRepository.findUserById(userId)
+    if (!user) throw new NotFoundError(`User ${userId} not found`)
+
+    let finalAvatarUrl = input.avatarUrl
+
+    // If an image data URI is sent, upload it to Cloudinary and store the secure HTTPS CDN link
+    if (input.avatarUrl && input.avatarUrl.startsWith('data:image/')) {
+      finalAvatarUrl = await uploadToCloudinary(input.avatarUrl, 'school_passports')
+    }
+
+    const updated = await authRepository.updateUser(userId, {
+      fullName: input.fullName?.trim() || undefined,
+      phone: input.phone?.trim() || undefined,
+      avatarUrl: finalAvatarUrl !== undefined ? finalAvatarUrl : undefined,
+    })
+
+    return toAuthenticatedUser(updated)
+  },
+
+  async changePassword(userId: number, input: ChangePasswordInput): Promise<{ message: string }> {
+    const user = await authRepository.findUserById(userId)
+    if (!user) throw new NotFoundError(`User ${userId} not found`)
+
+    const valid = await verifyPassword(input.currentPassword, user.passwordHash)
+    if (!valid) throw new ValidationError('Current password does not match')
+
+    const newHash = await hashPassword(input.newPassword)
+    await authRepository.updatePassword(userId, newHash)
+
+    return { message: 'Password changed successfully' }
   },
 }

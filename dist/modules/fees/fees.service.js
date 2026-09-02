@@ -1,6 +1,7 @@
 import { feesRepository } from './fees.repository.js';
 import { journalService } from '../journal/journal.service.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js';
+import { broadcastChange } from '../../common/events.js';
 export const feesService = {
     listStructures: () => feesRepository.findAllStructures(),
     async getStructureById(id) {
@@ -10,9 +11,12 @@ export const feesService = {
         const items = await feesRepository.findStructureItems(id);
         return { ...structure, items };
     },
-    createStructure: (input) => {
+    createStructure: async (input) => {
         const { items, ...structure } = input;
-        return feesRepository.createStructure(structure, items.map((item) => ({ ...item, amount: String(item.amount) })));
+        const created = await feesRepository.createStructure(structure, items.map((item) => ({ ...item, amount: String(item.amount) })));
+        broadcastChange('fees', 'structure_created');
+        broadcastChange('dashboard', 'updated');
+        return created;
     },
     listInvoices: () => feesRepository.findAllInvoices(),
     async getInvoiceById(id) {
@@ -58,7 +62,10 @@ export const feesService = {
             createdBy: input.createdBy,
             lines,
         });
-        return feesRepository.attachInvoiceJournalEntry(invoice.id, entry.id);
+        const attached = await feesRepository.attachInvoiceJournalEntry(invoice.id, entry.id);
+        broadcastChange('fees', 'invoice_created');
+        broadcastChange('dashboard', 'updated');
+        return attached;
     },
     async recordPayment(input) {
         const invoice = await feesRepository.findInvoiceById(input.invoiceId);
@@ -111,7 +118,10 @@ export const feesService = {
         const totalAllocatedSoFar = await Promise.all(items.map((item) => feesRepository.allocatedForItem(item.id))).then((amounts) => amounts.reduce((sum, a) => sum + a, 0));
         const newStatus = totalAllocatedSoFar >= Number(invoice.totalAmount) ? 'paid' : 'partially_paid';
         await feesRepository.updateInvoiceStatus(invoice.id, newStatus);
-        return feesRepository.attachPaymentJournalEntry(payment.id, entry.id);
+        const attachedPayment = await feesRepository.attachPaymentJournalEntry(payment.id, entry.id);
+        broadcastChange('fees', 'payment_recorded');
+        broadcastChange('dashboard', 'updated');
+        return attachedPayment;
     },
     listPaymentsByStudent: (studentId) => feesRepository.findPaymentsByStudent(studentId),
 };

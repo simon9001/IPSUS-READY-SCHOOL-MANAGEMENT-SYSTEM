@@ -1,6 +1,7 @@
 import { procurementRepository } from './procurement.repository.js';
 import { journalService } from '../journal/journal.service.js';
 import { ConflictError, NotFoundError } from '../../common/errors.js';
+import { broadcastChange } from '../../common/events.js';
 export const procurementService = {
     listSuppliers: () => procurementRepository.findAllSuppliers(),
     async getSupplierById(id) {
@@ -9,7 +10,11 @@ export const procurementService = {
             throw new NotFoundError(`Supplier ${id} not found`);
         return supplier;
     },
-    createSupplier: (input) => procurementRepository.createSupplier(input),
+    createSupplier: async (input) => {
+        const created = await procurementRepository.createSupplier(input);
+        broadcastChange('procurement', 'supplier_created');
+        return created;
+    },
     listRequisitions: () => procurementRepository.findAllRequisitions(),
     async getRequisitionById(id) {
         const requisition = await procurementRepository.findRequisitionById(id);
@@ -18,13 +23,16 @@ export const procurementService = {
         const items = await procurementRepository.findRequisitionItems(id);
         return { ...requisition, items };
     },
-    createRequisition: (input) => {
+    createRequisition: async (input) => {
         const { items, ...requisition } = input;
-        return procurementRepository.createRequisition({ ...requisition, requisitionNo: `REQ-${Date.now()}`, status: 'submitted' }, items.map((item) => ({
+        const created = await procurementRepository.createRequisition({ ...requisition, requisitionNo: `REQ-${Date.now()}`, status: 'submitted' }, items.map((item) => ({
             ...item,
             quantity: String(item.quantity),
             estimatedUnitCost: item.estimatedUnitCost !== undefined ? String(item.estimatedUnitCost) : undefined,
         })));
+        broadcastChange('procurement', 'requisition_created');
+        broadcastChange('dashboard', 'updated');
+        return created;
     },
     async approveRequisition(id, input) {
         const requisition = await procurementRepository.findRequisitionById(id);
@@ -32,7 +40,10 @@ export const procurementService = {
             throw new NotFoundError(`Requisition ${id} not found`);
         if (requisition.status !== 'submitted')
             throw new ConflictError(`Requisition ${id} is ${requisition.status}, not submitted`);
-        return procurementRepository.updateRequisitionStatus(id, 'approved', { approvedBy: input.approvedBy, approvedAt: new Date() });
+        const approved = await procurementRepository.updateRequisitionStatus(id, 'approved', { approvedBy: input.approvedBy, approvedAt: new Date() });
+        broadcastChange('procurement', 'requisition_approved');
+        broadcastChange('dashboard', 'updated');
+        return approved;
     },
     async rejectRequisition(id) {
         const requisition = await procurementRepository.findRequisitionById(id);
@@ -40,7 +51,10 @@ export const procurementService = {
             throw new NotFoundError(`Requisition ${id} not found`);
         if (requisition.status !== 'submitted')
             throw new ConflictError(`Requisition ${id} is ${requisition.status}, not submitted`);
-        return procurementRepository.updateRequisitionStatus(id, 'rejected');
+        const rejected = await procurementRepository.updateRequisitionStatus(id, 'rejected');
+        broadcastChange('procurement', 'requisition_rejected');
+        broadcastChange('dashboard', 'updated');
+        return rejected;
     },
     listPurchaseOrders: () => procurementRepository.findAllPurchaseOrders(),
     async getPurchaseOrderById(id) {
@@ -65,6 +79,8 @@ export const procurementService = {
         if (input.requisitionId) {
             await procurementRepository.updateRequisitionStatus(input.requisitionId, 'converted_to_lpo');
         }
+        broadcastChange('procurement', 'po_created');
+        broadcastChange('dashboard', 'updated');
         return po;
     },
     /** Simplified receipt tracking: a GRN covering every item on the PO marks
@@ -78,6 +94,8 @@ export const procurementService = {
         const receivedItemIds = new Set(input.items.map((item) => item.purchaseOrderItemId));
         const status = poItems.every((item) => receivedItemIds.has(item.id)) ? 'received' : 'partially_received';
         await procurementRepository.updatePurchaseOrderStatus(input.purchaseOrderId, status);
+        broadcastChange('procurement', 'grn_created');
+        broadcastChange('dashboard', 'updated');
         return grn;
     },
     listSupplierInvoices: () => procurementRepository.findAllSupplierInvoices(),
@@ -114,7 +132,10 @@ export const procurementService = {
                 { accountId: input.creditorsAccountId, fundId: input.fundId, credit: amount },
             ],
         });
-        return procurementRepository.attachInvoiceJournalEntry(invoice.id, entry.id);
+        const attached = await procurementRepository.attachInvoiceJournalEntry(invoice.id, entry.id);
+        broadcastChange('procurement', 'invoice_created');
+        broadcastChange('dashboard', 'updated');
+        return attached;
     },
     async createSupplierPayment(input) {
         const invoice = await procurementRepository.findSupplierInvoiceById(input.supplierInvoiceId);
@@ -146,6 +167,9 @@ export const procurementService = {
         if (Number(input.amount) >= Number(invoice.amount)) {
             await procurementRepository.markInvoicePaid(input.supplierInvoiceId);
         }
-        return procurementRepository.attachPaymentJournalEntry(payment.id, entry.id);
+        const attached = await procurementRepository.attachPaymentJournalEntry(payment.id, entry.id);
+        broadcastChange('procurement', 'payment_created');
+        broadcastChange('dashboard', 'updated');
+        return attached;
     },
 };

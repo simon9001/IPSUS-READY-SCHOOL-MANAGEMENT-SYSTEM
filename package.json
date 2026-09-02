@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
     "db:seed-demo-users": "tsx src/db/seed-demo-users.ts",
+    "db:seed-school": "tsx src/db/seed-school-data.ts",
     "db:sync-rbac": "tsx src/db/sync-rbac.ts"
   },
   "dependencies": {

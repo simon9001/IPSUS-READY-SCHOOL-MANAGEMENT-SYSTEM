@@ -8,6 +8,7 @@ const safeUserColumns = {
     email: users.email,
     fullName: users.fullName,
     phone: users.phone,
+    avatarUrl: users.avatarUrl,
     status: users.status,
     mustChangePassword: users.mustChangePassword,
     failedLoginAttempts: users.failedLoginAttempts,

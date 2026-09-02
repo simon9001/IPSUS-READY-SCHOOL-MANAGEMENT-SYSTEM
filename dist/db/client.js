@@ -19,6 +19,7 @@ const isLocalHost = /(localhost|127\.0\.0\.1)/.test(connectionString);
 const queryClient = postgres(connectionString, {
     ssl: isLocalHost ? false : 'require',
     prepare: false,
+    onnotice: () => { }, // Silences routine NOTICE logs (e.g. column already exists)
     debug: process.env.DB_DEBUG === '1' ? (_c, query, params) => console.log('[sql]', query, params) : undefined,
 });
 export const db = drizzle(queryClient, { schema });
@@ -29,4 +30,5 @@ export const db = drizzle(queryClient, { schema });
 // so a bad connection stops the process at startup instead.
 export async function assertDatabaseConnection() {
     await queryClient `select 1`;
+    await queryClient `ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url text`;
 }

@@ -9,9 +9,11 @@ import { authService } from './auth.service.js';
  */
 export async function attachUser(c, next) {
     const header = c.req.header('Authorization');
-    if (header?.startsWith('Bearer ')) {
+    const queryToken = c.req.query('token');
+    const token = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : queryToken;
+    if (token) {
         try {
-            const payload = authService.verifyToken(header.slice('Bearer '.length));
+            const payload = authService.verifyToken(token);
             const user = await authService.me(payload.sub);
             c.set('user', { id: user.id, permissions: user.permissions });
         }

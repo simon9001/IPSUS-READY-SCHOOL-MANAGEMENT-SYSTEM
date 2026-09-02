@@ -39,13 +39,24 @@ async function rbacDrift(): Promise<RbacDrift> {
   const sourceRoleCodes = new Set(ROLES.map((r) => r.code))
 
   const missingRolePermissions: { roleCode: string; permissionCode: string }[] = []
+  const sourcePairKeys = new Set<string>()
   for (const role of ROLES) {
     for (const permissionCode of new Set(role.permissions)) {
+      sourcePairKeys.add(`${role.code}|${permissionCode}`)
       if (!dbPairKeys.has(`${role.code}|${permissionCode}`)) {
         missingRolePermissions.push({ roleCode: role.code, permissionCode })
       }
     }
   }
+
+  // The direction that actually matters for security. db:sync-rbac only ever
+  // inserts, so narrowing a role in rbac.ts leaves the database still granting
+  // everything that was taken away — and users keep the access indefinitely.
+  // Only check roles the source still defines; a role dropped from rbac.ts
+  // entirely is already reported as an orphan role.
+  const orphanRolePermissions = dbPairs
+    .filter((p) => sourceRoleCodes.has(p.roleCode) && !sourcePairKeys.has(`${p.roleCode}|${p.permissionCode}`))
+    .map((p) => ({ roleCode: p.roleCode, permissionCode: p.permissionCode }))
 
   const missingPermissions = [...sourcePermissionCodes].filter((c) => !dbPermissionCodes.has(c))
   const missingRoles = [...sourceRoleCodes].filter((c) => !dbRoleCodes.has(c))
@@ -61,12 +72,14 @@ async function rbacDrift(): Promise<RbacDrift> {
     missingRolePermissions,
     orphanPermissions,
     orphanRoles,
+    orphanRolePermissions,
     inSync:
       missingPermissions.length === 0 &&
       missingRoles.length === 0 &&
       missingRolePermissions.length === 0 &&
       orphanPermissions.length === 0 &&
-      orphanRoles.length === 0,
+      orphanRoles.length === 0 &&
+      orphanRolePermissions.length === 0,
   }
 }
 

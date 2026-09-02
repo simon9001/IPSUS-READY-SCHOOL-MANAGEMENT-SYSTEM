@@ -32,6 +32,9 @@ export interface RbacDrift {
   missingRolePermissions: { roleCode: string; permissionCode: string }[]
   orphanPermissions: string[]
   orphanRoles: string[]
+  /** Grants the database still makes that rbac.ts no longer contains — a
+   *  permission narrowed in code but never revoked in the database. */
+  orphanRolePermissions: { roleCode: string; permissionCode: string }[]
   inSync: boolean
 }
 

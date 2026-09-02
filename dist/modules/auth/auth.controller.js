@@ -10,4 +10,16 @@ export const authController = {
             throw new ForbiddenError('Not authenticated');
         return ok(c, await authService.me(user.id));
     },
+    updateProfile: async (c) => {
+        const user = c.get('user');
+        if (!user)
+            throw new ForbiddenError('Not authenticated');
+        return ok(c, await authService.updateProfile(user.id, getValidated(c, 'json')));
+    },
+    changePassword: async (c) => {
+        const user = c.get('user');
+        if (!user)
+            throw new ForbiddenError('Not authenticated');
+        return ok(c, await authService.changePassword(user.id, getValidated(c, 'json')));
+    },
 };

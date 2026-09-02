@@ -32,6 +32,17 @@ import { periodsService } from '../periods/periods.service.js';
 const hasGate = (permissions, gate) => Array.isArray(gate) ? gate.some((p) => permissions.includes(p)) : permissions.includes(gate);
 const money = (n) => `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const daysUntil = (asOfDate, date) => Math.round((new Date(date).getTime() - new Date(asOfDate).getTime()) / 86_400_000);
+// Shared by inventory-overview (inventory.view) and inventory-low-stock
+// (inventory.manage) so the two widgets never disagree on the numbers.
+async function computeInventoryBalances() {
+    const [items, movements] = await Promise.all([inventoryService.listItems(), inventoryService.listAllMovements()]);
+    const balanceByItem = new Map();
+    for (const m of movements) {
+        const qty = Number(m.quantity) * (m.movementType === 'issue' ? -1 : 1);
+        balanceByItem.set(m.itemId, (balanceByItem.get(m.itemId) ?? 0) + qty);
+    }
+    return { items, balanceByItem };
+}
 export const WIDGETS = [
     // ---------------- FINANCIAL ----------------
     {
@@ -172,6 +183,28 @@ export const WIDGETS = [
         },
     },
     {
+        id: 'inventory-overview',
+        section: 'financial',
+        // Plain view-level summary — separate from inventory-low-stock below,
+        // which is gated on inventory.manage and only shown to someone who can
+        // actually reorder. Anyone who can merely see stock (e.g. the Bursar,
+        // who holds inventory.view but not .manage) still gets a real widget.
+        requiredPermission: 'inventory.view',
+        async build() {
+            const { items, balanceByItem } = await computeInventoryBalances();
+            const belowReorder = items.filter((it) => it.reorderLevel !== null && (balanceByItem.get(it.id) ?? 0) <= Number(it.reorderLevel));
+            return {
+                id: 'inventory-overview',
+                title: 'Inventory',
+                kind: 'stats',
+                stats: [
+                    { label: 'Items Tracked', value: String(items.length) },
+                    { label: 'Below Reorder Level', value: String(belowReorder.length), tone: belowReorder.length > 0 ? 'warning' : 'default' },
+                ],
+            };
+        },
+    },
+    {
         id: 'banking-overview',
         section: 'financial',
         requiredPermission: 'banking.manage',
@@ -289,12 +322,7 @@ export const WIDGETS = [
         // someone who can actually reorder. Same for library-overdue below.
         requiredPermission: 'inventory.manage',
         async build() {
-            const [items, movements] = await Promise.all([inventoryService.listItems(), inventoryService.listAllMovements()]);
-            const balanceByItem = new Map();
-            for (const m of movements) {
-                const qty = Number(m.quantity) * (m.movementType === 'issue' ? -1 : 1);
-                balanceByItem.set(m.itemId, (balanceByItem.get(m.itemId) ?? 0) + qty);
-            }
+            const { items, balanceByItem } = await computeInventoryBalances();
             const low = items.filter((it) => it.reorderLevel !== null && (balanceByItem.get(it.id) ?? 0) <= Number(it.reorderLevel));
             return {
                 id: 'inventory-low-stock',
@@ -364,6 +392,9 @@ export const WIDGETS = [
             }
             if (drift.missingRolePermissions.length > 0) {
                 rows.push({ label: `${drift.missingRolePermissions.length} role grant(s) not applied`, sublabel: 'Run pnpm db:sync-rbac to apply them', tone: 'warning' });
+            }
+            if (drift.orphanRolePermissions.length > 0) {
+                rows.push({ label: `${drift.orphanRolePermissions.length} grant(s) the database still makes but rbac.ts does not`, sublabel: 'Access narrowed in code was never revoked in the database', tone: 'danger' });
             }
             if (drift.orphanPermissions.length > 0) {
                 rows.push({ label: `${drift.orphanPermissions.length} permission(s) no longer in rbac.ts`, sublabel: drift.orphanPermissions.slice(0, 4).join(', '), tone: 'warning' });

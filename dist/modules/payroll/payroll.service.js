@@ -1,6 +1,7 @@
 import { payrollRepository } from './payroll.repository.js';
 import { journalService } from '../journal/journal.service.js';
 import { ConflictError, NotFoundError } from '../../common/errors.js';
+import { broadcastChange } from '../../common/events.js';
 /**
  * Illustrative statutory deduction rates only — Kenya's PAYE bands, NSFF
  * tier limits, and SHIF rate change periodically. Verify against current
@@ -35,7 +36,11 @@ export const payrollService = {
             throw new NotFoundError(`Employee ${id} not found`);
         return employee;
     },
-    createEmployee: (input) => payrollRepository.createEmployee(input),
+    createEmployee: async (input) => {
+        const created = await payrollRepository.createEmployee(input);
+        broadcastChange('payroll', 'employee_created');
+        return created;
+    },
     listSalaryComponents: (employeeId) => payrollRepository.findComponentsByEmployee(employeeId),
     addSalaryComponent: (employeeId, input) => payrollRepository.addComponent({ ...input, employeeId, amount: String(input.amount) }),
     listRuns: () => payrollRepository.findAllRuns(),
@@ -46,7 +51,12 @@ export const payrollService = {
         const slips = await payrollRepository.findPayslipsByRun(id);
         return { ...run, payslips: slips };
     },
-    createRun: (input) => payrollRepository.createRun({ ...input, status: 'draft' }),
+    createRun: async (input) => {
+        const created = await payrollRepository.createRun({ ...input, status: 'draft' });
+        broadcastChange('payroll', 'run_created');
+        broadcastChange('dashboard', 'updated');
+        return created;
+    },
     /** Computes a payslip per active employee, then posts one summary journal entry. */
     async processRun(runId, input) {
         const run = await payrollRepository.findRunById(runId);
@@ -105,10 +115,13 @@ export const payrollService = {
                 { accountId: input.netPayAccountId, fundId: input.fundId, credit: totalNet },
             ],
         });
-        return payrollRepository.updateRunStatus(runId, 'posted', {
+        const updated = await payrollRepository.updateRunStatus(runId, 'posted', {
             processedBy: input.processedBy,
             processedAt: new Date(),
             journalEntryId: entry.id,
         });
+        broadcastChange('payroll', 'run_processed');
+        broadcastChange('dashboard', 'updated');
+        return updated;
     },
 };

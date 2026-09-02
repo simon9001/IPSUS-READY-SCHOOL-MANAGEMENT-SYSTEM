@@ -1,6 +1,7 @@
 import { payrollRepository } from './payroll.repository.js'
 import { journalService } from '../journal/journal.service.js'
 import { ConflictError, NotFoundError } from '../../common/errors.js'
+import { broadcastChange } from '../../common/events.js'
 import type {
   AddSalaryComponentInput,
   CreateEmployeeInput,
@@ -45,7 +46,11 @@ export const payrollService = {
     return employee
   },
 
-  createEmployee: (input: CreateEmployeeInput) => payrollRepository.createEmployee(input),
+  createEmployee: async (input: CreateEmployeeInput) => {
+    const created = await payrollRepository.createEmployee(input)
+    broadcastChange('payroll', 'employee_created')
+    return created
+  },
 
   listSalaryComponents: (employeeId: number) => payrollRepository.findComponentsByEmployee(employeeId),
 
@@ -61,7 +66,12 @@ export const payrollService = {
     return { ...run, payslips: slips }
   },
 
-  createRun: (input: CreatePayrollRunInput) => payrollRepository.createRun({ ...input, status: 'draft' }),
+  createRun: async (input: CreatePayrollRunInput) => {
+    const created = await payrollRepository.createRun({ ...input, status: 'draft' })
+    broadcastChange('payroll', 'run_created')
+    broadcastChange('dashboard', 'updated')
+    return created
+  },
 
   /** Computes a payslip per active employee, then posts one summary journal entry. */
   async processRun(runId: number, input: ProcessPayrollRunInput) {
@@ -126,10 +136,15 @@ export const payrollService = {
       ],
     })
 
-    return payrollRepository.updateRunStatus(runId, 'posted', {
+    const updated = await payrollRepository.updateRunStatus(runId, 'posted', {
       processedBy: input.processedBy,
       processedAt: new Date(),
       journalEntryId: entry.id,
     })
+
+    broadcastChange('payroll', 'run_processed')
+    broadcastChange('dashboard', 'updated')
+
+    return updated
   },
 }

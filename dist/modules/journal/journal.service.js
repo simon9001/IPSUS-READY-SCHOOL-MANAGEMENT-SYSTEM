@@ -1,6 +1,7 @@
 import { journalRepository } from './journal.repository.js';
 import { periodsRepository } from '../periods/periods.repository.js';
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js';
+import { broadcastChange } from '../../common/events.js';
 function toAmount(value) {
     if (value === undefined)
         return 0;
@@ -33,7 +34,7 @@ async function insertEntry(input, status, extra) {
     await assertPeriodOpen(input.periodId);
     const fiscalYear = new Date(input.entryDate).getFullYear();
     const entryNo = await nextEntryNo(fiscalYear);
-    return journalRepository.insertWithLines({
+    const created = await journalRepository.insertWithLines({
         entryNo,
         periodId: input.periodId,
         entryDate: input.entryDate,
@@ -50,6 +51,9 @@ async function insertEntry(input, status, extra) {
         credit: toAmount(line.credit).toFixed(2),
         description: line.description,
     })));
+    broadcastChange('journal', status === 'posted' ? 'posted' : 'created');
+    broadcastChange('dashboard', 'updated');
+    return created;
 }
 export const journalService = {
     list: () => journalRepository.findAll(),
@@ -73,7 +77,10 @@ export const journalService = {
         if (entry.status !== 'pending_approval')
             throw new ConflictError(`Entry is ${entry.status}, not pending approval`);
         await assertPeriodOpen(entry.periodId);
-        return journalRepository.approve(id, approverId);
+        const approved = await journalRepository.approve(id, approverId);
+        broadcastChange('journal', 'approved');
+        broadcastChange('dashboard', 'updated');
+        return approved;
     },
     async reject(id, approverId, reason) {
         const entry = await journalRepository.findById(id);
@@ -81,7 +88,10 @@ export const journalService = {
             throw new NotFoundError(`Journal entry ${id} not found`);
         if (entry.status !== 'pending_approval')
             throw new ConflictError(`Entry is ${entry.status}, not pending approval`);
-        return journalRepository.reject(id, approverId, reason);
+        const rejected = await journalRepository.reject(id, approverId, reason);
+        broadcastChange('journal', 'rejected');
+        broadcastChange('dashboard', 'updated');
+        return rejected;
     },
     async trialBalance(asOfDate, fundId) {
         const rows = await journalRepository.trialBalanceRows(asOfDate, fundId);

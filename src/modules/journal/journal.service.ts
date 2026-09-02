@@ -1,6 +1,7 @@
 import { journalRepository } from './journal.repository.js'
 import { periodsRepository } from '../periods/periods.repository.js'
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js'
+import { broadcastChange } from '../../common/events.js'
 import type { CreateJournalEntryInput, JournalLineInput } from './journal.schema.js'
 import type { TrialBalanceResult } from './journal.types.js'
 
@@ -43,7 +44,7 @@ async function insertEntry(
   const fiscalYear = new Date(input.entryDate).getFullYear()
   const entryNo = await nextEntryNo(fiscalYear)
 
-  return journalRepository.insertWithLines(
+  const created = await journalRepository.insertWithLines(
     {
       entryNo,
       periodId: input.periodId,
@@ -63,6 +64,11 @@ async function insertEntry(
       description: line.description,
     })),
   )
+
+  broadcastChange('journal', status === 'posted' ? 'posted' : 'created')
+  broadcastChange('dashboard', 'updated')
+
+  return created
 }
 
 export const journalService = {
@@ -90,14 +96,20 @@ export const journalService = {
     if (!entry) throw new NotFoundError(`Journal entry ${id} not found`)
     if (entry.status !== 'pending_approval') throw new ConflictError(`Entry is ${entry.status}, not pending approval`)
     await assertPeriodOpen(entry.periodId)
-    return journalRepository.approve(id, approverId)
+    const approved = await journalRepository.approve(id, approverId)
+    broadcastChange('journal', 'approved')
+    broadcastChange('dashboard', 'updated')
+    return approved
   },
 
   async reject(id: number, approverId: number, reason: string) {
     const entry = await journalRepository.findById(id)
     if (!entry) throw new NotFoundError(`Journal entry ${id} not found`)
     if (entry.status !== 'pending_approval') throw new ConflictError(`Entry is ${entry.status}, not pending approval`)
-    return journalRepository.reject(id, approverId, reason)
+    const rejected = await journalRepository.reject(id, approverId, reason)
+    broadcastChange('journal', 'rejected')
+    broadcastChange('dashboard', 'updated')
+    return rejected
   },
 
   async trialBalance(asOfDate: string, fundId?: number): Promise<TrialBalanceResult> {

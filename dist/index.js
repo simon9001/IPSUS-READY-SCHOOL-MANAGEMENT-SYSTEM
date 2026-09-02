@@ -49,6 +49,8 @@ import { documentsRoutes } from './modules/documents/documents.routes.js';
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { usersRoutes, rolesRoutes, auditLogRoutes } from './modules/identity/identity.routes.js';
 import { systemRoutes } from './modules/system/system.routes.js';
+import { realtimeRoutes } from './modules/realtime/realtime.routes.js';
+import { searchRoutes } from './modules/search/search.routes.js';
 const app = new Hono();
 // CORS_ORIGIN is required so credentialed requests (Authorization header)
 // are only ever accepted from known frontend origins, not reflected back
@@ -118,6 +120,8 @@ app.route('/api/users', usersRoutes);
 app.route('/api/roles', rolesRoutes);
 app.route('/api/audit-log', auditLogRoutes);
 app.route('/api/system', systemRoutes);
+app.route('/api/realtime', realtimeRoutes);
+app.route('/api/search', searchRoutes);
 app.onError((err, c) => {
     if (err instanceof AppError) {
         logError(c, err, err.statusCode);
