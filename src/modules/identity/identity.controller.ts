@@ -3,7 +3,7 @@ import { identityService } from './identity.service.js'
 import { ok, created } from '../../common/response.js'
 import { getValidated } from '../../common/validate.js'
 import type { AuthUser } from '../../common/auth.js'
-import type { AssignRoleInput, CreateUserInput, ResetPasswordInput, UpdateUserInput } from './identity.schema.js'
+import type { AssignRoleInput, CreateUserInput, ResetPasswordInput, SetPermissionOverrideInput, UpdateUserInput } from './identity.schema.js'
 
 // requirePermission already guarantees c.get('user') is set for every route
 // this controller serves.
@@ -26,6 +26,22 @@ export const identityController = {
     ok(c, await identityService.assignRole(Number(c.req.param('userId')), getValidated<AssignRoleInput>(c, 'json'), actorId(c))),
   removeRole: async (c: Context) =>
     ok(c, await identityService.removeRole(Number(c.req.param('userId')), Number(c.req.param('roleId')), actorId(c))),
+
+  listUserPermissions: async (c: Context) =>
+    ok(c, await identityService.listUserPermissions(Number(c.req.param('userId')))),
+  setPermissionOverride: async (c: Context) =>
+    ok(c, await identityService.setPermissionOverride(
+      Number(c.req.param('userId')),
+      c.req.param('code')!,
+      getValidated<SetPermissionOverrideInput>(c, 'json').granted,
+      actorId(c),
+    )),
+  clearPermissionOverride: async (c: Context) =>
+    ok(c, await identityService.clearPermissionOverride(
+      Number(c.req.param('userId')),
+      c.req.param('code')!,
+      actorId(c),
+    )),
 
   listAuditLog: async (c: Context) => {
     const limit = Math.min(Number(c.req.query('limit') ?? 100), 500)

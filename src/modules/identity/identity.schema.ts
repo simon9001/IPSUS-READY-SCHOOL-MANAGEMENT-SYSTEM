@@ -22,7 +22,12 @@ export const assignRoleSchema = z.object({
   roleId: z.number().int().positive(),
 })
 
+export const setPermissionOverrideSchema = z.object({
+  granted: z.boolean(),
+})
+
 export type CreateUserInput = z.infer<typeof createUserSchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 export type AssignRoleInput = z.infer<typeof assignRoleSchema>
+export type SetPermissionOverrideInput = z.infer<typeof setPermissionOverrideSchema>

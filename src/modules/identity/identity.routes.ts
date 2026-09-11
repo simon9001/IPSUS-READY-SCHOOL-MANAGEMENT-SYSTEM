@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
 import { requirePermission } from '../../common/auth.js'
 import { identityController } from './identity.controller.js'
-import { assignRoleSchema, createUserSchema, resetPasswordSchema, updateUserSchema } from './identity.schema.js'
+import { assignRoleSchema, createUserSchema, resetPasswordSchema, setPermissionOverrideSchema, updateUserSchema } from './identity.schema.js'
 
 export const usersRoutes = new Hono()
 
@@ -14,6 +14,10 @@ usersRoutes.post('/:id/reset-password', requirePermission('users.manage'), zVali
 
 usersRoutes.post('/:userId/roles', requirePermission('roles.manage'), zValidator('json', assignRoleSchema), identityController.assignRole)
 usersRoutes.delete('/:userId/roles/:roleId', requirePermission('roles.manage'), identityController.removeRole)
+
+usersRoutes.get('/:userId/permissions', requirePermission('roles.manage'), identityController.listUserPermissions)
+usersRoutes.put('/:userId/permissions/:code', requirePermission('roles.manage'), zValidator('json', setPermissionOverrideSchema), identityController.setPermissionOverride)
+usersRoutes.delete('/:userId/permissions/:code', requirePermission('roles.manage'), identityController.clearPermissionOverride)
 
 export const rolesRoutes = new Hono()
 rolesRoutes.get('/', requirePermission('roles.manage'), identityController.listRoles)
