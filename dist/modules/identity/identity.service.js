@@ -43,6 +43,12 @@ export const identityService = {
     },
     async updateUser(id, input, actorUserId) {
         const before = await this.getUserById(id);
+        // The last-administrator guard counts only users whose status is 'active',
+        // so suspending or locking the sole administrator is another route to the
+        // very lockout that guard exists to prevent.
+        if (input.status !== undefined && input.status !== 'active') {
+            await this.assertNotLastAdministrator(id);
+        }
         const updated = await identityRepository.updateUser(id, input);
         if (!updated)
             throw new NotFoundError(`User ${id} not found`);
