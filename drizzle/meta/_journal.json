@@ -78,6 +78,13 @@
       "when": 1789146505449,
       "tag": "0010_square_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789151712001,
+      "tag": "0011_add_avatar_url",
+      "breakpoints": true
     }
   ]
 }
