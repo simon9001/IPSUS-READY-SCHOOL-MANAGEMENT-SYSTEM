@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/client.js';
-import { permissions, rolePermissions, roles, userRoles, users } from '../../db/schema/index.js';
+import { permissions, rolePermissions, roles, userPermissionOverrides, userRoles, users } from '../../db/schema/index.js';
+import { mergePermissions } from '../../common/permissionRules.js';
 export const authRepository = {
     findUserByEmail: (email) => db.select().from(users).where(eq(users.email, email)).then((rows) => rows[0]),
     findUserById: (id) => db.select().from(users).where(eq(users.id, id)).then((rows) => rows[0]),
@@ -16,9 +17,18 @@ export const authRepository = {
             .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
             .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
             .where(eq(userRoles.userId, userId));
+        // Per-user exceptions. This is the third query on a path that runs for
+        // every authenticated request; acceptable at school scale, and caching is
+        // deliberately avoided because per-request resolution is what lets a
+        // permission change take effect without re-login.
+        const overrideRows = await db
+            .select({ code: permissions.code, granted: userPermissionOverrides.granted })
+            .from(userPermissionOverrides)
+            .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id))
+            .where(eq(userPermissionOverrides.userId, userId));
         return {
             roles: roleRows.map((r) => r.code),
-            permissions: [...new Set(permissionRows.map((p) => p.code))],
+            permissions: mergePermissions(permissionRows.map((p) => p.code), overrideRows),
         };
     },
     recordLogin: (userId) => db.update(users).set({ lastLoginAt: new Date(), failedLoginAttempts: 0, lockedUntil: null }).where(eq(users.id, userId)),

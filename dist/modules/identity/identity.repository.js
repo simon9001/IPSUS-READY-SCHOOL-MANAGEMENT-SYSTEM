@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client.js';
-import { auditLog, permissions, rolePermissions, roles, userRoles, users } from '../../db/schema/index.js';
+import { auditLog, permissions, rolePermissions, roles, userPermissionOverrides, userRoles, users } from '../../db/schema/index.js';
 // Every read path selects these columns explicitly rather than `select *` —
 // passwordHash must never leave this module.
 const safeUserColumns = {
@@ -56,6 +56,50 @@ export const identityRepository = {
         .from(rolePermissions)
         .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
         .where(eq(rolePermissions.roleId, roleId)),
+    findPermissionByCode: (code) => db.select().from(permissions).where(eq(permissions.code, code)).then((rows) => rows[0]),
+    findOverridesForUser: (userId) => db
+        .select({ code: permissions.code, granted: userPermissionOverrides.granted })
+        .from(userPermissionOverrides)
+        .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id))
+        .where(eq(userPermissionOverrides.userId, userId)),
+    upsertOverride: (userId, permissionId, granted, assignedBy) => db
+        .insert(userPermissionOverrides)
+        .values({ userId, permissionId, granted, assignedBy })
+        .onConflictDoUpdate({
+        target: [userPermissionOverrides.userId, userPermissionOverrides.permissionId],
+        set: { granted, assignedBy, assignedAt: new Date() },
+    }),
+    deleteOverride: (userId, permissionId) => db
+        .delete(userPermissionOverrides)
+        .where(and(eq(userPermissionOverrides.userId, userId), eq(userPermissionOverrides.permissionId, permissionId))),
+    /**
+     * Every user with the raw material the guard needs: whether a role grants
+     * the permission, and whether an override overrules that. Assembled in three
+     * simple queries rather than one clever join — this runs only on the guard
+     * path, not per request.
+     */
+    async findAdministratorCandidates(permissionCode) {
+        const allUsers = await db.select({ userId: users.id, status: users.status }).from(users);
+        const viaRole = await db
+            .selectDistinct({ userId: userRoles.userId })
+            .from(userRoles)
+            .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
+            .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+            .where(eq(permissions.code, permissionCode));
+        const overrides = await db
+            .select({ userId: userPermissionOverrides.userId, granted: userPermissionOverrides.granted })
+            .from(userPermissionOverrides)
+            .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id))
+            .where(eq(permissions.code, permissionCode));
+        const roleHolders = new Set(viaRole.map((r) => r.userId));
+        const overrideByUser = new Map(overrides.map((o) => [o.userId, o.granted]));
+        return allUsers.map((u) => ({
+            userId: u.userId,
+            status: u.status,
+            hasViaRole: roleHolders.has(u.userId),
+            override: overrideByUser.get(u.userId) ?? null,
+        }));
+    },
     findAuditLog: (limit) => db
         .select({ entry: auditLog, actorEmail: users.email, actorName: users.fullName })
         .from(auditLog)

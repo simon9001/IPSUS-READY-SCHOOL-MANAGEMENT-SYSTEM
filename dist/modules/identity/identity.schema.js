@@ -17,3 +17,6 @@ export const resetPasswordSchema = z.object({
 export const assignRoleSchema = z.object({
     roleId: z.number().int().positive(),
 });
+export const setPermissionOverrideSchema = z.object({
+    granted: z.boolean(),
+});

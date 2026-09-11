@@ -14,6 +14,9 @@ export const identityController = {
     listPermissions: async (c) => ok(c, await identityService.listPermissions()),
     assignRole: async (c) => ok(c, await identityService.assignRole(Number(c.req.param('userId')), getValidated(c, 'json'), actorId(c))),
     removeRole: async (c) => ok(c, await identityService.removeRole(Number(c.req.param('userId')), Number(c.req.param('roleId')), actorId(c))),
+    listUserPermissions: async (c) => ok(c, await identityService.listUserPermissions(Number(c.req.param('userId')))),
+    setPermissionOverride: async (c) => ok(c, await identityService.setPermissionOverride(Number(c.req.param('userId')), c.req.param('code'), getValidated(c, 'json').granted, actorId(c))),
+    clearPermissionOverride: async (c) => ok(c, await identityService.clearPermissionOverride(Number(c.req.param('userId')), c.req.param('code'), actorId(c))),
     listAuditLog: async (c) => {
         const limit = Math.min(Number(c.req.query('limit') ?? 100), 500);
         return ok(c, await identityService.listAuditLog(limit));

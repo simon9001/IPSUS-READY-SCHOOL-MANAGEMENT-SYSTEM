@@ -43,6 +43,18 @@ export const userRoles = pgTable('user_roles', {
     assignedBy: integer('assigned_by').references(() => users.id),
     assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.userId, t.roleId] })]);
+// Per-user exceptions layered on top of role-derived permissions. A row's
+// absence means "the role decides", which is the default for every
+// permission — so this table holds only genuine exceptions and stays small.
+// The composite primary key makes it structurally impossible for a permission
+// to be both granted and revoked for the same user.
+export const userPermissionOverrides = pgTable('user_permission_overrides', {
+    userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    permissionId: integer('permission_id').notNull().references(() => permissions.id, { onDelete: 'cascade' }),
+    granted: boolean('granted').notNull(),
+    assignedBy: integer('assigned_by').references(() => users.id),
+    assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.userId, t.permissionId] })]);
 export const refreshTokens = pgTable('refresh_tokens', {
     id: serial('id').primaryKey(),
     userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
