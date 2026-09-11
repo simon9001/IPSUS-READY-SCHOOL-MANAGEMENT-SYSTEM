@@ -12,7 +12,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:seed-demo-users": "tsx src/db/seed-demo-users.ts",
     "db:seed-school": "tsx src/db/seed-school-data.ts",
-    "db:sync-rbac": "tsx src/db/sync-rbac.ts"
+    "db:sync-rbac": "tsx src/db/sync-rbac.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
@@ -31,6 +32,7 @@
     "@types/node": "^26.1.1",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
   }
 }
