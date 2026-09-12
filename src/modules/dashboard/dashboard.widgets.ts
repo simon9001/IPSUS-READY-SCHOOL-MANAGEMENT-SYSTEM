@@ -29,8 +29,9 @@ import { noticesService } from '../notices/notices.service.js'
 import { identityService } from '../identity/identity.service.js'
 import { systemService } from '../system/system.service.js'
 import { periodsService } from '../periods/periods.service.js'
+import { attendanceService } from '../attendance/attendance.service.js'
 import { buildBuckets, activeFiscalPeriod } from './dashboard.series.js'
-import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart } from './dashboard.charts.js'
+import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart, attendanceRateChart } from './dashboard.charts.js'
 import type { DashboardSectionId, DashboardWidget } from './dashboard.types.js'
 
 interface WidgetContext {
@@ -727,6 +728,16 @@ export const WIDGETS: WidgetDef[] = [
           ...[...byStatus.entries()].map(([status, count]) => ({ label: status.replace(/_/g, ' '), value: String(count) })),
         ],
       }
+    },
+  },
+  {
+    id: 'attendance-rate-trend',
+    section: 'students',
+    requiredPermission: 'attendance.view',
+    async build({ asOfDate }) {
+      const buckets = buildBuckets(asOfDate, 30, 'day')
+      const rows = await attendanceService.countByStatusAndDay(buckets[0].start, buckets[buckets.length - 1].end)
+      return attendanceRateChart({ buckets, rows })
     },
   },
 

@@ -16,4 +16,6 @@ export const attendanceService = {
     }
     return results
   },
+
+  countByStatusAndDay: (from: string, to: string) => attendanceRepository.countByStatusAndDay(from, to),
 }

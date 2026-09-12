@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart } from './dashboard.charts.js'
+import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart, attendanceRateChart } from './dashboard.charts.js'
 import { buildBuckets } from './dashboard.series.js'
 
 const buckets = buildBuckets('2026-09-12', 3, 'month')
@@ -97,5 +97,41 @@ describe('spendByFundChart', () => {
     if (widget.kind !== 'series') throw new Error('expected a series widget')
     expect(widget.points).toEqual([])
     expect(widget.emptyText).toBeTruthy()
+  })
+})
+
+describe('attendanceRateChart', () => {
+  const days = buildBuckets('2026-09-12', 2, 'day')
+
+  it('reports present and late as a percentage of records taken that day', () => {
+    const widget = attendanceRateChart({
+      buckets: days,
+      rows: [
+        { bucket: '2026-09-12', status: 'present', count: '80' },
+        { bucket: '2026-09-12', status: 'late', count: '10' },
+        { bucket: '2026-09-12', status: 'absent', count: '10' },
+      ],
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.valueFormat).toBe('percent')
+    expect(widget.points[1].values.rate).toBe(90)
+  })
+
+  it('reports a day with no register taken as zero rather than dividing by zero', () => {
+    const widget = attendanceRateChart({ buckets: days, rows: [] })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points.map((p) => p.values.rate)).toEqual([0, 0])
+  })
+
+  it('rounds to one decimal place', () => {
+    const widget = attendanceRateChart({
+      buckets: days,
+      rows: [
+        { bucket: '2026-09-12', status: 'present', count: '1' },
+        { bucket: '2026-09-12', status: 'absent', count: '2' },
+      ],
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points[1].values.rate).toBe(33.3)
   })
 })

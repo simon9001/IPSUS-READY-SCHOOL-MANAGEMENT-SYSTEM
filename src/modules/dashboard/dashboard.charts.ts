@@ -85,3 +85,40 @@ export function spendByFundChart(args: {
     emptyText: 'No expenditure posted for this period.',
   }
 }
+
+/**
+ * Rate is present+late over all records for that day. A day with no register
+ * taken has no denominator, and must read as 0 rather than NaN — Recharts
+ * renders NaN as a gap, which would look like perfect attendance.
+ */
+export function attendanceRateChart(args: {
+  buckets: Bucket[]
+  rows: Array<{ bucket: string; status: string; count: string | number }>
+}): DashboardWidget {
+  const mapped = args.rows.map((row) => ({
+    bucket: row.bucket,
+    attending: row.status === 'present' || row.status === 'late' ? toNumber(row.count) : 0,
+    total: toNumber(row.count),
+  }))
+
+  const totals = zeroFill(args.buckets, mapped, ['attending', 'total'], 'day')
+
+  return {
+    id: 'attendance-rate-trend',
+    title: 'Attendance Rate',
+    kind: 'series',
+    form: 'line',
+    valueFormat: 'percent',
+    series: [{ key: 'rate', label: 'Present' }],
+    points: totals.map((point) => ({
+      label: point.label,
+      values: {
+        rate:
+          point.values.total === 0
+            ? 0
+            : Math.round((point.values.attending / point.values.total) * 1000) / 10,
+      },
+    })),
+    emptyText: 'No attendance registers taken in this period.',
+  }
+}
