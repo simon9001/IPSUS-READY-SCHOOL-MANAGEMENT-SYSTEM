@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { feeCollectionChart, incomeVsExpenditureChart } from './dashboard.charts.js'
+import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart } from './dashboard.charts.js'
 import { buildBuckets } from './dashboard.series.js'
 
 const buckets = buildBuckets('2026-09-12', 3, 'month')
@@ -63,5 +63,39 @@ describe('incomeVsExpenditureChart', () => {
     })
     if (widget.kind !== 'series') throw new Error('expected a series widget')
     expect(widget.points[1].values).toEqual({ income: 0, expenditure: 0 })
+  })
+})
+
+describe('spendByFundChart', () => {
+  it('orders funds by spend, largest first', () => {
+    const widget = spendByFundChart({
+      rows: [
+        { fundName: 'Tuition', total: '300' },
+        { fundName: 'Operations', total: '900' },
+      ],
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.form).toBe('hbar')
+    expect(widget.points.map((p) => p.label)).toEqual(['Operations', 'Tuition'])
+    expect(widget.points[0].values.spend).toBe(900)
+  })
+
+  it('keeps only the top 8 funds so the axis stays readable', () => {
+    const rows = Array.from({ length: 12 }, (_, i) => ({ fundName: `Fund ${i}`, total: String(i + 1) }))
+    const widget = spendByFundChart({ rows })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points).toHaveLength(8)
+    expect(widget.points[0].label).toBe('Fund 11')
+  })
+
+  it('names the period in the title when one is given', () => {
+    expect(spendByFundChart({ rows: [], periodName: '2026 Term 3' }).title).toContain('2026 Term 3')
+  })
+
+  it('returns an empty point list rather than throwing when there is no spend', () => {
+    const widget = spendByFundChart({ rows: [] })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points).toEqual([])
+    expect(widget.emptyText).toBeTruthy()
   })
 })

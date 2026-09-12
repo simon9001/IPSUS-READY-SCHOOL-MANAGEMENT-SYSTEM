@@ -135,4 +135,6 @@ export const journalService = {
   },
 
   sumPostedByTypeAndMonth: (from: string, to: string) => journalRepository.sumPostedByTypeAndMonth(from, to),
+
+  sumExpenseByFund: (from: string, to: string) => journalRepository.sumExpenseByFund(from, to),
 }

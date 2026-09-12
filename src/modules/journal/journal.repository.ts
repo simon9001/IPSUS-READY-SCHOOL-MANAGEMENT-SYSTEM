@@ -1,6 +1,6 @@
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { accounts, journalEntries, journalLines } from '../../db/schema/index.js'
+import { accounts, funds, journalEntries, journalLines } from '../../db/schema/index.js'
 import type { NewJournalEntry, NewJournalLine, TrialBalanceRow } from './journal.types.js'
 
 export const journalRepository = {
@@ -97,4 +97,24 @@ export const journalRepository = {
         ),
       )
       .groupBy(sql`date_trunc('month', ${journalEntries.entryDate})`, accounts.type),
+
+  sumExpenseByFund: (from: string, to: string) =>
+    db
+      .select({
+        fundName: funds.name,
+        total: sql<string>`coalesce(sum(${journalLines.debit}), 0)`,
+      })
+      .from(journalLines)
+      .innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+      .innerJoin(accounts, eq(journalLines.accountId, accounts.id))
+      .innerJoin(funds, eq(journalLines.fundId, funds.id))
+      .where(
+        and(
+          eq(journalEntries.status, 'posted'),
+          eq(accounts.type, 'expense'),
+          gte(journalEntries.entryDate, from),
+          lte(journalEntries.entryDate, to),
+        ),
+      )
+      .groupBy(funds.name),
 }

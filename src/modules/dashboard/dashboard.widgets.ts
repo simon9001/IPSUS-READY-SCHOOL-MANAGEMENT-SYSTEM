@@ -29,8 +29,8 @@ import { noticesService } from '../notices/notices.service.js'
 import { identityService } from '../identity/identity.service.js'
 import { systemService } from '../system/system.service.js'
 import { periodsService } from '../periods/periods.service.js'
-import { buildBuckets } from './dashboard.series.js'
-import { feeCollectionChart, incomeVsExpenditureChart } from './dashboard.charts.js'
+import { buildBuckets, activeFiscalPeriod } from './dashboard.series.js'
+import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart } from './dashboard.charts.js'
 import type { DashboardSectionId, DashboardWidget } from './dashboard.types.js'
 
 interface WidgetContext {
@@ -127,6 +127,17 @@ export const WIDGETS: WidgetDef[] = [
         feesService.sumInvoicedByMonth(from, to),
       ])
       return feeCollectionChart({ buckets, paymentRows, invoiceRows })
+    },
+  },
+  {
+    id: 'spend-by-fund',
+    section: 'financial',
+    requiredPermission: 'ledger.journal.view',
+    async build({ asOfDate }) {
+      const period = activeFiscalPeriod(await periodsService.list(), asOfDate)
+      if (!period) return spendByFundChart({ rows: [] })
+      const rows = await journalService.sumExpenseByFund(period.startDate, period.endDate)
+      return spendByFundChart({ rows, periodName: period.name })
     },
   },
   {

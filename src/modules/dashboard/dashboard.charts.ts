@@ -1,5 +1,5 @@
 import type { DashboardWidget } from './dashboard.types.js'
-import { zeroFill, type Bucket, type BucketRow } from './dashboard.series.js'
+import { zeroFill, toNumber, type Bucket, type BucketRow } from './dashboard.series.js'
 
 /**
  * Pure shapers: repository rows in, chart widget out. Kept separate from
@@ -59,5 +59,29 @@ export function incomeVsExpenditureChart(args: {
     ],
     points: zeroFill(args.buckets, mapped, ['income', 'expenditure'], 'month'),
     emptyText: 'No posted journal entries in this period.',
+  }
+}
+
+const TOP_FUNDS = 8
+
+/** Categorical, not time-bucketed: one bar per fund, so no zero-filling applies. */
+export function spendByFundChart(args: {
+  rows: Array<{ fundName: string; total: string | number }>
+  periodName?: string
+}): DashboardWidget {
+  const points = args.rows
+    .map((row) => ({ label: row.fundName, values: { spend: toNumber(row.total) } }))
+    .sort((a, b) => b.values.spend - a.values.spend)
+    .slice(0, TOP_FUNDS)
+
+  return {
+    id: 'spend-by-fund',
+    title: args.periodName ? `Spend by Votehead — ${args.periodName}` : 'Spend by Votehead',
+    kind: 'series',
+    form: 'hbar',
+    valueFormat: 'currency',
+    series: [{ key: 'spend', label: 'Spend' }],
+    points,
+    emptyText: 'No expenditure posted for this period.',
   }
 }
