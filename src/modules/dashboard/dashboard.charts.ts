@@ -31,3 +31,33 @@ export function feeCollectionChart(args: {
     emptyText: 'No invoices or payments in this period.',
   }
 }
+
+/**
+ * The ledger returns one row per (month, account type). Revenue and expense are
+ * the only two types that describe money in and money out; asset, liability and
+ * net_assets rows are balance-sheet movements and would double-count here.
+ */
+export function incomeVsExpenditureChart(args: {
+  buckets: Bucket[]
+  rows: Array<BucketRow & { type: string }>
+}): DashboardWidget {
+  const mapped = args.rows.map((row) => ({
+    bucket: row.bucket,
+    income: row.type === 'revenue' ? row.total : 0,
+    expenditure: row.type === 'expense' ? row.total : 0,
+  }))
+
+  return {
+    id: 'income-vs-expenditure',
+    title: 'Income vs Expenditure',
+    kind: 'series',
+    form: 'line',
+    valueFormat: 'currency',
+    series: [
+      { key: 'income', label: 'Income' },
+      { key: 'expenditure', label: 'Expenditure' },
+    ],
+    points: zeroFill(args.buckets, mapped, ['income', 'expenditure'], 'month'),
+    emptyText: 'No posted journal entries in this period.',
+  }
+}

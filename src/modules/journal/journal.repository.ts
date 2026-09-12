@@ -1,4 +1,4 @@
-import { and, eq, lte, sql } from 'drizzle-orm'
+import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { accounts, journalEntries, journalLines } from '../../db/schema/index.js'
 import type { NewJournalEntry, NewJournalLine, TrialBalanceRow } from './journal.types.js'
@@ -78,4 +78,23 @@ export const journalRepository = {
       balance: 0, // computed by the service, which knows normal-balance sign rules
     }))
   },
+
+  sumPostedByTypeAndMonth: (from: string, to: string) =>
+    db
+      .select({
+        bucket: sql<string>`to_char(date_trunc('month', ${journalEntries.entryDate}), 'YYYY-MM-DD')`,
+        type: accounts.type,
+        total: sql<string>`coalesce(sum(${journalLines.debit} + ${journalLines.credit}), 0)`,
+      })
+      .from(journalLines)
+      .innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+      .innerJoin(accounts, eq(journalLines.accountId, accounts.id))
+      .where(
+        and(
+          eq(journalEntries.status, 'posted'),
+          gte(journalEntries.entryDate, from),
+          lte(journalEntries.entryDate, to),
+        ),
+      )
+      .groupBy(sql`date_trunc('month', ${journalEntries.entryDate})`, accounts.type),
 }

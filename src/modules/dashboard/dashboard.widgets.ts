@@ -30,7 +30,7 @@ import { identityService } from '../identity/identity.service.js'
 import { systemService } from '../system/system.service.js'
 import { periodsService } from '../periods/periods.service.js'
 import { buildBuckets } from './dashboard.series.js'
-import { feeCollectionChart } from './dashboard.charts.js'
+import { feeCollectionChart, incomeVsExpenditureChart } from './dashboard.charts.js'
 import type { DashboardSectionId, DashboardWidget } from './dashboard.types.js'
 
 interface WidgetContext {
@@ -83,6 +83,16 @@ export const WIDGETS: WidgetDef[] = [
           { label: 'Total Credit', value: money(tb.totalCredit) },
         ],
       }
+    },
+  },
+  {
+    id: 'income-vs-expenditure',
+    section: 'financial',
+    requiredPermission: 'ledger.journal.view',
+    async build({ asOfDate }) {
+      const buckets = buildBuckets(asOfDate, 6, 'month')
+      const rows = await journalService.sumPostedByTypeAndMonth(buckets[0].start, buckets[buckets.length - 1].end)
+      return incomeVsExpenditureChart({ buckets, rows })
     },
   },
   {
