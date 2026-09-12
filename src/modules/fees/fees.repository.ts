@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import {
   feeInvoiceItems,
@@ -67,4 +67,24 @@ export const feesRepository = {
     db.insert(feePaymentAllocations).values(allocations).returning(),
 
   findPaymentsByStudent: (studentId: number) => db.select().from(feePayments).where(eq(feePayments.studentId, studentId)),
+
+  sumPaymentsByMonth: (from: string, to: string) =>
+    db
+      .select({
+        bucket: sql<string>`to_char(date_trunc('month', ${feePayments.paymentDate}), 'YYYY-MM-DD')`,
+        collected: sql<string>`coalesce(sum(${feePayments.amount}), 0)`,
+      })
+      .from(feePayments)
+      .where(and(gte(feePayments.paymentDate, from), lte(feePayments.paymentDate, to)))
+      .groupBy(sql`date_trunc('month', ${feePayments.paymentDate})`),
+
+  sumInvoicedByMonth: (from: string, to: string) =>
+    db
+      .select({
+        bucket: sql<string>`to_char(date_trunc('month', ${feeInvoices.invoiceDate}), 'YYYY-MM-DD')`,
+        billed: sql<string>`coalesce(sum(${feeInvoices.totalAmount}), 0)`,
+      })
+      .from(feeInvoices)
+      .where(and(gte(feeInvoices.invoiceDate, from), lte(feeInvoices.invoiceDate, to)))
+      .groupBy(sql`date_trunc('month', ${feeInvoices.invoiceDate})`),
 }

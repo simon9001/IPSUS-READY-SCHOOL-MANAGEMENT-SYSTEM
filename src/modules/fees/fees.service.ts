@@ -148,4 +148,7 @@ export const feesService = {
   },
 
   listPaymentsByStudent: (studentId: number) => feesRepository.findPaymentsByStudent(studentId),
+
+  sumPaymentsByMonth: (from: string, to: string) => feesRepository.sumPaymentsByMonth(from, to),
+  sumInvoicedByMonth: (from: string, to: string) => feesRepository.sumInvoicedByMonth(from, to),
 }
