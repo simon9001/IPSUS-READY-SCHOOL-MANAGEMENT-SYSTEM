@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, numeric, date, timestamp, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, text, integer, numeric, date, timestamp, pgEnum, index } from 'drizzle-orm/pg-core'
 import { accounts } from './accounts.js'
 import { funds } from './funds.js'
 import { fiscalPeriods } from './periods.js'
@@ -27,7 +27,7 @@ export const journalEntries = pgTable('journal_entries', {
   postedBy: integer('posted_by').references(() => users.id),
   postedAt: timestamp('posted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (t) => [index('journal_entries_entry_date_idx').on(t.entryDate)])
 
 export const journalLines = pgTable('journal_lines', {
   id: serial('id').primaryKey(),

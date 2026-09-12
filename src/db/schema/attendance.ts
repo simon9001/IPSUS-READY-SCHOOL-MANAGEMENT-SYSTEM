@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, date, text, pgEnum, unique } from 'drizzle-orm/pg-core'
+import { pgTable, serial, integer, date, text, pgEnum, unique, index } from 'drizzle-orm/pg-core'
 import { students } from './students.js'
 import { users } from './identity.js'
 
@@ -11,4 +11,7 @@ export const attendanceRecords = pgTable('attendance_records', {
   status: attendanceStatusEnum('status').notNull(),
   remarks: text('remarks'),
   recordedBy: integer('recorded_by').notNull().references(() => users.id),
-}, (t) => [unique().on(t.studentId, t.attendanceDate)])
+}, (t) => [
+  unique().on(t.studentId, t.attendanceDate),
+  index('attendance_records_attendance_date_idx').on(t.attendanceDate),
+])
