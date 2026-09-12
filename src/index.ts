@@ -5,6 +5,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { AppError } from './common/errors.js'
 import { requestLogger, logError, metricsHandler } from './common/observability.js'
 import { assertDatabaseConnection } from './db/client.js'
+import { resolvePort, DEFAULT_PORT } from './common/port.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { attachUser } from './modules/auth/auth.middleware.js'
 import { accountsRoutes } from './modules/accounts/accounts.routes.js'
@@ -139,7 +140,11 @@ app.onError((err, c) => {
   return c.json({ success: false, error: 'Internal server error' }, 500)
 })
 
-const port = Number(process.env.PORT ?? 3000)
+const rawPort = process.env.PORT
+if (rawPort !== undefined && rawPort.trim() === '') {
+  console.warn(`PORT is set but empty — falling back to ${DEFAULT_PORT}.`)
+}
+const port = resolvePort(rawPort)
 
 // Refuse to start listening at all until the database is actually reachable
 // — no request should ever be able to hit this server and only then
