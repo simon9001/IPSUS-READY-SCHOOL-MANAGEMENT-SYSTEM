@@ -16,8 +16,10 @@ export interface Bucket {
 }
 
 export interface BucketRow {
-  /** The grouped date from SQL — a date or timestamp string. */
-  bucket: string
+  /** The grouped date from SQL — arrives as either a string (if cast with to_char)
+   * or a Date object (if selected directly, since the postgres driver parses date/timestamp
+   * columns via their OID handlers). Both forms are normalised by bucketKey(). */
+  bucket: string | Date
   [column: string]: unknown
 }
 
@@ -67,8 +69,9 @@ export function buildBuckets(asOfDate: string, count: number, granularity: Granu
 }
 
 /** Normalises a SQL-grouped date to the same shape as Bucket.key. */
-export function bucketKey(dateLike: string, granularity: Granularity): string {
-  const date = dateLike.slice(0, 10)
+export function bucketKey(dateLike: string | Date, granularity: Granularity): string {
+  const dateStr = dateLike instanceof Date ? dateLike.toISOString() : dateLike
+  const date = dateStr.slice(0, 10)
   return granularity === 'month' ? date.slice(0, 7) : date
 }
 
@@ -92,7 +95,7 @@ export function zeroFill(
   const totals = new Map<string, Record<string, number>>()
 
   for (const row of rows) {
-    const key = bucketKey(String(row.bucket), granularity)
+    const key = bucketKey(row.bucket, granularity)
     const acc = totals.get(key) ?? {}
     for (const seriesKey of seriesKeys) {
       acc[seriesKey] = (acc[seriesKey] ?? 0) + toNumber(row[seriesKey])

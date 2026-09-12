@@ -56,6 +56,14 @@ describe('bucketKey', () => {
   it('tolerates a timestamp, which is what date_trunc returns', () => {
     expect(bucketKey('2026-04-01T00:00:00.000Z', 'month')).toBe('2026-04')
   })
+
+  it('normalises a Date object (from driver parsing) to month key', () => {
+    expect(bucketKey(new Date('2026-04-17T00:00:00.000Z'), 'month')).toBe('2026-04')
+  })
+
+  it('normalises a Date object (from driver parsing) to day key', () => {
+    expect(bucketKey(new Date('2026-04-17T00:00:00.000Z'), 'day')).toBe('2026-04-17')
+  })
 })
 
 describe('toNumber', () => {
@@ -110,6 +118,19 @@ describe('zeroFill', () => {
     const rows = [{ bucket: '2020-01-01', collected: '999' }]
     const points = zeroFill(buckets, rows, ['collected'], 'month')
     expect(points.every((p) => p.values.collected === 0)).toBe(true)
+  })
+
+  it('lands Date objects (from driver parsing) in the correct bucket', () => {
+    const rows = [
+      { bucket: new Date('2026-07-15T00:00:00.000Z'), collected: '500' },
+      { bucket: new Date('2026-09-20T00:00:00.000Z'), collected: '900' },
+    ]
+    const points = zeroFill(buckets, rows, ['collected'], 'month')
+    expect(points).toEqual([
+      { label: 'Jul', values: { collected: 500 } },
+      { label: 'Aug', values: { collected: 0 } },
+      { label: 'Sep', values: { collected: 900 } },
+    ])
   })
 
   it('returns a point per bucket even with no rows at all', () => {
