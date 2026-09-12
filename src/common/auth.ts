@@ -1,5 +1,5 @@
 import type { Context, Next } from 'hono'
-import { ForbiddenError } from './errors.js'
+import { ForbiddenError, UnauthorizedError } from './errors.js'
 
 // Extension point for your own auth. Once you have a login/session
 // middleware that does c.set('user', { id, permissions: string[] }),
@@ -13,7 +13,10 @@ export interface AuthUser {
 export function requirePermission(code: string) {
   return async (c: Context, next: Next) => {
     const user = c.get('user') as AuthUser | undefined
-    if (!user || !user.permissions.includes(code)) {
+    // No user at all means no valid token (attachUser swallows expired ones),
+    // which is a different problem from being signed in without the grant.
+    if (!user) throw new UnauthorizedError('Authentication required')
+    if (!user.permissions.includes(code)) {
       throw new ForbiddenError(`Missing required permission: ${code}`)
     }
     await next()
@@ -27,7 +30,7 @@ export function requirePermission(code: string) {
 export function requireAuth() {
   return async (c: Context, next: Next) => {
     const user = c.get('user') as AuthUser | undefined
-    if (!user) throw new ForbiddenError('Authentication required')
+    if (!user) throw new UnauthorizedError('Authentication required')
     await next()
   }
 }
@@ -40,7 +43,8 @@ export function requireSelf(paramName: string) {
   return async (c: Context, next: Next) => {
     const user = c.get('user') as AuthUser | undefined
     const routeUserId = Number(c.req.param(paramName))
-    if (!user || user.id !== routeUserId) {
+    if (!user) throw new UnauthorizedError('Authentication required')
+    if (user.id !== routeUserId) {
       throw new ForbiddenError('You can only access your own records')
     }
     await next()
