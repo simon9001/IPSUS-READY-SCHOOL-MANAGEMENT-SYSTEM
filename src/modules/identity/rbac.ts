@@ -91,8 +91,11 @@ export const PERMISSIONS: PermissionDef[] = [
   // Core academic records: students, classes/streams, teachers, subjects, attendance, promotions
   { code: 'students.manage', module: 'academic_records', description: 'Create/edit student records, classes, and streams' },
   { code: 'students.view', module: 'academic_records', description: 'View student records' },
+  { code: 'students.edit', module: 'academic_records', description: 'Edit existing student records' },
+  { code: 'students.delete', module: 'academic_records', description: 'Delete student records that have no history (fees, attendance, results, etc.)' },
   { code: 'teachers.manage', module: 'academic_records', description: 'Create/edit the teacher registry' },
   { code: 'teachers.view', module: 'academic_records', description: 'View the teacher registry' },
+  { code: 'teachers.delete', module: 'academic_records', description: 'Delete teacher records that have no history (subject assignments, timetable, staff links)' },
   { code: 'subjects.manage', module: 'academic_records', description: 'Create subjects/strands, offer subjects to classes, and assign teachers' },
   { code: 'subjects.view', module: 'academic_records', description: 'View subjects, class offerings, and teacher assignments' },
   { code: 'attendance.manage', module: 'academic_records', description: 'Take and edit the daily class register' },
@@ -194,7 +197,7 @@ export const ROLES: RoleDef[] = [
     description: 'Academic administration head — coordinates the master timetable, exam scheduling and results analysis, and monitors syllabus coverage and teaching staff performance. Reports to the Principal; distinct from the Timetable Coordinator, who only handles scheduling mechanics.',
     permissions: [
       'timetable.manage', 'timetable.view', 'exams.manage', 'exams.view', 'staff.view', 'dashboard.view',
-      'students.view', 'teachers.manage', 'teachers.view', 'subjects.manage', 'subjects.view',
+      'students.view', 'students.edit', 'students.delete', 'teachers.manage', 'teachers.view', 'teachers.delete', 'subjects.manage', 'subjects.view',
       'attendance.view', 'promotions.manage', 'promotions.view',
     ],
   },
@@ -289,7 +292,7 @@ export const ROLES: RoleDef[] = [
     description: 'Captures government placements and inter-school transfers, and runs the direct-application interview process.',
     permissions: [
       'admissions.manage', 'admissions.view', 'compliance.manage', 'compliance.view', 'documents.manage', 'documents.view',
-      'students.manage', 'students.view', 'guardians.manage', 'guardians.view', 'promotions.view', 'dashboard.view',
+      'students.manage', 'students.edit', 'students.view', 'guardians.manage', 'guardians.view', 'promotions.view', 'dashboard.view',
     ],
   },
   {
