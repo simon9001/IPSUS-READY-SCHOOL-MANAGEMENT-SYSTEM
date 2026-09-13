@@ -148,4 +148,7 @@ export const examsService = {
 
   getAllResultsForStudent: (studentId: number) => examsRepository.findAllResultsByStudent(studentId),
   getResultsForExam: (examId: number) => examsRepository.findResultsByExam(examId),
+
+  findLatestPublished: () => examsRepository.findLatestPublished(),
+  countResultsByGrade: (examId: number) => examsRepository.countResultsByGrade(examId),
 }

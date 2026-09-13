@@ -31,7 +31,7 @@ import { systemService } from '../system/system.service.js'
 import { periodsService } from '../periods/periods.service.js'
 import { attendanceService } from '../attendance/attendance.service.js'
 import { buildBuckets, activeFiscalPeriod } from './dashboard.series.js'
-import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart, attendanceRateChart } from './dashboard.charts.js'
+import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart, attendanceRateChart, enrolmentByClassChart, gradeDistributionChart } from './dashboard.charts.js'
 import type { DashboardSectionId, DashboardWidget } from './dashboard.types.js'
 
 interface WidgetContext {
@@ -738,6 +738,24 @@ export const WIDGETS: WidgetDef[] = [
       const buckets = buildBuckets(asOfDate, 30, 'day')
       const rows = await attendanceService.countByStatusAndDay(buckets[0].start, buckets[buckets.length - 1].end)
       return attendanceRateChart({ buckets, rows })
+    },
+  },
+  {
+    id: 'enrolment-by-class',
+    section: 'students',
+    requiredPermission: 'students.view',
+    async build() {
+      return enrolmentByClassChart({ rows: await studentsService.countActiveByClass() })
+    },
+  },
+  {
+    id: 'exam-grade-distribution',
+    section: 'students',
+    requiredPermission: 'exams.view',
+    async build() {
+      const exam = await examsService.findLatestPublished()
+      if (!exam) return gradeDistributionChart({ rows: [] })
+      return gradeDistributionChart({ rows: await examsService.countResultsByGrade(exam.id), examName: exam.name })
     },
   },
 

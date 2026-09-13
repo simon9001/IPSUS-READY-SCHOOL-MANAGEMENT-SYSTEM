@@ -122,3 +122,40 @@ export function attendanceRateChart(args: {
     emptyText: 'No attendance registers taken in this period.',
   }
 }
+
+/** Categorical, not time-bucketed: one bar per class, so no zero-filling applies. */
+export function enrolmentByClassChart(args: {
+  rows: Array<{ className: string; count: string | number }>
+}): DashboardWidget {
+  return {
+    id: 'enrolment-by-class',
+    title: 'Enrolment by Class',
+    kind: 'series',
+    form: 'bar',
+    valueFormat: 'count',
+    series: [{ key: 'students', label: 'Students' }],
+    points: args.rows.map((row) => ({ label: row.className, values: { students: toNumber(row.count) } })),
+    emptyText: 'No active students on the register.',
+  }
+}
+
+export function gradeDistributionChart(args: {
+  rows: Array<{ grade: string | null; count: string | number }>
+  examName?: string
+}): DashboardWidget {
+  return {
+    id: 'exam-grade-distribution',
+    title: args.examName ? `Grade Distribution — ${args.examName}` : 'Grade Distribution',
+    kind: 'series',
+    form: 'bar',
+    valueFormat: 'count',
+    series: [{ key: 'students', label: 'Results' }],
+    // A result with no grade means marks were entered before the grading scale
+    // was applied. Dropping it would make the totals disagree with the exam.
+    points: args.rows.map((row) => ({
+      label: row.grade ?? 'Ungraded',
+      values: { students: toNumber(row.count) },
+    })),
+    emptyText: 'No published exam results yet.',
+  }
+}

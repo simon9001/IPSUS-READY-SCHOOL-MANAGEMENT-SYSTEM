@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { examResults, examStrandResults, examTimetableEntries, exams, gradingBands, gradingScales, subjectStrands, subjects } from '../../db/schema/index.js'
 import type { NewExam, NewExamResult, NewExamStrandResult, NewExamTimetableEntry, NewGradingBand, NewGradingScale } from './exams.types.js'
@@ -73,4 +73,21 @@ export const examsRepository = {
   findTimetableByExam: (examId: number) => db.select().from(examTimetableEntries).where(eq(examTimetableEntries.examId, examId)),
   addTimetableEntry: (data: NewExamTimetableEntry) =>
     db.insert(examTimetableEntries).values(data).returning().then((rows) => rows[0]),
+
+  findLatestPublished: () =>
+    db
+      .select()
+      .from(exams)
+      .where(eq(exams.status, 'published'))
+      .orderBy(desc(exams.examDate))
+      .limit(1)
+      .then((rows) => rows[0]),
+
+  countResultsByGrade: (examId: number) =>
+    db
+      .select({ grade: examResults.grade, count: sql<number>`count(*)::int` })
+      .from(examResults)
+      .where(eq(examResults.examId, examId))
+      .groupBy(examResults.grade)
+      .orderBy(examResults.grade),
 }

@@ -44,4 +44,6 @@ export const studentsService = {
     broadcastChange('dashboard', 'updated')
     return updated
   },
+
+  countActiveByClass: () => studentsRepository.countActiveByClass(),
 }

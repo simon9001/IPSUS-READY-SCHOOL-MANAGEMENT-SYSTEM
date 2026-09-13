@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { classes, streams, students } from '../../db/schema/index.js'
 import type { NewClass, NewStream, NewStudent } from './students.types.js'
@@ -25,4 +25,13 @@ export const studentsRepository = {
       .where(eq(students.id, id))
       .returning()
       .then((rows) => rows[0]),
+
+  countActiveByClass: () =>
+    db
+      .select({ className: classes.name, count: sql<number>`count(*)::int` })
+      .from(students)
+      .innerJoin(classes, eq(students.classId, classes.id))
+      .where(eq(students.status, 'active'))
+      .groupBy(classes.name)
+      .orderBy(classes.name),
 }

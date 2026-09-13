@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart, attendanceRateChart } from './dashboard.charts.js'
+import {
+  feeCollectionChart,
+  incomeVsExpenditureChart,
+  spendByFundChart,
+  attendanceRateChart,
+  enrolmentByClassChart,
+  gradeDistributionChart,
+} from './dashboard.charts.js'
 import { buildBuckets } from './dashboard.series.js'
 
 const buckets = buildBuckets('2026-09-12', 3, 'month')
@@ -133,5 +140,60 @@ describe('attendanceRateChart', () => {
     })
     if (widget.kind !== 'series') throw new Error('expected a series widget')
     expect(widget.points[1].values.rate).toBe(33.3)
+  })
+})
+
+describe('enrolmentByClassChart', () => {
+  it('keeps classes in the order the query returned them', () => {
+    const widget = enrolmentByClassChart({
+      rows: [
+        { className: 'Form 1', count: '120' },
+        { className: 'Form 2', count: '98' },
+      ],
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.form).toBe('bar')
+    expect(widget.valueFormat).toBe('count')
+    expect(widget.points).toEqual([
+      { label: 'Form 1', values: { students: 120 } },
+      { label: 'Form 2', values: { students: 98 } },
+    ])
+  })
+
+  it('has an empty text for a school with no active students', () => {
+    expect(enrolmentByClassChart({ rows: [] }).kind).toBe('series')
+    const widget = enrolmentByClassChart({ rows: [] })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points).toEqual([])
+    expect(widget.emptyText).toBeTruthy()
+  })
+})
+
+describe('gradeDistributionChart', () => {
+  it('counts students per grade and names the exam', () => {
+    const widget = gradeDistributionChart({
+      rows: [
+        { grade: 'A', count: '12' },
+        { grade: 'B', count: '30' },
+      ],
+      examName: 'Term 3 Endterm',
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.title).toContain('Term 3 Endterm')
+    expect(widget.points.map((p) => p.label)).toEqual(['A', 'B'])
+    expect(widget.points[1].values.students).toBe(30)
+  })
+
+  it('labels ungraded results rather than dropping them', () => {
+    const widget = gradeDistributionChart({ rows: [{ grade: null, count: '4' }] })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points[0].label).toBe('Ungraded')
+  })
+
+  it('is empty when no exam has been published', () => {
+    const widget = gradeDistributionChart({ rows: [] })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points).toEqual([])
+    expect(widget.emptyText).toBeTruthy()
   })
 })
