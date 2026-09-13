@@ -40,7 +40,7 @@ export const feeInvoices = pgTable('fee_invoices', {
   status: invoiceStatusEnum('status').notNull().default('open'),
   journalEntryId: integer('journal_entry_id').references(() => journalEntries.id), // Dr Fee Debtors / Cr Fee Income
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (t) => [index('fee_invoices_invoice_date_idx').on(t.invoiceDate)])
 
 export const feeInvoiceItems = pgTable('fee_invoice_items', {
   id: serial('id').primaryKey(),
