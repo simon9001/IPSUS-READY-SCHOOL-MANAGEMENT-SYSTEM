@@ -116,15 +116,27 @@ export interface PeriodLike {
   endDate: string
 }
 
+/** Span in milliseconds; both dates are 'YYYY-MM-DD', which Date.parse reads as UTC. */
+const periodSpan = (p: PeriodLike) => Date.parse(p.endDate) - Date.parse(p.startDate)
+
 /**
  * The fiscal period covering asOfDate. Charts windowed on "the term" share this
  * one resolver so they cannot disagree about which term that is. When the
  * calendar has a gap, the most recent period that has already ended is the
  * honest answer — showing nothing would hide real spend.
+ *
+ * Where several periods contain the date, the NARROWEST wins. The schema makes
+ * `term` nullable precisely so a full-year period can exist, and such a period
+ * overlaps every term inside it while sorting first by startDate — so taking the
+ * first match would silently widen "this term" to twelve months while still
+ * labelling itself the active period. Ties keep the earlier list entry, so the
+ * answer is stable for a given ordering.
  */
 export function activeFiscalPeriod<T extends PeriodLike>(periods: T[], asOfDate: string): T | undefined {
-  const containing = periods.find((p) => p.startDate <= asOfDate && p.endDate >= asOfDate)
-  if (containing) return containing
+  const containing = periods.filter((p) => p.startDate <= asOfDate && p.endDate >= asOfDate)
+  if (containing.length > 0) {
+    return containing.reduce((narrowest, p) => (periodSpan(p) < periodSpan(narrowest) ? p : narrowest))
+  }
 
   return periods
     .filter((p) => p.endDate < asOfDate)

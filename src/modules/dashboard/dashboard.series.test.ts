@@ -171,4 +171,32 @@ describe('activeFiscalPeriod', () => {
   it('returns undefined when there are no periods at all', () => {
     expect(activeFiscalPeriod([], '2026-09-12')).toBeUndefined()
   })
+
+  // `fiscal_periods.term` is nullable for a full-year period, so a year row and
+  // a term row legitimately both contain the date. The year sorts first by
+  // startDate, so "the first containing period" would silently widen every
+  // term-windowed chart to twelve months. The narrowest range is the term.
+  it('prefers the narrowest containing period over an overlapping full year', () => {
+    const overlapping = [
+      { id: 10, startDate: '2026-01-01', endDate: '2026-12-31' },
+      { id: 11, startDate: '2026-09-01', endDate: '2026-12-31' },
+    ]
+    expect(activeFiscalPeriod(overlapping, '2026-09-12')?.id).toBe(11)
+  })
+
+  it('prefers the narrowest containing period whatever order the list arrives in', () => {
+    const overlapping = [
+      { id: 11, startDate: '2026-09-01', endDate: '2026-11-30' },
+      { id: 10, startDate: '2026-01-01', endDate: '2026-12-31' },
+    ]
+    expect(activeFiscalPeriod(overlapping, '2026-09-12')?.id).toBe(11)
+  })
+
+  it('keeps the first of two equally narrow containing periods, for a stable answer', () => {
+    const duplicated = [
+      { id: 20, startDate: '2026-09-01', endDate: '2026-12-31' },
+      { id: 21, startDate: '2026-09-01', endDate: '2026-12-31' },
+    ]
+    expect(activeFiscalPeriod(duplicated, '2026-09-12')?.id).toBe(20)
+  })
 })
