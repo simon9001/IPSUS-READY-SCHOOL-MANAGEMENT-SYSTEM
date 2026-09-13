@@ -79,12 +79,19 @@ export const journalRepository = {
     }))
   },
 
+  /**
+   * Debit and credit are returned separately, NOT pre-added: netting them into
+   * "income" and "expenditure" needs the account's normal balance, which the
+   * caller knows from `type`. Summing debit + credit here would make a credit
+   * note debited to Fee Income raise income, contradicting trialBalanceRows.
+   */
   sumPostedByTypeAndMonth: (from: string, to: string) =>
     db
       .select({
         bucket: sql<string>`to_char(date_trunc('month', ${journalEntries.entryDate}), 'YYYY-MM-DD')`,
         type: accounts.type,
-        total: sql<string>`coalesce(sum(${journalLines.debit} + ${journalLines.credit}), 0)`,
+        debit: sql<string>`coalesce(sum(${journalLines.debit}), 0)`,
+        credit: sql<string>`coalesce(sum(${journalLines.credit}), 0)`,
       })
       .from(journalLines)
       .innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
@@ -98,11 +105,18 @@ export const journalRepository = {
       )
       .groupBy(sql`date_trunc('month', ${journalEntries.entryDate})`, accounts.type),
 
+  /**
+   * Expense accounts have a debit normal balance, so spend is debit - credit:
+   * a refund credited back must reduce the bar, the same way it reduces
+   * expenditure in sumPostedByTypeAndMonth. Grouped by funds.id as well as
+   * funds.name because only `code` is unique — two funds that share a display
+   * name are two voteheads and must stay two bars.
+   */
   sumExpenseByFund: (from: string, to: string) =>
     db
       .select({
         fundName: funds.name,
-        total: sql<string>`coalesce(sum(${journalLines.debit}), 0)`,
+        total: sql<string>`coalesce(sum(${journalLines.debit} - ${journalLines.credit}), 0)`,
       })
       .from(journalLines)
       .innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
@@ -116,5 +130,5 @@ export const journalRepository = {
           lte(journalEntries.entryDate, to),
         ),
       )
-      .groupBy(funds.name),
+      .groupBy(funds.id, funds.name),
 }

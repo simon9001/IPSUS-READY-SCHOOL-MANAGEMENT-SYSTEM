@@ -33,19 +33,31 @@ export function feeCollectionChart(args: {
 }
 
 /**
- * The ledger returns one row per (month, account type). Revenue and expense are
- * the only two types that describe money in and money out; asset, liability and
- * net_assets rows are balance-sheet movements and would double-count here.
+ * The ledger returns one row per (month, account type), with debit and credit
+ * summed separately. Revenue and expense are the only two types that describe
+ * money in and money out; asset, liability and net_assets rows are balance-sheet
+ * movements and would double-count here.
+ *
+ * Netting follows the same normal-balance convention as the trial balance, which
+ * this chart sits beside on the same page: revenue is credit - debit (a credit
+ * note debited to Fee Income reduces income), expense is debit - credit (a
+ * refund credited back reduces expenditure). A month can legitimately come out
+ * negative when reversals outweigh postings, and is shown as such rather than
+ * clamped — a hidden negative would misstate the year-to-date total.
  */
 export function incomeVsExpenditureChart(args: {
   buckets: Bucket[]
   rows: Array<BucketRow & { type: string }>
 }): DashboardWidget {
-  const mapped = args.rows.map((row) => ({
-    bucket: row.bucket,
-    income: row.type === 'revenue' ? row.total : 0,
-    expenditure: row.type === 'expense' ? row.total : 0,
-  }))
+  const mapped = args.rows.map((row) => {
+    const debit = toNumber(row.debit)
+    const credit = toNumber(row.credit)
+    return {
+      bucket: row.bucket,
+      income: row.type === 'revenue' ? credit - debit : 0,
+      expenditure: row.type === 'expense' ? debit - credit : 0,
+    }
+  })
 
   return {
     id: 'income-vs-expenditure',

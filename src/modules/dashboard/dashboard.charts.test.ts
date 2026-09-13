@@ -48,9 +48,9 @@ describe('incomeVsExpenditureChart', () => {
     const widget = incomeVsExpenditureChart({
       buckets,
       rows: [
-        { bucket: '2026-07-01', type: 'revenue', total: '5000' },
-        { bucket: '2026-07-01', type: 'expense', total: '3000' },
-        { bucket: '2026-09-01', type: 'expense', total: '1200' },
+        { bucket: '2026-07-01', type: 'revenue', debit: '0', credit: '5000' },
+        { bucket: '2026-07-01', type: 'expense', debit: '3000', credit: '0' },
+        { bucket: '2026-09-01', type: 'expense', debit: '1200', credit: '0' },
       ],
     })
 
@@ -63,10 +63,43 @@ describe('incomeVsExpenditureChart', () => {
     ])
   })
 
+  // Revenue accounts have a credit normal balance, so a debit against Fee Income
+  // is a credit note and REDUCES income. Summing debit + credit would raise it.
+  it('nets a credit note debited to a revenue account out of income', () => {
+    const widget = incomeVsExpenditureChart({
+      buckets,
+      rows: [{ bucket: '2026-08-01', type: 'revenue', debit: '2000', credit: '5000' }],
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points[1].values.income).toBe(3000)
+  })
+
+  // Mirror case: an expense refund is credited back, and must reduce spend.
+  it('nets a refund credited to an expense account out of expenditure', () => {
+    const widget = incomeVsExpenditureChart({
+      buckets,
+      rows: [{ bucket: '2026-08-01', type: 'expense', debit: '4000', credit: '1500' }],
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points[1].values.expenditure).toBe(2500)
+  })
+
+  it('matches the trial balance convention when a month is net-negative', () => {
+    const widget = incomeVsExpenditureChart({
+      buckets,
+      rows: [
+        { bucket: '2026-08-01', type: 'revenue', debit: '900', credit: '400' },
+        { bucket: '2026-08-01', type: 'expense', debit: '100', credit: '700' },
+      ],
+    })
+    if (widget.kind !== 'series') throw new Error('expected a series widget')
+    expect(widget.points[1].values).toEqual({ income: -500, expenditure: -600 })
+  })
+
   it('ignores account types that are neither revenue nor expense', () => {
     const widget = incomeVsExpenditureChart({
       buckets,
-      rows: [{ bucket: '2026-08-01', type: 'asset', total: '9999' }],
+      rows: [{ bucket: '2026-08-01', type: 'asset', debit: '9999', credit: '9999' }],
     })
     if (widget.kind !== 'series') throw new Error('expected a series widget')
     expect(widget.points[1].values).toEqual({ income: 0, expenditure: 0 })
