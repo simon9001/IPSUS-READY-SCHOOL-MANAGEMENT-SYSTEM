@@ -1,6 +1,7 @@
 import { guardiansRepository } from './guardians.repository.js'
 import { notificationsService } from '../notifications/notifications.service.js'
 import { ConflictError, ForbiddenError } from '../../common/errors.js'
+import { recordAudit } from '../../common/audit.js'
 import type { LinkGuardianInput } from './guardians.schema.js'
 
 export const guardiansService = {
@@ -37,10 +38,12 @@ export const guardiansService = {
     }
   },
 
-  async link(input: LinkGuardianInput) {
+  async link(input: LinkGuardianInput, actorUserId: number) {
     const existing = await guardiansRepository.findLink(input.userId, input.studentId)
     if (existing) throw new ConflictError('This guardian is already linked to this student')
-    return guardiansRepository.link(input)
+    const linked = await guardiansRepository.link(input)
+    await recordAudit({ userId: actorUserId, action: 'guardian.link', entityType: 'student', entityId: input.studentId, afterData: linked })
+    return linked
   },
 
   /** Resource-ownership check used by the parent portal — not an RBAC

@@ -2,6 +2,7 @@ import { disciplinaryCasesRepository } from './disciplinaryCases.repository.js'
 import { studentsRepository } from '../students/students.repository.js'
 import { guardiansService } from '../guardians/guardians.service.js'
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js'
+import { recordAudit } from '../../common/audit.js'
 import type {
   BomReviewInput,
   DecideCaseInput,
@@ -27,8 +28,9 @@ export const disciplinaryCasesService = {
     return record
   },
 
-  async open(input: OpenCaseInput) {
+  async open(input: OpenCaseInput, actorUserId: number) {
     const record = await disciplinaryCasesRepository.create(input)
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.open', entityType: 'disciplinary_case', entityId: record.id, afterData: record })
     const name = await studentName(input.studentId)
     await guardiansService.notifyGuardians(input.studentId, {
       channel: 'sms',
@@ -40,11 +42,12 @@ export const disciplinaryCasesService = {
     return record
   },
 
-  async summonParent(id: number, input: SummonParentInput) {
+  async summonParent(id: number, input: SummonParentInput, actorUserId: number) {
     const record = await this.getById(id)
     if (record.status === 'decided' || record.status === 'closed') throw new ConflictError(`Case ${id} is already ${record.status}`)
 
     const updated = await disciplinaryCasesRepository.update(id, { parentSummonsDate: input.summonsDate, status: 'parent_summoned' })
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.summon_parent', entityType: 'disciplinary_case', entityId: id, beforeData: record, afterData: updated })
     const name = await studentName(record.studentId)
     await guardiansService.notifyGuardians(record.studentId, {
       channel: 'sms',
@@ -55,23 +58,31 @@ export const disciplinaryCasesService = {
     return updated
   },
 
-  recordParentAttendance: (id: number, input: RecordParentAttendanceInput) =>
-    disciplinaryCasesRepository.update(id, { parentAttended: input.attended }),
+  async recordParentAttendance(id: number, input: RecordParentAttendanceInput, actorUserId: number) {
+    const record = await this.getById(id)
+    const updated = await disciplinaryCasesRepository.update(id, { parentAttended: input.attended })
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.record_parent_attendance', entityType: 'disciplinary_case', entityId: id, beforeData: record, afterData: updated })
+    return updated
+  },
 
-  async recordHearing(id: number, input: RecordHearingInput) {
-    await this.getById(id)
-    return disciplinaryCasesRepository.update(id, { ...input, status: 'hearing_held' })
+  async recordHearing(id: number, input: RecordHearingInput, actorUserId: number) {
+    const record = await this.getById(id)
+    const updated = await disciplinaryCasesRepository.update(id, { ...input, status: 'hearing_held' })
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.record_hearing', entityType: 'disciplinary_case', entityId: id, beforeData: record, afterData: updated })
+    return updated
   },
 
   /** Required for expulsion cases before a decision can be recorded — the
    *  Basic Education Act requires Board of Management sign-off. */
-  async bomReview(id: number, input: BomReviewInput) {
+  async bomReview(id: number, input: BomReviewInput, actorUserId: number) {
     const record = await this.getById(id)
     if (record.caseType !== 'expulsion') throw new ValidationError('BOM review only applies to expulsion cases')
-    return disciplinaryCasesRepository.update(id, { ...input, status: 'bom_reviewed' })
+    const updated = await disciplinaryCasesRepository.update(id, { ...input, status: 'bom_reviewed' })
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.bom_review', entityType: 'disciplinary_case', entityId: id, beforeData: record, afterData: updated })
+    return updated
   },
 
-  async decide(id: number, input: DecideCaseInput) {
+  async decide(id: number, input: DecideCaseInput, actorUserId: number) {
     const record = await this.getById(id)
     if (record.status === 'decided' || record.status === 'closed') throw new ConflictError(`Case ${id} is already ${record.status}`)
     if (input.decision === 'expelled' && record.status !== 'bom_reviewed') {
@@ -90,6 +101,7 @@ export const disciplinaryCasesService = {
 
     if (input.decision === 'suspended') await studentsRepository.update(record.studentId, { status: 'suspended' })
     if (input.decision === 'expelled') await studentsRepository.update(record.studentId, { status: 'expelled' })
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.decide', entityType: 'disciplinary_case', entityId: id, beforeData: record, afterData: updated })
 
     const name = await studentName(record.studentId)
     const outcomeText =
@@ -107,7 +119,7 @@ export const disciplinaryCasesService = {
     return updated
   },
 
-  async reinstate(id: number, input: ReinstateCaseInput) {
+  async reinstate(id: number, input: ReinstateCaseInput, actorUserId: number) {
     const record = await this.getById(id)
     if (record.status !== 'decided' || record.decision !== 'suspended') {
       throw new ConflictError(`Case ${id} is not a decided suspension awaiting reinstatement`)
@@ -115,6 +127,7 @@ export const disciplinaryCasesService = {
 
     await studentsRepository.update(record.studentId, { status: 'active' })
     const updated = await disciplinaryCasesRepository.update(id, { status: 'closed' })
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.reinstate', entityType: 'disciplinary_case', entityId: id, beforeData: record, afterData: updated })
 
     const name = await studentName(record.studentId)
     await guardiansService.notifyGuardians(record.studentId, {
@@ -128,5 +141,10 @@ export const disciplinaryCasesService = {
     return updated
   },
 
-  close: (id: number) => disciplinaryCasesRepository.update(id, { status: 'closed' }),
+  async close(id: number, actorUserId: number) {
+    const record = await this.getById(id)
+    const updated = await disciplinaryCasesRepository.update(id, { status: 'closed' })
+    await recordAudit({ userId: actorUserId, action: 'disciplinary_case.close', entityType: 'disciplinary_case', entityId: id, beforeData: record, afterData: updated })
+    return updated
+  },
 }

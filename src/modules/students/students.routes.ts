@@ -14,5 +14,9 @@ studentsRoutes.get('/classes/:classId/students', requirePermission('students.vie
 
 studentsRoutes.get('/', requirePermission('students.view'), studentsController.list)
 studentsRoutes.get('/:id', requirePermission('students.view'), studentsController.getById)
+// Adding stays with students.manage (the Registrar). Editing and deleting are
+// separate grants so the Dean can correct and remove records without also
+// taking on admissions.
 studentsRoutes.post('/', requirePermission('students.manage'), zValidator('json', createStudentSchema), studentsController.create)
-studentsRoutes.patch('/:id', requirePermission('students.manage'), zValidator('json', updateStudentSchema), studentsController.update)
+studentsRoutes.patch('/:id', requirePermission('students.edit'), zValidator('json', updateStudentSchema), studentsController.update)
+studentsRoutes.delete('/:id', requirePermission('students.delete'), studentsController.remove)

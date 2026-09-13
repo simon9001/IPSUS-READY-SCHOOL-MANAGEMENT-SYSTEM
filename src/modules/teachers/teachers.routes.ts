@@ -10,3 +10,4 @@ teachersRoutes.get('/', requirePermission('teachers.view'), teachersController.l
 teachersRoutes.get('/:id', requirePermission('teachers.view'), teachersController.getById)
 teachersRoutes.post('/', requirePermission('teachers.manage'), zValidator('json', createTeacherSchema), teachersController.create)
 teachersRoutes.patch('/:id', requirePermission('teachers.manage'), zValidator('json', updateTeacherSchema), teachersController.update)
+teachersRoutes.delete('/:id', requirePermission('teachers.delete'), teachersController.remove)

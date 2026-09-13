@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { classes, streams, students } from '../../db/schema/index.js'
+import { admissions, classes, streams, students } from '../../db/schema/index.js'
 import type { NewClass, NewStream, NewStudent } from './students.types.js'
 
 export const studentsRepository = {
@@ -25,4 +25,16 @@ export const studentsRepository = {
       .where(eq(students.id, id))
       .returning()
       .then((rows) => rows[0]),
+  /**
+   * One transaction. An enrolled student is always referenced by the admission
+   * that created them, so that link is cleared and the admission returned to
+   * 'admitted', ready to be enrolled again correctly. If any other table still
+   * references the student, Postgres refuses the delete and the unlink rolls
+   * back with it.
+   */
+  removeWithAdmissionUnlink: (id: number) =>
+    db.transaction(async (tx) => {
+      await tx.update(admissions).set({ studentId: null, status: 'admitted', enrolledAt: null }).where(eq(admissions.studentId, id))
+      return tx.delete(students).where(eq(students.id, id)).returning().then((rows) => rows[0])
+    }),
 }

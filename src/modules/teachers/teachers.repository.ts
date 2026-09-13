@@ -12,4 +12,5 @@ export const teachersRepository = {
   create: (data: NewTeacher) => db.insert(teachers).values(data).returning().then((rows) => rows[0]),
   update: (id: number, data: Partial<NewTeacher>) =>
     db.update(teachers).set(data).where(eq(teachers.id, id)).returning().then((rows) => rows[0]),
+  remove: (id: number) => db.delete(teachers).where(eq(teachers.id, id)).returning().then((rows) => rows[0]),
 }

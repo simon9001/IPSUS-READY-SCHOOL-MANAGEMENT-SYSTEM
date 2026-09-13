@@ -358,9 +358,9 @@ async function main() {
   console.log('Classes and streams...')
   const classes = []
   for (let level = 1; level <= 4; level++) {
-    const cls = await studentsService.createClass({ name: `Form ${level}`, level })
-    const north = await studentsService.createStream({ classId: cls.id, name: 'North' })
-    const south = await studentsService.createStream({ classId: cls.id, name: 'South' })
+    const cls = await studentsService.createClass({ name: `Form ${level}`, level }, actor('registrar@school.local'))
+    const north = await studentsService.createStream({ classId: cls.id, name: 'North' }, actor('registrar@school.local'))
+    const south = await studentsService.createStream({ classId: cls.id, name: 'South' }, actor('registrar@school.local'))
     classes.push({ ...cls, streams: [north, south] })
   }
   console.log(`  ${classes.length} classes, ${classes.length * 2} streams`)
@@ -395,7 +395,7 @@ async function main() {
         guardianName: `${chance(0.5) ? pick(FIRST_NAMES_M) : pick(FIRST_NAMES_F)} ${guardianSurname}`,
         guardianPhone: `07${randInt(10, 99)}${randInt(100000, 999999)}`,
         admissionDate: `${admissionYear}-01-06`,
-      })
+      }, actor('registrar@school.local'))
 
       allStudents.push({ id: student.id, classId: cls.id, level: cls.level, boarding, name: `${firstName} ${lastName}`, gender })
       admissionCounter++
@@ -431,7 +431,7 @@ async function main() {
       studentId: child.id,
       relationship: chance(0.5) ? 'father' : 'mother',
       isPrimary: true,
-    })
+    }, actor('registrar@school.local'))
     guardianLinks++
   }
   console.log(`  ${guardianLinks} parent logins linked to their children`)
@@ -446,7 +446,7 @@ async function main() {
       tscNumber: t.tscNumber,
       email: `${t.fullName.toLowerCase().replace(/\s+/g, '.')}@school.local`,
       phone: `07${randInt(10, 99)}${randInt(100000, 999999)}`,
-    })
+    }, DEAN)
     teacherByStaffNo.set(t.staffNo, teacher.id)
   }
 
