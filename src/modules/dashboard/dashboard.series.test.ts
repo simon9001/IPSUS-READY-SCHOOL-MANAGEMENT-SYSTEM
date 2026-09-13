@@ -136,6 +136,12 @@ describe('zeroFill', () => {
   it('returns a point per bucket even with no rows at all', () => {
     expect(zeroFill(buckets, [], ['collected'], 'month')).toHaveLength(3)
   })
+
+  it('lands a Date bucket in the right day when granularity is day', () => {
+    const days = buildBuckets('2026-09-12', 3, 'day')
+    const points = zeroFill(days, [{ bucket: new Date('2026-09-11T00:00:00.000Z'), count: '4' }], ['count'], 'day')
+    expect(points.map((p) => p.values.count)).toEqual([0, 4, 0])
+  })
 })
 
 describe('activeFiscalPeriod', () => {
