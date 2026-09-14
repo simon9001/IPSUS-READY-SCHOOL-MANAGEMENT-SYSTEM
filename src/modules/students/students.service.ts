@@ -80,4 +80,6 @@ export const studentsService = {
     broadcastChange('dashboard', 'updated')
     return { id }
   },
+
+  countActiveByClass: () => studentsRepository.countActiveByClass(),
 }

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, numeric, date, pgEnum, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, text, integer, numeric, date, pgEnum, timestamp, index } from 'drizzle-orm/pg-core'
 import { accounts } from './accounts.js'
 import { funds } from './funds.js'
 import { fiscalPeriods } from './periods.js'
@@ -40,7 +40,7 @@ export const feeInvoices = pgTable('fee_invoices', {
   status: invoiceStatusEnum('status').notNull().default('open'),
   journalEntryId: integer('journal_entry_id').references(() => journalEntries.id), // Dr Fee Debtors / Cr Fee Income
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (t) => [index('fee_invoices_invoice_date_idx').on(t.invoiceDate)])
 
 export const feeInvoiceItems = pgTable('fee_invoice_items', {
   id: serial('id').primaryKey(),
@@ -64,7 +64,7 @@ export const feePayments = pgTable('fee_payments', {
   journalEntryId: integer('journal_entry_id').references(() => journalEntries.id), // Dr Cash/Bank / Cr Fee Debtors
   receivedBy: integer('received_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (t) => [index('fee_payments_payment_date_idx').on(t.paymentDate)])
 
 export const feePaymentAllocations = pgTable('fee_payment_allocations', {
   id: serial('id').primaryKey(),

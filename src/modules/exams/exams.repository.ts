@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { examResults, examStrandResults, examTimetableEntries, exams, gradingBands, gradingScales, subjectStrands, subjects } from '../../db/schema/index.js'
 import type { NewExam, NewExamResult, NewExamStrandResult, NewExamTimetableEntry, NewGradingBand, NewGradingScale } from './exams.types.js'
@@ -73,4 +73,39 @@ export const examsRepository = {
   findTimetableByExam: (examId: number) => db.select().from(examTimetableEntries).where(eq(examTimetableEntries.examId, examId)),
   addTimetableEntry: (data: NewExamTimetableEntry) =>
     db.insert(examTimetableEntries).values(data).returning().then((rows) => rows[0]),
+
+  findLatestPublished: () =>
+    db
+      .select()
+      .from(exams)
+      .where(eq(exams.status, 'published'))
+      .orderBy(desc(exams.examDate))
+      .limit(1)
+      .then((rows) => rows[0]),
+
+  /**
+   * Ordered pedagogically, not alphabetically: `grade` is free text, so sorting
+   * on it puts B before B+ at every letter boundary on a KCSE-style scale and
+   * reduces a CBC rubric to "Approaching, Below, Exceeds, Meets". A grade
+   * distribution IS its shape, so that ordering destroys the chart.
+   *
+   * The exam's own grading scale supplies the order, via the band whose grade
+   * matches. LEFT join, so a result whose grade matches no band (a renamed band,
+   * or marks entered before the scale was applied) is still returned and still
+   * counted — dropping it would make the chart disagree with the exam — and
+   * sorts last via `nulls last`. count(distinct) rather than count(*) so the
+   * count survives a scale that somehow holds two bands with the same grade.
+   */
+  countResultsByGrade: (examId: number) =>
+    db
+      .select({ grade: examResults.grade, count: sql<number>`count(distinct ${examResults.id})::int` })
+      .from(examResults)
+      .innerJoin(exams, eq(examResults.examId, exams.id))
+      .leftJoin(
+        gradingBands,
+        and(eq(gradingBands.gradingScaleId, exams.gradingScaleId), eq(gradingBands.grade, examResults.grade)),
+      )
+      .where(eq(examResults.examId, examId))
+      .groupBy(examResults.grade)
+      .orderBy(sql`max(${gradingBands.minMarks}) desc nulls last`),
 }

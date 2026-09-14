@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { admissions, classes, streams, students } from '../../db/schema/index.js'
 import type { NewClass, NewStream, NewStudent } from './students.types.js'
@@ -37,4 +37,13 @@ export const studentsRepository = {
       await tx.update(admissions).set({ studentId: null, status: 'admitted', enrolledAt: null }).where(eq(admissions.studentId, id))
       return tx.delete(students).where(eq(students.id, id)).returning().then((rows) => rows[0])
     }),
+
+  countActiveByClass: () =>
+    db
+      .select({ className: classes.name, count: sql<number>`count(*)::int` })
+      .from(students)
+      .innerJoin(classes, eq(students.classId, classes.id))
+      .where(eq(students.status, 'active'))
+      .groupBy(classes.name)
+      .orderBy(classes.name),
 }

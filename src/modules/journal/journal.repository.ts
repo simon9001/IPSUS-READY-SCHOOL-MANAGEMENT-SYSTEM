@@ -1,6 +1,6 @@
-import { and, eq, lte, sql } from 'drizzle-orm'
+import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { accounts, journalEntries, journalLines } from '../../db/schema/index.js'
+import { accounts, funds, journalEntries, journalLines } from '../../db/schema/index.js'
 import type { NewJournalEntry, NewJournalLine, TrialBalanceRow } from './journal.types.js'
 
 export const journalRepository = {
@@ -78,4 +78,57 @@ export const journalRepository = {
       balance: 0, // computed by the service, which knows normal-balance sign rules
     }))
   },
+
+  /**
+   * Debit and credit are returned separately, NOT pre-added: netting them into
+   * "income" and "expenditure" needs the account's normal balance, which the
+   * caller knows from `type`. Summing debit + credit here would make a credit
+   * note debited to Fee Income raise income, contradicting trialBalanceRows.
+   */
+  sumPostedByTypeAndMonth: (from: string, to: string) =>
+    db
+      .select({
+        bucket: sql<string>`to_char(date_trunc('month', ${journalEntries.entryDate}), 'YYYY-MM-DD')`,
+        type: accounts.type,
+        debit: sql<string>`coalesce(sum(${journalLines.debit}), 0)`,
+        credit: sql<string>`coalesce(sum(${journalLines.credit}), 0)`,
+      })
+      .from(journalLines)
+      .innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+      .innerJoin(accounts, eq(journalLines.accountId, accounts.id))
+      .where(
+        and(
+          eq(journalEntries.status, 'posted'),
+          gte(journalEntries.entryDate, from),
+          lte(journalEntries.entryDate, to),
+        ),
+      )
+      .groupBy(sql`date_trunc('month', ${journalEntries.entryDate})`, accounts.type),
+
+  /**
+   * Expense accounts have a debit normal balance, so spend is debit - credit:
+   * a refund credited back must reduce the bar, the same way it reduces
+   * expenditure in sumPostedByTypeAndMonth. Grouped by funds.id as well as
+   * funds.name because only `code` is unique — two funds that share a display
+   * name are two voteheads and must stay two bars.
+   */
+  sumExpenseByFund: (from: string, to: string) =>
+    db
+      .select({
+        fundName: funds.name,
+        total: sql<string>`coalesce(sum(${journalLines.debit} - ${journalLines.credit}), 0)`,
+      })
+      .from(journalLines)
+      .innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+      .innerJoin(accounts, eq(journalLines.accountId, accounts.id))
+      .innerJoin(funds, eq(journalLines.fundId, funds.id))
+      .where(
+        and(
+          eq(journalEntries.status, 'posted'),
+          eq(accounts.type, 'expense'),
+          gte(journalEntries.entryDate, from),
+          lte(journalEntries.entryDate, to),
+        ),
+      )
+      .groupBy(funds.id, funds.name),
 }

@@ -85,6 +85,20 @@
       "when": 1789151712001,
       "tag": "0011_add_avatar_url",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789236253473,
+      "tag": "0012_tough_the_watchers",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789284598975,
+      "tag": "0013_shocking_violations",
+      "breakpoints": true
     }
   ]
 }

@@ -29,6 +29,9 @@ import { noticesService } from '../notices/notices.service.js'
 import { identityService } from '../identity/identity.service.js'
 import { systemService } from '../system/system.service.js'
 import { periodsService } from '../periods/periods.service.js'
+import { attendanceService } from '../attendance/attendance.service.js'
+import { buildBuckets, activeFiscalPeriod } from './dashboard.series.js'
+import { feeCollectionChart, incomeVsExpenditureChart, spendByFundChart, attendanceRateChart, enrolmentByClassChart, gradeDistributionChart } from './dashboard.charts.js'
 import type { DashboardSectionId, DashboardWidget } from './dashboard.types.js'
 
 interface WidgetContext {
@@ -84,6 +87,16 @@ export const WIDGETS: WidgetDef[] = [
     },
   },
   {
+    id: 'income-vs-expenditure',
+    section: 'financial',
+    requiredPermission: 'ledger.journal.view',
+    async build({ asOfDate }) {
+      const buckets = buildBuckets(asOfDate, 6, 'month')
+      const rows = await journalService.sumPostedByTypeAndMonth(buckets[0].start, buckets[buckets.length - 1].end)
+      return incomeVsExpenditureChart({ buckets, rows })
+    },
+  },
+  {
     id: 'fees-overview',
     section: 'financial',
     requiredPermission: 'fees.view',
@@ -101,6 +114,31 @@ export const WIDGETS: WidgetDef[] = [
           ...[...byStatus.entries()].map(([status, count]) => ({ label: `Invoices ${status}`, value: String(count) })),
         ],
       }
+    },
+  },
+  {
+    id: 'fee-collection-trend',
+    section: 'financial',
+    requiredPermission: 'fees.view',
+    async build({ asOfDate }) {
+      const buckets = buildBuckets(asOfDate, 6, 'month')
+      const [from, to] = [buckets[0].start, buckets[buckets.length - 1].end]
+      const [paymentRows, invoiceRows] = await Promise.all([
+        feesService.sumPaymentsByMonth(from, to),
+        feesService.sumInvoicedByMonth(from, to),
+      ])
+      return feeCollectionChart({ buckets, paymentRows, invoiceRows })
+    },
+  },
+  {
+    id: 'spend-by-fund',
+    section: 'financial',
+    requiredPermission: 'ledger.journal.view',
+    async build({ asOfDate }) {
+      const period = activeFiscalPeriod(await periodsService.list(), asOfDate)
+      if (!period) return spendByFundChart({ rows: [] })
+      const rows = await journalService.sumExpenseByFund(period.startDate, period.endDate)
+      return spendByFundChart({ rows, periodName: period.name })
     },
   },
   {
@@ -690,6 +728,34 @@ export const WIDGETS: WidgetDef[] = [
           ...[...byStatus.entries()].map(([status, count]) => ({ label: status.replace(/_/g, ' '), value: String(count) })),
         ],
       }
+    },
+  },
+  {
+    id: 'attendance-rate-trend',
+    section: 'students',
+    requiredPermission: 'attendance.view',
+    async build({ asOfDate }) {
+      const buckets = buildBuckets(asOfDate, 30, 'day')
+      const rows = await attendanceService.countByStatusAndDay(buckets[0].start, buckets[buckets.length - 1].end)
+      return attendanceRateChart({ buckets, rows })
+    },
+  },
+  {
+    id: 'enrolment-by-class',
+    section: 'students',
+    requiredPermission: 'students.view',
+    async build() {
+      return enrolmentByClassChart({ rows: await studentsService.countActiveByClass() })
+    },
+  },
+  {
+    id: 'exam-grade-distribution',
+    section: 'students',
+    requiredPermission: 'exams.view',
+    async build() {
+      const exam = await examsService.findLatestPublished()
+      if (!exam) return gradeDistributionChart({ rows: [] })
+      return gradeDistributionChart({ rows: await examsService.countResultsByGrade(exam.id), examName: exam.name })
     },
   },
 

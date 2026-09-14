@@ -133,4 +133,8 @@ export const journalService = {
       isBalanced: Math.round(totalDebit * 100) === Math.round(totalCredit * 100),
     }
   },
+
+  sumPostedByTypeAndMonth: (from: string, to: string) => journalRepository.sumPostedByTypeAndMonth(from, to),
+
+  sumExpenseByFund: (from: string, to: string) => journalRepository.sumExpenseByFund(from, to),
 }
