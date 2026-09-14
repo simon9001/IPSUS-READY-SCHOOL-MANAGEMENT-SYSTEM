@@ -1,5 +1,6 @@
-import { pgTable, serial, varchar, integer, text, boolean, pgEnum, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, integer, text, boolean, pgEnum, timestamp, index } from 'drizzle-orm/pg-core'
 import { users } from './identity.js'
+import { messageBatches } from './messaging.js'
 
 export const notificationChannelEnum = pgEnum('notification_channel', ['sms', 'email', 'in_app'])
 
@@ -12,12 +13,15 @@ export const notificationTemplates = pgTable('notification_templates', {
   isActive: boolean('is_active').notNull().default(true),
 })
 
-export const notificationStatusEnum = pgEnum('notification_status', ['pending', 'sent', 'failed'])
+// 'sending' = claimed by the background sender; 'skipped' = never attempted
+// because the recipient has no usable destination for this channel.
+export const notificationStatusEnum = pgEnum('notification_status', ['pending', 'sent', 'failed', 'sending', 'skipped'])
 
 export const notifications = pgTable('notifications', {
   id: serial('id').primaryKey(),
   templateId: integer('template_id').references(() => notificationTemplates.id),
   recipientUserId: integer('recipient_user_id').references(() => users.id),
+  recipientName: varchar('recipient_name', { length: 150 }), // snapshot: many parents have no user row
   recipientPhone: varchar('recipient_phone', { length: 30 }), // snapshot at send time
   recipientEmail: varchar('recipient_email', { length: 150 }),
   channel: notificationChannelEnum('channel').notNull(),
@@ -26,8 +30,10 @@ export const notifications = pgTable('notifications', {
   status: notificationStatusEnum('status').notNull().default('pending'),
   relatedEntityType: varchar('related_entity_type', { length: 60 }), // e.g. 'fee_invoice', 'exam'
   relatedEntityId: varchar('related_entity_id', { length: 60 }),
+  batchId: integer('batch_id').references(() => messageBatches.id),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }), // when the background sender took the row
   sentAt: timestamp('sent_at', { withTimezone: true }),
   failureReason: text('failure_reason'),
   createdBy: integer('created_by').references(() => users.id), // null = system-generated
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (t) => [index('notifications_batch_id_status_idx').on(t.batchId, t.status)])
