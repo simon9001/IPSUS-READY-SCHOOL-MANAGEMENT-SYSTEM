@@ -7,8 +7,12 @@ import { users } from './identity.js'
 // tightly (see the RBAC 'counseling.access' permission, not *.view).
 export const counselingSessions = pgTable('counseling_sessions', {
   id: serial('id').primaryKey(),
-  studentId: integer('student_id').notNull().references(() => students.id),
-  counselorId: integer('counselor_id').notNull().references(() => users.id),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id),
+  counselorId: integer('counselor_id')
+    .notNull()
+    .references(() => users.id),
   sessionDate: date('session_date').notNull(),
   category: varchar('category', { length: 40 }), // 'academic' | 'behavioral' | 'family' | 'emotional' | 'career' | 'other'
   notes: text('notes'),

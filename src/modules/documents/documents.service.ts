@@ -4,12 +4,7 @@ import { examsService } from '../exams/exams.service.js'
 import { feesService } from '../fees/fees.service.js'
 import { renderTemplate } from '../../common/template.js'
 import { NotFoundError, ValidationError } from '../../common/errors.js'
-import type {
-  CreateTemplateInput,
-  GenerateFeeClearanceInput,
-  GenerateTranscriptInput,
-  RenderLetterInput,
-} from './documents.schema.js'
+import type { CreateTemplateInput, GenerateFeeClearanceInput, GenerateTranscriptInput, RenderLetterInput } from './documents.schema.js'
 import type { Transcript } from './documents.types.js'
 
 function nextReferenceNumber(): string {

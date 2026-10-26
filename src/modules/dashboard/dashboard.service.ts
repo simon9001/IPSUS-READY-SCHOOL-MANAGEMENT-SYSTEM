@@ -1,5 +1,6 @@
 import { SECTION_ORDER, SECTION_TITLES, WIDGETS, hasGate } from './dashboard.widgets.js'
 import type { DashboardSummary } from './dashboard.types.js'
+import { logger } from '../../common/logger.js'
 
 export const dashboardService = {
   async summary(permissions: string[], asOfDate: string): Promise<DashboardSummary> {
@@ -8,7 +9,7 @@ export const dashboardService = {
     const settled = await Promise.allSettled(applicable.map((w) => w.build({ asOfDate, permissions })))
     const widgets = settled.flatMap((result, i) => {
       if (result.status === 'fulfilled') return [{ section: applicable[i].section, widget: result.value }]
-      console.error(`Dashboard widget "${applicable[i].id}" failed:`, result.reason)
+      logger.error({ widget: applicable[i].id, err: result.reason }, 'dashboard widget failed')
       return []
     })
 

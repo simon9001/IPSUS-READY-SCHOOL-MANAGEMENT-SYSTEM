@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Patch/minor bumps of dev tooling arrive as one PR instead of a dozen.
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # TypeScript 7 is installed under the `typescript7` alias and the
+      # `typescript` name is pinned to the TS 6 API for typescript-eslint —
+      # see the README "Tooling" section. Move both together, by hand.
+      - dependency-name: typescript
+      - dependency-name: typescript7
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

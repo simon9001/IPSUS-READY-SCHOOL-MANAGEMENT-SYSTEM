@@ -27,7 +27,13 @@ export const systemRepository = {
    *  cannot log in right now. */
   lockedOutUsers: () =>
     db
-      .select({ id: users.id, email: users.email, fullName: users.fullName, lockedUntil: users.lockedUntil, failedLoginAttempts: users.failedLoginAttempts })
+      .select({
+        id: users.id,
+        email: users.email,
+        fullName: users.fullName,
+        lockedUntil: users.lockedUntil,
+        failedLoginAttempts: users.failedLoginAttempts,
+      })
       .from(users)
       .where(gt(users.lockedUntil, new Date())),
 

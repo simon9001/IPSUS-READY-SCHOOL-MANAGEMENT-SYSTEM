@@ -10,4 +10,9 @@ export const counselingRoutes = new Hono()
 // same reasoning as health records: counselor/principal only.
 counselingRoutes.get('/students/:studentId', requirePermission('counseling.access'), counselingController.listByStudent)
 counselingRoutes.get('/:id', requirePermission('counseling.access'), counselingController.getById)
-counselingRoutes.post('/', requirePermission('counseling.manage'), zValidator('json', createCounselingSessionSchema), counselingController.create)
+counselingRoutes.post(
+  '/',
+  requirePermission('counseling.manage'),
+  zValidator('json', createCounselingSessionSchema),
+  counselingController.create,
+)

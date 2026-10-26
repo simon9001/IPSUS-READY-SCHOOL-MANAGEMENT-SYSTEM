@@ -10,13 +10,20 @@ export const disciplinaryCaseTypeEnum = pgEnum('disciplinary_case_type', ['suspe
 // — the Basic Education Act requires Board of Management sign-off before a
 // student can be expelled.
 export const disciplinaryCaseStatusEnum = pgEnum('disciplinary_case_status', [
-  'opened', 'parent_summoned', 'hearing_held', 'bom_reviewed', 'decided', 'closed',
+  'opened',
+  'parent_summoned',
+  'hearing_held',
+  'bom_reviewed',
+  'decided',
+  'closed',
 ])
 export const disciplinaryDecisionEnum = pgEnum('disciplinary_decision', ['suspended', 'expelled', 'reinstated', 'dismissed'])
 
 export const disciplinaryCases = pgTable('disciplinary_cases', {
   id: serial('id').primaryKey(),
-  studentId: integer('student_id').notNull().references(() => students.id),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id),
   disciplineRecordId: integer('discipline_record_id').references(() => disciplineRecords.id),
   caseType: disciplinaryCaseTypeEnum('case_type').notNull(),
   status: disciplinaryCaseStatusEnum('status').notNull().default('opened'),
@@ -36,7 +43,9 @@ export const disciplinaryCases = pgTable('disciplinary_cases', {
   suspensionEndDate: date('suspension_end_date'),
   reAdmissionDate: date('re_admission_date'),
 
-  openedBy: integer('opened_by').notNull().references(() => users.id),
+  openedBy: integer('opened_by')
+    .notNull()
+    .references(() => users.id),
   openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
   decidedBy: integer('decided_by').references(() => users.id),
   decidedAt: timestamp('decided_at', { withTimezone: true }),

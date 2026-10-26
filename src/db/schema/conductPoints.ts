@@ -16,12 +16,18 @@ export const conductPointRules = pgTable('conduct_point_rules', {
 // trial balance.
 export const conductPoints = pgTable('conduct_points', {
   id: serial('id').primaryKey(),
-  studentId: integer('student_id').notNull().references(() => students.id),
-  periodId: integer('period_id').notNull().references(() => fiscalPeriods.id),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id),
+  periodId: integer('period_id')
+    .notNull()
+    .references(() => fiscalPeriods.id),
   ruleId: integer('rule_id').references(() => conductPointRules.id),
   points: integer('points').notNull(),
   reason: text('reason'),
   disciplineRecordId: integer('discipline_record_id').references(() => disciplineRecords.id),
-  awardedBy: integer('awarded_by').notNull().references(() => users.id),
+  awardedBy: integer('awarded_by')
+    .notNull()
+    .references(() => users.id),
   awardedAt: timestamp('awarded_at', { withTimezone: true }).notNull().defaultNow(),
 })

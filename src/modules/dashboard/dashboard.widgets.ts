@@ -48,8 +48,7 @@ const hasGate = (permissions: string[], gate: string | string[]) =>
 
 const money = (n: number) => `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const daysUntil = (asOfDate: string, date: string) =>
-  Math.round((new Date(date).getTime() - new Date(asOfDate).getTime()) / 86_400_000)
+const daysUntil = (asOfDate: string, date: string) => Math.round((new Date(date).getTime() - new Date(asOfDate).getTime()) / 86_400_000)
 
 // Shared by inventory-overview (inventory.view) and inventory-low-stock
 // (inventory.manage) so the two widgets never disagree on the numbers.
@@ -117,7 +116,10 @@ export const WIDGETS: WidgetDef[] = [
         kind: 'stats',
         stats: [
           { label: 'Total Budgets', value: String(budgets.length) },
-          ...[...byStatus.entries()].map(([status, count]) => ({ label: `${status[0].toUpperCase()}${status.slice(1)}`, value: String(count) })),
+          ...[...byStatus.entries()].map(([status, count]) => ({
+            label: `${status[0].toUpperCase()}${status.slice(1)}`,
+            value: String(count),
+          })),
         ],
       }
     },
@@ -156,8 +158,15 @@ export const WIDGETS: WidgetDef[] = [
         title: 'Procurement',
         kind: 'stats',
         stats: [
-          { label: 'Requisitions Awaiting Approval', value: String(requisitions.filter((r) => r.status === 'submitted').length), tone: 'warning' },
-          { label: 'Purchase Orders Open', value: String(pos.filter((p) => p.status === 'issued' || p.status === 'partially_received').length) },
+          {
+            label: 'Requisitions Awaiting Approval',
+            value: String(requisitions.filter((r) => r.status === 'submitted').length),
+            tone: 'warning',
+          },
+          {
+            label: 'Purchase Orders Open',
+            value: String(pos.filter((p) => p.status === 'issued' || p.status === 'partially_received').length),
+          },
           { label: 'Invoices Pending Payment', value: String(invoices.filter((i) => i.status === 'pending').length) },
         ],
       }
@@ -235,7 +244,11 @@ export const WIDGETS: WidgetDef[] = [
         kind: 'stats',
         stats: [
           { label: 'Bank Accounts', value: String(accounts.filter((a) => a.isActive).length) },
-          { label: 'Outstanding Imprest', value: String(outstandingImprest.length), tone: outstandingImprest.length > 0 ? 'warning' : 'default' },
+          {
+            label: 'Outstanding Imprest',
+            value: String(outstandingImprest.length),
+            tone: outstandingImprest.length > 0 ? 'warning' : 'default',
+          },
         ],
       }
     },
@@ -292,7 +305,13 @@ export const WIDGETS: WidgetDef[] = [
           rows.push({ label: i.invoiceNo, sublabel: 'Invoice pending payment', value: money(Number(i.amount)), tone: 'warning' })
         }
       }
-      return { id: 'procurement-approvals-pending', title: 'Procurement Awaiting Your Action', kind: 'list', emptyText: 'Nothing awaiting approval.', rows }
+      return {
+        id: 'procurement-approvals-pending',
+        title: 'Procurement Awaiting Your Action',
+        kind: 'list',
+        emptyText: 'Nothing awaiting approval.',
+        rows,
+      }
     },
   },
   {
@@ -405,22 +424,46 @@ export const WIDGETS: WidgetDef[] = [
       const drift = await systemService.rbacDrift()
       const rows: { label: string; sublabel?: string; tone?: 'warning' | 'danger' }[] = []
       if (drift.missingPermissions.length > 0) {
-        rows.push({ label: `${drift.missingPermissions.length} permission(s) not in the database`, sublabel: drift.missingPermissions.slice(0, 4).join(', '), tone: 'danger' })
+        rows.push({
+          label: `${drift.missingPermissions.length} permission(s) not in the database`,
+          sublabel: drift.missingPermissions.slice(0, 4).join(', '),
+          tone: 'danger',
+        })
       }
       if (drift.missingRoles.length > 0) {
-        rows.push({ label: `${drift.missingRoles.length} role(s) not in the database`, sublabel: drift.missingRoles.slice(0, 4).join(', '), tone: 'danger' })
+        rows.push({
+          label: `${drift.missingRoles.length} role(s) not in the database`,
+          sublabel: drift.missingRoles.slice(0, 4).join(', '),
+          tone: 'danger',
+        })
       }
       if (drift.missingRolePermissions.length > 0) {
-        rows.push({ label: `${drift.missingRolePermissions.length} role grant(s) not applied`, sublabel: 'Run pnpm db:sync-rbac to apply them', tone: 'warning' })
+        rows.push({
+          label: `${drift.missingRolePermissions.length} role grant(s) not applied`,
+          sublabel: 'Run pnpm db:sync-rbac to apply them',
+          tone: 'warning',
+        })
       }
       if (drift.orphanRolePermissions.length > 0) {
-        rows.push({ label: `${drift.orphanRolePermissions.length} grant(s) the database still makes but rbac.ts does not`, sublabel: 'Access narrowed in code was never revoked in the database', tone: 'danger' })
+        rows.push({
+          label: `${drift.orphanRolePermissions.length} grant(s) the database still makes but rbac.ts does not`,
+          sublabel: 'Access narrowed in code was never revoked in the database',
+          tone: 'danger',
+        })
       }
       if (drift.orphanPermissions.length > 0) {
-        rows.push({ label: `${drift.orphanPermissions.length} permission(s) no longer in rbac.ts`, sublabel: drift.orphanPermissions.slice(0, 4).join(', '), tone: 'warning' })
+        rows.push({
+          label: `${drift.orphanPermissions.length} permission(s) no longer in rbac.ts`,
+          sublabel: drift.orphanPermissions.slice(0, 4).join(', '),
+          tone: 'warning',
+        })
       }
       if (drift.orphanRoles.length > 0) {
-        rows.push({ label: `${drift.orphanRoles.length} role(s) no longer in rbac.ts`, sublabel: drift.orphanRoles.slice(0, 4).join(', '), tone: 'warning' })
+        rows.push({
+          label: `${drift.orphanRoles.length} role(s) no longer in rbac.ts`,
+          sublabel: drift.orphanRoles.slice(0, 4).join(', '),
+          tone: 'warning',
+        })
       }
       return { id: 'rbac-drift', title: 'RBAC Catalogue Drift', kind: 'list', emptyText: 'Database matches rbac.ts.', rows }
     },
@@ -573,7 +616,9 @@ export const WIDGETS: WidgetDef[] = [
         kind: 'stats',
         stats: [
           { label: 'Active Students', value: String(active.length) },
-          ...[...byClass.entries()].slice(0, 5).map(([classId, count]) => ({ label: classNameById.get(classId) ?? `Class #${classId}`, value: String(count) })),
+          ...[...byClass.entries()]
+            .slice(0, 5)
+            .map(([classId, count]) => ({ label: classNameById.get(classId) ?? `Class #${classId}`, value: String(count) })),
         ],
       }
     },
@@ -723,7 +768,10 @@ export const WIDGETS: WidgetDef[] = [
         id: 'leave-overview',
         title: 'Leave',
         kind: 'stats',
-        stats: [...byStatus.entries()].map(([status, count]) => ({ label: `${status[0].toUpperCase()}${status.slice(1)}`, value: String(count) })),
+        stats: [...byStatus.entries()].map(([status, count]) => ({
+          label: `${status[0].toUpperCase()}${status.slice(1)}`,
+          value: String(count),
+        })),
       }
     },
   },
@@ -915,6 +963,15 @@ export const SECTION_TITLES: Record<DashboardSectionId, string> = {
   general: 'General',
 }
 
-export const SECTION_ORDER: DashboardSectionId[] = ['attention', 'system', 'financial', 'students', 'hr', 'welfare', 'compliance', 'general']
+export const SECTION_ORDER: DashboardSectionId[] = [
+  'attention',
+  'system',
+  'financial',
+  'students',
+  'hr',
+  'welfare',
+  'compliance',
+  'general',
+]
 
 export { hasGate }

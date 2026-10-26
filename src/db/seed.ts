@@ -53,12 +53,27 @@ async function seed() {
   console.log('Seeding funds / voteheads...')
 
   await db.insert(funds).values([
-    { code: 'FUND-CAP', name: 'Government Capitation (FDSE)', restrictionType: 'restricted', restrictionNotes: 'Restricted to tuition and approved operational voteheads per MoE capitation guidelines.' },
+    {
+      code: 'FUND-CAP',
+      name: 'Government Capitation (FDSE)',
+      restrictionType: 'restricted',
+      restrictionNotes: 'Restricted to tuition and approved operational voteheads per MoE capitation guidelines.',
+    },
     { code: 'FUND-TUI', name: 'Tuition Fund', restrictionType: 'unrestricted' },
     { code: 'FUND-BRD', name: 'Boarding Fund', restrictionType: 'unrestricted' },
-    { code: 'FUND-DEV', name: 'Development Fund', restrictionType: 'restricted', restrictionNotes: 'Restricted to capital projects as approved by BOM/parents.' },
+    {
+      code: 'FUND-DEV',
+      name: 'Development Fund',
+      restrictionType: 'restricted',
+      restrictionNotes: 'Restricted to capital projects as approved by BOM/parents.',
+    },
     { code: 'FUND-PTA', name: 'PTA Fund', restrictionType: 'unrestricted' },
-    { code: 'FUND-BUR', name: 'Bursary / CDF Fund', restrictionType: 'restricted', restrictionNotes: 'Restricted to designated beneficiary students.' },
+    {
+      code: 'FUND-BUR',
+      name: 'Bursary / CDF Fund',
+      restrictionType: 'restricted',
+      restrictionNotes: 'Restricted to designated beneficiary students.',
+    },
     { code: 'FUND-TRD', name: 'Trading Activities (Farm/Shop)', restrictionType: 'unrestricted' },
   ])
 
@@ -76,10 +91,7 @@ async function seed() {
 
   console.log('Seeding roles and role-permission mappings...')
   for (const role of ROLES) {
-    const [insertedRole] = await db
-      .insert(roles)
-      .values({ code: role.code, name: role.name, description: role.description })
-      .returning()
+    const [insertedRole] = await db.insert(roles).values({ code: role.code, name: role.name, description: role.description }).returning()
 
     const mappings = [...new Set(role.permissions)]
       .map((code) => permissionIdByCode.get(code))

@@ -9,11 +9,9 @@ export const fundsController = {
 
   getById: async (c: Context) => ok(c, await fundsService.getById(Number(c.req.param('id')))),
 
-  create: async (c: Context) =>
-    created(c, await fundsService.create(getValidated<CreateFundInput>(c, 'json'))),
+  create: async (c: Context) => created(c, await fundsService.create(getValidated<CreateFundInput>(c, 'json'))),
 
-  update: async (c: Context) =>
-    ok(c, await fundsService.update(Number(c.req.param('id')), getValidated<UpdateFundInput>(c, 'json'))),
+  update: async (c: Context) => ok(c, await fundsService.update(Number(c.req.param('id')), getValidated<UpdateFundInput>(c, 'json'))),
 
   deactivate: async (c: Context) => ok(c, await fundsService.deactivate(Number(c.req.param('id')))),
 }

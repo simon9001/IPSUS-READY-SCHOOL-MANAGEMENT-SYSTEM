@@ -20,7 +20,12 @@ export const timetableService = {
     )
     if (classConflict) throw new ConflictError('This class/stream already has a lesson scheduled in that day/period slot')
 
-    const teacherConflict = await timetableRepository.findTeacherSlotConflict(input.teacherId, input.dayOfWeek, input.lessonPeriodId, input.periodId)
+    const teacherConflict = await timetableRepository.findTeacherSlotConflict(
+      input.teacherId,
+      input.dayOfWeek,
+      input.lessonPeriodId,
+      input.periodId,
+    )
     if (teacherConflict) throw new ConflictError('This teacher is already scheduled elsewhere in that day/period slot')
 
     return timetableRepository.create(input)

@@ -6,8 +6,7 @@ import type { CreateLeaveRequestInput, CreateLeaveTypeInput, DecideLeaveRequestI
 
 export const leaveController = {
   listTypes: async (c: Context) => ok(c, await leaveService.listTypes()),
-  createType: async (c: Context) =>
-    created(c, await leaveService.createType(getValidated<CreateLeaveTypeInput>(c, 'json'))),
+  createType: async (c: Context) => created(c, await leaveService.createType(getValidated<CreateLeaveTypeInput>(c, 'json'))),
 
   list: async (c: Context) => ok(c, await leaveService.list()),
   listByStaff: async (c: Context) => ok(c, await leaveService.listByStaff(Number(c.req.param('staffId')))),

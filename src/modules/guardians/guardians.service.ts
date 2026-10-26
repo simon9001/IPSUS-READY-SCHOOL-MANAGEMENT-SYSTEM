@@ -2,6 +2,7 @@ import { guardiansRepository } from './guardians.repository.js'
 import { notificationsService } from '../notifications/notifications.service.js'
 import { ConflictError, ForbiddenError } from '../../common/errors.js'
 import type { LinkGuardianInput } from './guardians.schema.js'
+import { logger } from '../../common/logger.js'
 
 export const guardiansService = {
   listStudentsForGuardian: (userId: number) => guardiansRepository.findStudentsByGuardian(userId),
@@ -14,7 +15,14 @@ export const guardiansService = {
    */
   async notifyGuardians(
     studentId: number,
-    params: { channel: 'sms' | 'email' | 'in_app'; subject?: string; body: string; relatedEntityType?: string; relatedEntityId?: string; createdBy?: number },
+    params: {
+      channel: 'sms' | 'email' | 'in_app'
+      subject?: string
+      body: string
+      relatedEntityType?: string
+      relatedEntityId?: string
+      createdBy?: number
+    },
   ) {
     try {
       const links = await guardiansRepository.findGuardiansByStudent(studentId)
@@ -33,7 +41,7 @@ export const guardiansService = {
         ),
       )
     } catch (err) {
-      console.error(`Failed to notify guardians of student ${studentId}:`, err)
+      logger.error({ studentId, err }, 'failed to notify guardians')
     }
   },
 

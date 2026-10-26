@@ -122,12 +122,7 @@ export const searchService = {
           status: budgets.status,
         })
         .from(budgets)
-        .where(
-          or(
-            ilike(budgets.name, pattern),
-            ilike(sql`CAST(${budgets.fiscalYear} AS TEXT)`, pattern),
-          ),
-        )
+        .where(or(ilike(budgets.name, pattern), ilike(sql`CAST(${budgets.fiscalYear} AS TEXT)`, pattern)))
         .limit(4)
 
       for (const r of budgetRows) {
@@ -152,12 +147,7 @@ export const searchService = {
           status: purchaseRequisitions.status,
         })
         .from(purchaseRequisitions)
-        .where(
-          or(
-            ilike(purchaseRequisitions.requisitionNo, pattern),
-            ilike(purchaseRequisitions.department, pattern),
-          ),
-        )
+        .where(or(ilike(purchaseRequisitions.requisitionNo, pattern), ilike(purchaseRequisitions.department, pattern)))
         .limit(4)
 
       for (const r of reqRows) {
@@ -201,13 +191,7 @@ export const searchService = {
           contactPerson: suppliers.contactPerson,
         })
         .from(suppliers)
-        .where(
-          or(
-            ilike(suppliers.name, pattern),
-            ilike(suppliers.kraPin, pattern),
-            ilike(suppliers.contactPerson, pattern),
-          ),
-        )
+        .where(or(ilike(suppliers.name, pattern), ilike(suppliers.kraPin, pattern), ilike(suppliers.contactPerson, pattern)))
         .limit(4)
 
       for (const r of suppRows) {
@@ -328,12 +312,7 @@ export const searchService = {
           code: subjects.code,
         })
         .from(subjects)
-        .where(
-          or(
-            ilike(subjects.name, pattern),
-            ilike(subjects.code, pattern),
-          ),
-        )
+        .where(or(ilike(subjects.name, pattern), ilike(subjects.code, pattern)))
         .limit(4)
 
       for (const r of subjRows) {
@@ -358,13 +337,7 @@ export const searchService = {
           description: assets.description,
         })
         .from(assets)
-        .where(
-          or(
-            ilike(assets.name, pattern),
-            ilike(assets.assetTag, pattern),
-            ilike(assets.description, pattern),
-          ),
-        )
+        .where(or(ilike(assets.name, pattern), ilike(assets.assetTag, pattern), ilike(assets.description, pattern)))
         .limit(4)
 
       for (const r of assetRows) {
@@ -387,13 +360,7 @@ export const searchService = {
           category: inventoryItems.category,
         })
         .from(inventoryItems)
-        .where(
-          or(
-            ilike(inventoryItems.name, pattern),
-            ilike(inventoryItems.itemCode, pattern),
-            ilike(inventoryItems.category, pattern),
-          ),
-        )
+        .where(or(ilike(inventoryItems.name, pattern), ilike(inventoryItems.itemCode, pattern), ilike(inventoryItems.category, pattern)))
         .limit(4)
 
       for (const r of invItemRows) {

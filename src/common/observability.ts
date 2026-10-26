@@ -1,5 +1,7 @@
 import type { Context, Next } from 'hono'
+import { randomUUID } from 'node:crypto'
 import client from 'prom-client'
+import { logger } from './logger.js'
 
 // ---- Prometheus metrics ----
 // One registry for everything this process exposes. collectDefaultMetrics
@@ -37,21 +39,23 @@ function routeLabel(c: Context): string {
   return c.req.routePath || c.req.path
 }
 
-// ---- Terminal request/error logging ----
-// ANSI color codes, no extra dependency — green/yellow/red by status class,
-// matching the convention most HTTP loggers use so the pattern is
-// recognizable at a glance in a scrolling terminal.
-const RESET = '\x1b[0m'
-const DIM = '\x1b[2m'
-function colorForStatus(status: number): string {
-  if (status >= 500) return '\x1b[31m' // red
-  if (status >= 400) return '\x1b[33m' // yellow
-  if (status >= 300) return '\x1b[36m' // cyan
-  return '\x1b[32m' // green
+// ---- Structured request/error logging ----
+// One JSON log line per request (pretty-printed in a dev terminal — see
+// logger.ts). Each request gets an id, echoed back as X-Request-Id, so a
+// user-reported failure can be matched to its log lines; an incoming
+// X-Request-Id from a proxy is reused rather than replaced.
+function levelForStatus(status: number): 'error' | 'warn' | 'info' {
+  if (status >= 500) return 'error'
+  if (status >= 400) return 'warn'
+  return 'info'
 }
 
 export async function requestLogger(c: Context, next: Next) {
   const start = performance.now()
+  const requestId = c.req.header('x-request-id') || randomUUID()
+  c.set('requestId', requestId)
+  c.header('X-Request-Id', requestId)
+
   // A downstream handler throwing (e.g. requirePermission's 403, or a
   // NotFoundError) rejects this next() call — without the try/catch here,
   // that exception would skip straight past everything below and up to
@@ -68,11 +72,17 @@ export async function requestLogger(c: Context, next: Next) {
   const durationMs = performance.now() - start
   const status = thrown ? statusFromError(thrown) : c.res.status
   const user = c.get('user') as { id: number } | undefined
-  const color = colorForStatus(status)
-  const actor = user ? `user#${user.id}` : 'anon'
 
-  console.log(
-    `${DIM}${new Date().toISOString()}${RESET} ${color}${status}${RESET} ${c.req.method} ${c.req.path} ${DIM}${durationMs.toFixed(1)}ms ${actor}${RESET}`,
+  logger[levelForStatus(status)](
+    {
+      requestId,
+      method: c.req.method,
+      path: c.req.path,
+      status,
+      durationMs: Math.round(durationMs * 10) / 10,
+      userId: user?.id ?? null,
+    },
+    'request completed',
   )
 
   const route = routeLabel(c)
@@ -90,14 +100,21 @@ function statusFromError(err: unknown): number {
 
 // Called from index.ts's onError handler so every thrown error — expected
 // (AppError, e.g. a 403 from requirePermission) or not — leaves a visible
-// trace in the terminal instead of only the client seeing it. Repeated 403s
+// trace in the logs instead of only the client seeing it. Repeated 403s
 // from one IP/user are exactly the kind of pattern this is meant to surface.
+// Stack traces are only attached for 5xx; a 4xx is the caller's mistake.
 export function logError(c: Context, err: unknown, statusCode: number) {
-  const message = err instanceof Error ? err.message : String(err)
-  const stack = err instanceof Error && statusCode >= 500 ? `\n${err.stack}` : ''
-  console.error(
-    `${DIM}${new Date().toISOString()}${RESET} \x1b[31m${statusCode}${RESET} ${c.req.method} ${c.req.path} — ${message}${stack}`,
-  )
+  const fields = {
+    requestId: c.get('requestId') as string | undefined,
+    method: c.req.method,
+    path: c.req.path,
+    status: statusCode,
+  }
+  if (statusCode >= 500) {
+    logger.error({ ...fields, err }, 'unhandled error')
+  } else {
+    logger.warn({ ...fields, reason: err instanceof Error ? err.message : String(err) }, 'request rejected')
+  }
 }
 
 export async function metricsHandler(c: Context) {

@@ -1,4 +1,10 @@
-import type { bankAccounts, bankReconciliations, bankReconciliationItems, imprestRequests, imprestRetirements } from '../../db/schema/index.js'
+import type {
+  bankAccounts,
+  bankReconciliations,
+  bankReconciliationItems,
+  imprestRequests,
+  imprestRetirements,
+} from '../../db/schema/index.js'
 
 export type BankAccount = typeof bankAccounts.$inferSelect
 export type NewBankAccount = typeof bankAccounts.$inferInsert

@@ -6,6 +6,5 @@ import type { RecordPromotionInput } from './promotions.schema.js'
 
 export const promotionsController = {
   listByStudent: async (c: Context) => ok(c, await promotionsService.listByStudent(Number(c.req.param('studentId')))),
-  record: async (c: Context) =>
-    created(c, await promotionsService.record(getValidated<RecordPromotionInput>(c, 'json'))),
+  record: async (c: Context) => created(c, await promotionsService.record(getValidated<RecordPromotionInput>(c, 'json'))),
 }

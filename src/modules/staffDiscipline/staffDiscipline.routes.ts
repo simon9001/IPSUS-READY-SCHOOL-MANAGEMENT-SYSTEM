@@ -8,4 +8,9 @@ export const staffDisciplineRoutes = new Hono()
 
 staffDisciplineRoutes.get('/staff/:staffId', requirePermission('staff_discipline.view'), staffDisciplineController.listByStaff)
 staffDisciplineRoutes.get('/:id', requirePermission('staff_discipline.view'), staffDisciplineController.getById)
-staffDisciplineRoutes.post('/', requirePermission('staff_discipline.manage'), zValidator('json', createStaffDisciplineRecordSchema), staffDisciplineController.create)
+staffDisciplineRoutes.post(
+  '/',
+  requirePermission('staff_discipline.manage'),
+  zValidator('json', createStaffDisciplineRecordSchema),
+  staffDisciplineController.create,
+)

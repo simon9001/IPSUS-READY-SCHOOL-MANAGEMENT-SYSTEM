@@ -114,10 +114,7 @@ export const identityService = {
   listPermissions: () => identityRepository.findAllPermissions(),
 
   async assignRole(userId: number, input: AssignRoleInput, actorUserId: number) {
-    const [user, role] = await Promise.all([
-      identityRepository.findUserById(userId),
-      identityRepository.findRoleById(input.roleId),
-    ])
+    const [user, role] = await Promise.all([identityRepository.findUserById(userId), identityRepository.findRoleById(input.roleId)])
     if (!user) throw new NotFoundError(`User ${userId} not found`)
     if (!role) throw new NotFoundError(`Role ${input.roleId} not found`)
 
@@ -136,7 +133,7 @@ export const identityService = {
   async removeRole(userId: number, roleId: number, actorUserId: number) {
     const remainingCount = await identityRepository.countRolesForUser(userId)
     if (remainingCount <= 1) {
-      throw new ValidationError('Cannot remove a user\'s last remaining role — assign a replacement first')
+      throw new ValidationError("Cannot remove a user's last remaining role — assign a replacement first")
     }
 
     // Without this, the override guard is bypassable: an admin could strip the
@@ -184,9 +181,7 @@ export const identityService = {
   async assertNotLastAdministrator(userId: number) {
     const candidates = await identityRepository.findAdministratorCandidates(ADMIN_PERMISSION)
     if (wouldRemoveLastAdministrator(administratorIds(candidates), userId)) {
-      throw new ValidationError(
-        'This would leave the system with no administrator - grant users.manage to someone else first',
-      )
+      throw new ValidationError('This would leave the system with no administrator - grant users.manage to someone else first')
     }
   },
 

@@ -7,7 +7,15 @@ export const counselingRepository = {
   findAll: () => db.select().from(counselingSessions),
   findByStudent: (studentId: number) => db.select().from(counselingSessions).where(eq(counselingSessions.studentId, studentId)),
   findById: (id: number) =>
-    db.select().from(counselingSessions).where(eq(counselingSessions.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(counselingSessions)
+      .where(eq(counselingSessions.id, id))
+      .then((rows) => rows[0]),
   create: (data: NewCounselingSession) =>
-    db.insert(counselingSessions).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(counselingSessions)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 }

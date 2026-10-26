@@ -6,8 +6,17 @@ import type { NewNotice } from './notices.types.js'
 export const noticesRepository = {
   findAll: () => db.select().from(notices),
   findById: (id: number) =>
-    db.select().from(notices).where(eq(notices.id, id)).then((rows) => rows[0]),
-  create: (data: NewNotice) => db.insert(notices).values(data).returning().then((rows) => rows[0]),
+    db
+      .select()
+      .from(notices)
+      .where(eq(notices.id, id))
+      .then((rows) => rows[0]),
+  create: (data: NewNotice) =>
+    db
+      .insert(notices)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   findPublishedForAudience(audience: 'parents' | 'staff', today: string, classId?: number) {
     const audienceMatch = classId

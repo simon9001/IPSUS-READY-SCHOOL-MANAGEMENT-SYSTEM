@@ -17,7 +17,10 @@ export const feesService = {
 
   createStructure: async (input: CreateFeeStructureInput) => {
     const { items, ...structure } = input
-    const created = await feesRepository.createStructure(structure, items.map((item) => ({ ...item, amount: String(item.amount) })))
+    const created = await feesRepository.createStructure(
+      structure,
+      items.map((item) => ({ ...item, amount: String(item.amount) })),
+    )
     broadcastChange('fees', 'structure_created')
     broadcastChange('dashboard', 'updated')
     return created
@@ -63,7 +66,12 @@ export const feesService = {
 
     const lines: JournalLineInput[] = [
       ...[...fundTotals.entries()].map(([fundId, amount]) => ({ accountId: input.debtorsAccountId, fundId, debit: amount })),
-      ...items.map((item) => ({ accountId: item.accountId, fundId: item.fundId, credit: Number(item.amount), description: item.description ?? undefined })),
+      ...items.map((item) => ({
+        accountId: item.accountId,
+        fundId: item.fundId,
+        credit: Number(item.amount),
+        description: item.description ?? undefined,
+      })),
     ]
 
     const entry = await journalService.postSystemEntry({

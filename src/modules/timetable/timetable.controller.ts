@@ -16,8 +16,7 @@ export const timetableController = {
   teacherWorkload: async (c: Context) =>
     ok(c, await timetableService.teacherWorkload(Number(c.req.param('teacherId')), Number(c.req.query('periodId')))),
 
-  createEntry: async (c: Context) =>
-    created(c, await timetableService.createEntry(getValidated<CreateTimetableEntryInput>(c, 'json'))),
+  createEntry: async (c: Context) => created(c, await timetableService.createEntry(getValidated<CreateTimetableEntryInput>(c, 'json'))),
   deleteEntry: async (c: Context) => {
     await timetableService.deleteEntry(Number(c.req.param('id')))
     return noContent(c)

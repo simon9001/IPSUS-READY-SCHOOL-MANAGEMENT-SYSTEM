@@ -11,7 +11,9 @@ export const budgets = pgTable('budgets', {
   fiscalYear: integer('fiscal_year').notNull(),
   name: varchar('name', { length: 150 }).notNull(), // e.g. "2026 Annual Budget"
   status: budgetStatusEnum('status').notNull().default('draft'),
-  createdBy: integer('created_by').notNull().references(() => users.id),
+  createdBy: integer('created_by')
+    .notNull()
+    .references(() => users.id),
   approvedBy: integer('approved_by').references(() => users.id),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -21,9 +23,15 @@ export const budgets = pgTable('budgets', {
 // posted journal_lines for the same scope — no separate "actuals" table needed.
 export const budgetLines = pgTable('budget_lines', {
   id: serial('id').primaryKey(),
-  budgetId: integer('budget_id').notNull().references(() => budgets.id, { onDelete: 'cascade' }),
-  accountId: integer('account_id').notNull().references(() => accounts.id),
-  fundId: integer('fund_id').notNull().references(() => funds.id),
+  budgetId: integer('budget_id')
+    .notNull()
+    .references(() => budgets.id, { onDelete: 'cascade' }),
+  accountId: integer('account_id')
+    .notNull()
+    .references(() => accounts.id),
+  fundId: integer('fund_id')
+    .notNull()
+    .references(() => funds.id),
   periodId: integer('period_id').references(() => fiscalPeriods.id), // null = whole fiscal year
   amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
 })

@@ -10,8 +10,7 @@ export const clubsController = {
   createClub: async (c: Context) => created(c, await clubsService.createClub(getValidated<CreateClubInput>(c, 'json'))),
 
   listMembersByClub: async (c: Context) => ok(c, await clubsService.listMembersByClub(Number(c.req.param('clubId')))),
-  listMembershipsByStudent: async (c: Context) =>
-    ok(c, await clubsService.listMembershipsByStudent(Number(c.req.param('studentId')))),
+  listMembershipsByStudent: async (c: Context) => ok(c, await clubsService.listMembershipsByStudent(Number(c.req.param('studentId')))),
   joinClub: async (c: Context) => created(c, await clubsService.joinClub(getValidated<JoinClubInput>(c, 'json'))),
 
   listCompetitions: async (c: Context) => ok(c, await clubsService.listCompetitions()),
@@ -21,6 +20,5 @@ export const clubsController = {
 
   listParticipantsByCompetition: async (c: Context) =>
     ok(c, await clubsService.listParticipantsByCompetition(Number(c.req.param('competitionId')))),
-  addParticipant: async (c: Context) =>
-    created(c, await clubsService.addParticipant(getValidated<AddParticipantInput>(c, 'json'))),
+  addParticipant: async (c: Context) => created(c, await clubsService.addParticipant(getValidated<AddParticipantInput>(c, 'json'))),
 }

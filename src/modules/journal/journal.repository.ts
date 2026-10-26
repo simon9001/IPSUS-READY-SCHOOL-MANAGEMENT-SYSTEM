@@ -7,10 +7,13 @@ export const journalRepository = {
   findAll: () => db.select().from(journalEntries).orderBy(journalEntries.entryDate),
 
   findById: (id: number) =>
-    db.select().from(journalEntries).where(eq(journalEntries.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(journalEntries)
+      .where(eq(journalEntries.id, id))
+      .then((rows) => rows[0]),
 
-  findLines: (journalEntryId: number) =>
-    db.select().from(journalLines).where(eq(journalLines.journalEntryId, journalEntryId)),
+  findLines: (journalEntryId: number) => db.select().from(journalLines).where(eq(journalLines.journalEntryId, journalEntryId)),
 
   async countEntriesForYear(fiscalYear: number) {
     const [{ count }] = await db
@@ -23,9 +26,7 @@ export const journalRepository = {
   async insertWithLines(entry: NewJournalEntry, lines: Omit<NewJournalLine, 'journalEntryId' | 'lineNo'>[]) {
     return db.transaction(async (tx) => {
       const [inserted] = await tx.insert(journalEntries).values(entry).returning()
-      await tx.insert(journalLines).values(
-        lines.map((line, index) => ({ ...line, journalEntryId: inserted.id, lineNo: index + 1 })),
-      )
+      await tx.insert(journalLines).values(lines.map((line, index) => ({ ...line, journalEntryId: inserted.id, lineNo: index + 1 })))
       return inserted
     })
   },

@@ -9,10 +9,7 @@
  * explicit revokes. A revoke beats a role grant — an admin who explicitly
  * takes a permission away expects it gone whatever the user's roles say.
  */
-export function mergePermissions(
-  rolePermissions: string[],
-  overrides: { code: string; granted: boolean }[],
-): string[] {
+export function mergePermissions(rolePermissions: string[], overrides: { code: string; granted: boolean }[]): string[] {
   const effective = new Set(rolePermissions)
   for (const override of overrides) {
     if (override.granted) effective.add(override.code)

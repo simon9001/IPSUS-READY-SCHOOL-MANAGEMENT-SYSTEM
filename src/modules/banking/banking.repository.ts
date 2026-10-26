@@ -12,9 +12,17 @@ import type {
 export const bankingRepository = {
   findAllAccounts: () => db.select().from(bankAccounts),
   findAccountById: (id: number) =>
-    db.select().from(bankAccounts).where(eq(bankAccounts.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(bankAccounts)
+      .where(eq(bankAccounts.id, id))
+      .then((rows) => rows[0]),
   createAccount: (data: NewBankAccount) =>
-    db.insert(bankAccounts).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(bankAccounts)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   findReconciliationsByAccount: (bankAccountId: number) =>
     db.select().from(bankReconciliations).where(eq(bankReconciliations.bankAccountId, bankAccountId)),
@@ -39,9 +47,17 @@ export const bankingRepository = {
 
   findAllImprestRequests: () => db.select().from(imprestRequests),
   findImprestRequestById: (id: number) =>
-    db.select().from(imprestRequests).where(eq(imprestRequests.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(imprestRequests)
+      .where(eq(imprestRequests.id, id))
+      .then((rows) => rows[0]),
   createImprestRequest: (data: NewImprestRequest) =>
-    db.insert(imprestRequests).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(imprestRequests)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
   attachIssueJournalEntry: (id: number, journalEntryId: number) =>
     db
       .update(imprestRequests)
@@ -51,7 +67,16 @@ export const bankingRepository = {
       .then((rows) => rows[0]),
 
   createImprestRetirement: (data: NewImprestRetirement) =>
-    db.insert(imprestRetirements).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(imprestRetirements)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
   markImprestRetired: (id: number) =>
-    db.update(imprestRequests).set({ status: 'retired' }).where(eq(imprestRequests.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(imprestRequests)
+      .set({ status: 'retired' })
+      .where(eq(imprestRequests.id, id))
+      .returning()
+      .then((rows) => rows[0]),
 }

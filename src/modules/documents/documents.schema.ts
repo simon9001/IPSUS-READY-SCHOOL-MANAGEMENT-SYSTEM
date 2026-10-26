@@ -2,7 +2,14 @@ import { z } from 'zod'
 
 export const createTemplateSchema = z.object({
   code: z.string().min(1).max(60),
-  documentType: z.enum(['leaving_certificate', 'transcript', 'admission_letter', 'fee_clearance_letter', 'conduct_certificate', 'custom_letter']),
+  documentType: z.enum([
+    'leaving_certificate',
+    'transcript',
+    'admission_letter',
+    'fee_clearance_letter',
+    'conduct_certificate',
+    'custom_letter',
+  ]),
   bodyTemplate: z.string().min(1),
   isActive: z.boolean().default(true),
 })

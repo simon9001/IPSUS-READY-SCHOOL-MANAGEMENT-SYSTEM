@@ -50,7 +50,10 @@ export const procurementService = {
     const requisition = await procurementRepository.findRequisitionById(id)
     if (!requisition) throw new NotFoundError(`Requisition ${id} not found`)
     if (requisition.status !== 'submitted') throw new ConflictError(`Requisition ${id} is ${requisition.status}, not submitted`)
-    const approved = await procurementRepository.updateRequisitionStatus(id, 'approved', { approvedBy: input.approvedBy, approvedAt: new Date() })
+    const approved = await procurementRepository.updateRequisitionStatus(id, 'approved', {
+      approvedBy: input.approvedBy,
+      approvedAt: new Date(),
+    })
     broadcastChange('procurement', 'requisition_approved')
     broadcastChange('dashboard', 'updated')
     return approved
@@ -95,19 +98,27 @@ export const procurementService = {
     return po
   },
 
-  /** Simplified receipt tracking: a GRN covering every item on the PO marks
-   *  it 'received'; a GRN covering only some items marks it 'partially_received'. */
+  /** Simplified receipt tracking: once every item on the PO has appeared on
+   *  at least one GRN — this one or an earlier one — the PO is 'received';
+   *  until then it is 'partially_received'. Quantities are not compared. */
   async createGrn(input: CreateGrnInput) {
     const po = await procurementRepository.findPurchaseOrderById(input.purchaseOrderId)
     if (!po) throw new NotFoundError(`Purchase order ${input.purchaseOrderId} not found`)
 
     const poItems = await procurementRepository.findPurchaseOrderItems(input.purchaseOrderId)
     const grn = await procurementRepository.createGrn(
-      { grnNo: `GRN-${Date.now()}`, purchaseOrderId: input.purchaseOrderId, receivedDate: input.receivedDate, receivedBy: input.receivedBy },
+      {
+        grnNo: `GRN-${Date.now()}`,
+        purchaseOrderId: input.purchaseOrderId,
+        receivedDate: input.receivedDate,
+        receivedBy: input.receivedBy,
+      },
       input.items.map((item) => ({ ...item, quantityReceived: String(item.quantityReceived) })),
     )
 
-    const receivedItemIds = new Set(input.items.map((item) => item.purchaseOrderItemId))
+    // Includes the GRN just created, so a delivery split across several GRNs
+    // still completes the PO.
+    const receivedItemIds = new Set(await procurementRepository.findReceivedItemIdsForPurchaseOrder(input.purchaseOrderId))
     const status = poItems.every((item) => receivedItemIds.has(item.id)) ? 'received' : 'partially_received'
     await procurementRepository.updatePurchaseOrderStatus(input.purchaseOrderId, status)
 
@@ -147,7 +158,12 @@ export const procurementService = {
       sourceReference: `supplier-invoice-${invoice.id}`,
       createdBy: input.createdBy,
       lines: [
-        ...input.lines.map((line) => ({ accountId: line.accountId, fundId: input.fundId, debit: line.amount, description: line.description })),
+        ...input.lines.map((line) => ({
+          accountId: line.accountId,
+          fundId: input.fundId,
+          debit: line.amount,
+          description: line.description,
+        })),
         { accountId: input.creditorsAccountId, fundId: input.fundId, credit: amount },
       ],
     })
@@ -186,7 +202,11 @@ export const procurementService = {
       ],
     })
 
-    if (Number(input.amount) >= Number(invoice.amount)) {
+    // Compare the running total, not this one payment — an invoice settled in
+    // instalments must still end up 'paid'. The payment just inserted above is
+    // included in the total.
+    const totalPaid = await procurementRepository.totalPaidForInvoice(input.supplierInvoiceId)
+    if (totalPaid >= Number(invoice.amount)) {
       await procurementRepository.markInvoicePaid(input.supplierInvoiceId)
     }
 

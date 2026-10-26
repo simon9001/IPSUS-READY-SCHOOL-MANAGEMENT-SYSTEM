@@ -1,6 +1,12 @@
 import { examsRepository } from './exams.repository.js'
 import { ConflictError, NotFoundError } from '../../common/errors.js'
-import type { AddExamTimetableEntryInput, CreateExamInput, CreateGradingScaleInput, RecordExamResultInput, RecordStrandResultInput } from './exams.schema.js'
+import type {
+  AddExamTimetableEntryInput,
+  CreateExamInput,
+  CreateGradingScaleInput,
+  RecordExamResultInput,
+  RecordStrandResultInput,
+} from './exams.schema.js'
 import type { GradingBand, ReportCard } from './exams.types.js'
 
 function findBand(bands: GradingBand[], percentage: number) {
@@ -21,7 +27,12 @@ export const examsService = {
     const { bands, ...scale } = input
     return examsRepository.createScale(
       scale,
-      bands.map((b) => ({ minMarks: String(b.minMarks), maxMarks: String(b.maxMarks), grade: b.grade, points: b.points !== undefined ? String(b.points) : undefined })),
+      bands.map((b) => ({
+        minMarks: String(b.minMarks),
+        maxMarks: String(b.maxMarks),
+        grade: b.grade,
+        points: b.points !== undefined ? String(b.points) : undefined,
+      })),
     )
   },
 

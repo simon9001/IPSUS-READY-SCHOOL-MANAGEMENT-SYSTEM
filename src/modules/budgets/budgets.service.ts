@@ -58,7 +58,8 @@ export const budgetsService = {
         const startDate = row.periodStart ?? yearStart
         const endDate = row.periodEnd ?? yearEnd
         const actualAmounts = await budgetsRepository.actualForScope(row.line.accountId, row.line.fundId, startDate, endDate)
-        const actual = row.accountNormalBalance === 'debit' ? actualAmounts.debit - actualAmounts.credit : actualAmounts.credit - actualAmounts.debit
+        const actual =
+          row.accountNormalBalance === 'debit' ? actualAmounts.debit - actualAmounts.credit : actualAmounts.credit - actualAmounts.debit
         const budgeted = Number(row.line.amount)
         return {
           accountId: row.line.accountId,

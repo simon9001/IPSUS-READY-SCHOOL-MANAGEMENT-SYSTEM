@@ -14,7 +14,9 @@ export const stockMovementTypeEnum = pgEnum('stock_movement_type', ['receipt', '
 
 export const stockMovements = pgTable('stock_movements', {
   id: serial('id').primaryKey(),
-  itemId: integer('item_id').notNull().references(() => inventoryItems.id),
+  itemId: integer('item_id')
+    .notNull()
+    .references(() => inventoryItems.id),
   movementDate: date('movement_date').notNull(),
   movementType: stockMovementTypeEnum('movement_type').notNull(),
   quantity: numeric('quantity', { precision: 12, scale: 2 }).notNull(),

@@ -8,7 +8,9 @@ export const classes = pgTable('classes', {
 
 export const streams = pgTable('streams', {
   id: serial('id').primaryKey(),
-  classId: integer('class_id').notNull().references(() => classes.id),
+  classId: integer('class_id')
+    .notNull()
+    .references(() => classes.id),
   name: varchar('name', { length: 40 }).notNull(), // "East", "West"
 })
 
@@ -27,7 +29,9 @@ export const students = pgTable('students', {
   otherNames: varchar('other_names', { length: 80 }),
   gender: varchar('gender', { length: 10 }),
   dateOfBirth: date('date_of_birth'),
-  classId: integer('class_id').notNull().references(() => classes.id),
+  classId: integer('class_id')
+    .notNull()
+    .references(() => classes.id),
   streamId: integer('stream_id').references(() => streams.id),
   boardingStatus: boardingStatusEnum('boarding_status').notNull().default('day'),
   guardianName: varchar('guardian_name', { length: 150 }),

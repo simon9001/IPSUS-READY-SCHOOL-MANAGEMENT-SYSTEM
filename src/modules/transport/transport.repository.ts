@@ -6,11 +6,25 @@ import type { NewBusRoute, NewRouteStop, NewStudentTransportAllocation } from '.
 export const transportRepository = {
   findAllRoutes: () => db.select().from(busRoutes),
   findRouteById: (id: number) =>
-    db.select().from(busRoutes).where(eq(busRoutes.id, id)).then((rows) => rows[0]),
-  createRoute: (data: NewBusRoute) => db.insert(busRoutes).values(data).returning().then((rows) => rows[0]),
+    db
+      .select()
+      .from(busRoutes)
+      .where(eq(busRoutes.id, id))
+      .then((rows) => rows[0]),
+  createRoute: (data: NewBusRoute) =>
+    db
+      .insert(busRoutes)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   findStopsByRoute: (routeId: number) => db.select().from(routeStops).where(eq(routeStops.routeId, routeId)),
-  addStop: (data: NewRouteStop) => db.insert(routeStops).values(data).returning().then((rows) => rows[0]),
+  addStop: (data: NewRouteStop) =>
+    db
+      .insert(routeStops)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   async activeAllocationCount(routeId: number) {
     const [row] = await db
@@ -35,11 +49,20 @@ export const transportRepository = {
       .where(and(eq(studentTransportAllocations.studentId, studentId), eq(studentTransportAllocations.status, 'active')))
       .then((rows) => rows[0]),
 
-  findAllocationsByRoute: (routeId: number) => db.select().from(studentTransportAllocations).where(eq(studentTransportAllocations.routeId, routeId)),
+  findAllocationsByRoute: (routeId: number) =>
+    db.select().from(studentTransportAllocations).where(eq(studentTransportAllocations.routeId, routeId)),
   findAllocationById: (id: number) =>
-    db.select().from(studentTransportAllocations).where(eq(studentTransportAllocations.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(studentTransportAllocations)
+      .where(eq(studentTransportAllocations.id, id))
+      .then((rows) => rows[0]),
   createAllocation: (data: NewStudentTransportAllocation) =>
-    db.insert(studentTransportAllocations).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(studentTransportAllocations)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
   endAllocation: (id: number, endDate: string) =>
     db
       .update(studentTransportAllocations)

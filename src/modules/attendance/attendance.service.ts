@@ -4,8 +4,7 @@ import type { MarkAttendanceInput } from './attendance.schema.js'
 export const attendanceService = {
   listByStudent: (studentId: number) => attendanceRepository.findByStudent(studentId),
 
-  listByClassAndDate: (classId: number, attendanceDate: string) =>
-    attendanceRepository.findByClassAndDate(classId, attendanceDate),
+  listByClassAndDate: (classId: number, attendanceDate: string) => attendanceRepository.findByClassAndDate(classId, attendanceDate),
 
   mark: (input: MarkAttendanceInput) => attendanceRepository.upsert(input),
 

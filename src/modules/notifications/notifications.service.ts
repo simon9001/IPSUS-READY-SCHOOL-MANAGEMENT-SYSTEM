@@ -54,7 +54,10 @@ export function createNotificationsService(provider: NotificationProvider = cons
 
       const to = channel === 'sms' ? recipientPhone : recipientEmail
       if (!to) {
-        return notificationsRepository.markFailed(notification.id, `No ${channel === 'sms' ? 'phone number' : 'email address'} available for recipient`)
+        return notificationsRepository.markFailed(
+          notification.id,
+          `No ${channel === 'sms' ? 'phone number' : 'email address'} available for recipient`,
+        )
       }
 
       const result = await provider.send({ channel, to, subject, body })

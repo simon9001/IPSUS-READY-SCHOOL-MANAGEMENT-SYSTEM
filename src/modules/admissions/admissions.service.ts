@@ -63,7 +63,12 @@ export const admissionsService = {
 
   /** Direct/local admission — the only pathway with an interview step. */
   applyDirect: async (input: ApplyDirectInput) => {
-    const created = await admissionsRepository.create({ ...input, applicationNo: nextApplicationNo(), admissionType: 'direct', status: 'pending' })
+    const created = await admissionsRepository.create({
+      ...input,
+      applicationNo: nextApplicationNo(),
+      admissionType: 'direct',
+      status: 'pending',
+    })
     broadcastChange('admissions', 'applied')
     broadcastChange('dashboard', 'updated')
     return created
@@ -110,7 +115,8 @@ export const admissionsService = {
   /** Converts an admitted applicant into an actual enrolled student record. */
   async enroll(id: number, input: EnrollAdmissionInput) {
     const admission = await this.getById(id)
-    if (admission.status !== 'admitted') throw new ConflictError(`Admission ${id} must be 'admitted' before enrolling, currently ${admission.status}`)
+    if (admission.status !== 'admitted')
+      throw new ConflictError(`Admission ${id} must be 'admitted' before enrolling, currently ${admission.status}`)
 
     const student = await studentsRepository.create({
       admissionNo: input.admissionNo,

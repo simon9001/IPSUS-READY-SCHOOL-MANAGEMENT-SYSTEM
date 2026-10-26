@@ -9,4 +9,9 @@ export const attendanceRoutes = new Hono()
 attendanceRoutes.get('/students/:studentId', requirePermission('attendance.view'), attendanceController.listByStudent)
 attendanceRoutes.get('/classes/:classId', requirePermission('attendance.view'), attendanceController.listByClassAndDate)
 attendanceRoutes.post('/', requirePermission('attendance.manage'), zValidator('json', markAttendanceSchema), attendanceController.mark)
-attendanceRoutes.post('/bulk', requirePermission('attendance.manage'), zValidator('json', bulkMarkAttendanceSchema), attendanceController.markBulk)
+attendanceRoutes.post(
+  '/bulk',
+  requirePermission('attendance.manage'),
+  zValidator('json', bulkMarkAttendanceSchema),
+  attendanceController.markBulk,
+)

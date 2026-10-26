@@ -12,8 +12,12 @@ export const leaveRequestStatusEnum = pgEnum('leave_request_status', ['pending',
 
 export const leaveRequests = pgTable('leave_requests', {
   id: serial('id').primaryKey(),
-  staffId: integer('staff_id').notNull().references(() => staff.id),
-  leaveTypeId: integer('leave_type_id').notNull().references(() => leaveTypes.id),
+  staffId: integer('staff_id')
+    .notNull()
+    .references(() => staff.id),
+  leaveTypeId: integer('leave_type_id')
+    .notNull()
+    .references(() => leaveTypes.id),
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   daysRequested: numeric('days_requested', { precision: 5, scale: 1 }).notNull(),
@@ -21,6 +25,8 @@ export const leaveRequests = pgTable('leave_requests', {
   status: leaveRequestStatusEnum('status').notNull().default('pending'),
   approvedBy: integer('approved_by').references(() => users.id),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
-  recordedBy: integer('recorded_by').notNull().references(() => users.id),
+  recordedBy: integer('recorded_by')
+    .notNull()
+    .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })

@@ -2,7 +2,13 @@ import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
 import { requirePermission } from '../../common/auth.js'
 import { identityController } from './identity.controller.js'
-import { assignRoleSchema, createUserSchema, resetPasswordSchema, setPermissionOverrideSchema, updateUserSchema } from './identity.schema.js'
+import {
+  assignRoleSchema,
+  createUserSchema,
+  resetPasswordSchema,
+  setPermissionOverrideSchema,
+  updateUserSchema,
+} from './identity.schema.js'
 
 export const usersRoutes = new Hono()
 
@@ -10,13 +16,23 @@ usersRoutes.get('/', requirePermission('users.manage'), identityController.listU
 usersRoutes.get('/:id', requirePermission('users.manage'), identityController.getUserById)
 usersRoutes.post('/', requirePermission('users.manage'), zValidator('json', createUserSchema), identityController.createUser)
 usersRoutes.patch('/:id', requirePermission('users.manage'), zValidator('json', updateUserSchema), identityController.updateUser)
-usersRoutes.post('/:id/reset-password', requirePermission('users.manage'), zValidator('json', resetPasswordSchema), identityController.resetPassword)
+usersRoutes.post(
+  '/:id/reset-password',
+  requirePermission('users.manage'),
+  zValidator('json', resetPasswordSchema),
+  identityController.resetPassword,
+)
 
 usersRoutes.post('/:userId/roles', requirePermission('roles.manage'), zValidator('json', assignRoleSchema), identityController.assignRole)
 usersRoutes.delete('/:userId/roles/:roleId', requirePermission('roles.manage'), identityController.removeRole)
 
 usersRoutes.get('/:userId/permissions', requirePermission('roles.manage'), identityController.listUserPermissions)
-usersRoutes.put('/:userId/permissions/:code', requirePermission('roles.manage'), zValidator('json', setPermissionOverrideSchema), identityController.setPermissionOverride)
+usersRoutes.put(
+  '/:userId/permissions/:code',
+  requirePermission('roles.manage'),
+  zValidator('json', setPermissionOverrideSchema),
+  identityController.setPermissionOverride,
+)
 usersRoutes.delete('/:userId/permissions/:code', requirePermission('roles.manage'), identityController.clearPermissionOverride)
 
 export const rolesRoutes = new Hono()

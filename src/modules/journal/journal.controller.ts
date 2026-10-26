@@ -9,11 +9,9 @@ export const journalController = {
 
   getById: async (c: Context) => ok(c, await journalService.getById(Number(c.req.param('id')))),
 
-  createManual: async (c: Context) =>
-    created(c, await journalService.createManualEntry(getValidated<CreateJournalEntryInput>(c, 'json'))),
+  createManual: async (c: Context) => created(c, await journalService.createManualEntry(getValidated<CreateJournalEntryInput>(c, 'json'))),
 
-  postSystem: async (c: Context) =>
-    created(c, await journalService.postSystemEntry(getValidated<CreateJournalEntryInput>(c, 'json'))),
+  postSystem: async (c: Context) => created(c, await journalService.postSystemEntry(getValidated<CreateJournalEntryInput>(c, 'json'))),
 
   approve: async (c: Context) => {
     const { approverId } = getValidated<ApproveJournalEntryInput>(c, 'json')

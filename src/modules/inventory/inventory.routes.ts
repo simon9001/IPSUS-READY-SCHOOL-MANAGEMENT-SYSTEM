@@ -11,5 +11,15 @@ inventoryRoutes.get('/items/:id', requirePermission('inventory.view'), inventory
 inventoryRoutes.post('/items', requirePermission('inventory.manage'), zValidator('json', createItemSchema), inventoryController.createItem)
 
 inventoryRoutes.get('/items/:itemId/movements', requirePermission('inventory.view'), inventoryController.listMovements)
-inventoryRoutes.post('/movements/receive', requirePermission('inventory.manage'), zValidator('json', receiveStockSchema), inventoryController.receiveStock)
-inventoryRoutes.post('/movements/issue', requirePermission('inventory.manage'), zValidator('json', issueStockSchema), inventoryController.issueStock)
+inventoryRoutes.post(
+  '/movements/receive',
+  requirePermission('inventory.manage'),
+  zValidator('json', receiveStockSchema),
+  inventoryController.receiveStock,
+)
+inventoryRoutes.post(
+  '/movements/issue',
+  requirePermission('inventory.manage'),
+  zValidator('json', issueStockSchema),
+  inventoryController.issueStock,
+)

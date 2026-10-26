@@ -127,9 +127,64 @@ const addDays = (date: string, days: number) => {
 // Reference data
 // ---------------------------------------------------------------------------
 
-const FIRST_NAMES_M = ['Brian', 'Kevin', 'Dennis', 'Collins', 'Victor', 'Elijah', 'Fredrick', 'Isaac', 'Nicholas', 'Antony', 'Emmanuel', 'Gideon', 'Bernard', 'Cyrus', 'Duncan', 'Erick']
-const FIRST_NAMES_F = ['Mercy', 'Faith', 'Lydia', 'Purity', 'Winnie', 'Sharon', 'Beatrice', 'Caroline', 'Doreen', 'Emily', 'Gladys', 'Hellen', 'Irene', 'Joyce', 'Lilian', 'Naomi']
-const SURNAMES = ['Kamau', 'Ochieng', 'Wafula', 'Kiplagat', 'Mutiso', 'Njoroge', 'Omondi', 'Chebet', 'Wanyama', 'Muriuki', 'Achieng', 'Barasa', 'Kirui', 'Maina', 'Nyaga', 'Owino', 'Simiyu', 'Wekesa', 'Gitonga', 'Kilonzo']
+const FIRST_NAMES_M = [
+  'Brian',
+  'Kevin',
+  'Dennis',
+  'Collins',
+  'Victor',
+  'Elijah',
+  'Fredrick',
+  'Isaac',
+  'Nicholas',
+  'Antony',
+  'Emmanuel',
+  'Gideon',
+  'Bernard',
+  'Cyrus',
+  'Duncan',
+  'Erick',
+]
+const FIRST_NAMES_F = [
+  'Mercy',
+  'Faith',
+  'Lydia',
+  'Purity',
+  'Winnie',
+  'Sharon',
+  'Beatrice',
+  'Caroline',
+  'Doreen',
+  'Emily',
+  'Gladys',
+  'Hellen',
+  'Irene',
+  'Joyce',
+  'Lilian',
+  'Naomi',
+]
+const SURNAMES = [
+  'Kamau',
+  'Ochieng',
+  'Wafula',
+  'Kiplagat',
+  'Mutiso',
+  'Njoroge',
+  'Omondi',
+  'Chebet',
+  'Wanyama',
+  'Muriuki',
+  'Achieng',
+  'Barasa',
+  'Kirui',
+  'Maina',
+  'Nyaga',
+  'Owino',
+  'Simiyu',
+  'Wekesa',
+  'Gitonga',
+  'Kilonzo',
+]
 
 const SUBJECTS = [
   { code: 'MAT', name: 'Mathematics', isCompulsory: true },
@@ -216,25 +271,93 @@ const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as con
 // not care about foreign-key ordering, and RESTART IDENTITY puts the sequences
 // back so a re-run produces the same ids as a first run.
 const SCHOOL_DATA_TABLES = [
-  'admissions', 'asset_categories', 'asset_disposals', 'assets', 'attendance_records',
-  'bank_accounts', 'bank_reconciliation_items', 'bank_reconciliations', 'bed_allocations',
-  'boarding_attendance', 'book_borrowings', 'budget_lines', 'budgets', 'bus_routes',
-  'class_subjects', 'classes', 'clinic_visits', 'club_memberships', 'clubs',
-  'competition_participants', 'competitions', 'compliance_reports', 'conduct_point_rules',
-  'conduct_points', 'counseling_sessions', 'depreciation_entries', 'disciplinary_cases',
-  'discipline_records', 'document_templates', 'dormitories', 'employees', 'exam_results',
-  'exam_strand_results', 'exam_timetable_entries', 'exams', 'fee_invoice_items', 'fee_invoices',
-  'fee_payment_allocations', 'fee_payments', 'fee_structure_items', 'fee_structures',
-  'generated_documents', 'goods_received_notes', 'grading_bands', 'grading_scales',
-  'grant_disbursements', 'grant_types', 'grn_items', 'guardian_students', 'imprest_requests',
-  'imprest_retirements', 'inventory_items', 'journal_entries', 'journal_lines', 'leave_requests',
-  'leave_types', 'lesson_periods', 'library_books', 'medical_conditions',
-  'medication_administrations', 'notices', 'notification_templates', 'notifications',
-  'payroll_runs', 'payslips', 'promotions', 'purchase_order_items', 'purchase_orders',
-  'purchase_requisitions', 'requisition_items', 'route_stops', 'salary_components', 'staff',
-  'staff_appraisals', 'staff_contracts', 'staff_disciplinary_records', 'stock_movements',
-  'streams', 'student_transport_allocations', 'students', 'subject_strands', 'subjects',
-  'supplier_invoices', 'supplier_payments', 'suppliers', 'teacher_assignments', 'teachers',
+  'admissions',
+  'asset_categories',
+  'asset_disposals',
+  'assets',
+  'attendance_records',
+  'bank_accounts',
+  'bank_reconciliation_items',
+  'bank_reconciliations',
+  'bed_allocations',
+  'boarding_attendance',
+  'book_borrowings',
+  'budget_lines',
+  'budgets',
+  'bus_routes',
+  'class_subjects',
+  'classes',
+  'clinic_visits',
+  'club_memberships',
+  'clubs',
+  'competition_participants',
+  'competitions',
+  'compliance_reports',
+  'conduct_point_rules',
+  'conduct_points',
+  'counseling_sessions',
+  'depreciation_entries',
+  'disciplinary_cases',
+  'discipline_records',
+  'document_templates',
+  'dormitories',
+  'employees',
+  'exam_results',
+  'exam_strand_results',
+  'exam_timetable_entries',
+  'exams',
+  'fee_invoice_items',
+  'fee_invoices',
+  'fee_payment_allocations',
+  'fee_payments',
+  'fee_structure_items',
+  'fee_structures',
+  'generated_documents',
+  'goods_received_notes',
+  'grading_bands',
+  'grading_scales',
+  'grant_disbursements',
+  'grant_types',
+  'grn_items',
+  'guardian_students',
+  'imprest_requests',
+  'imprest_retirements',
+  'inventory_items',
+  'journal_entries',
+  'journal_lines',
+  'leave_requests',
+  'leave_types',
+  'lesson_periods',
+  'library_books',
+  'medical_conditions',
+  'medication_administrations',
+  'notices',
+  'notification_templates',
+  'notifications',
+  'payroll_runs',
+  'payslips',
+  'promotions',
+  'purchase_order_items',
+  'purchase_orders',
+  'purchase_requisitions',
+  'requisition_items',
+  'route_stops',
+  'salary_components',
+  'staff',
+  'staff_appraisals',
+  'staff_contracts',
+  'staff_disciplinary_records',
+  'stock_movements',
+  'streams',
+  'student_transport_allocations',
+  'students',
+  'subject_strands',
+  'subjects',
+  'supplier_invoices',
+  'supplier_payments',
+  'suppliers',
+  'teacher_assignments',
+  'teachers',
   'timetable_entries',
 ]
 
@@ -313,7 +436,6 @@ async function main() {
   const BOARDING_INCOME = acct('4010')
   const ACTIVITY_INCOME = acct('4020')
   const CAPITATION_INCOME = acct('4100')
-  const TRADING_INCOME = acct('4300')
   const SALARIES = acct('5000')
   const TEACHING_MATERIALS = acct('5100')
   const FOOD = acct('5200')
@@ -329,7 +451,6 @@ async function main() {
   const F_BRD = fund('FUND-BRD')
   const F_DEV = fund('FUND-DEV')
   const F_PTA = fund('FUND-PTA')
-  const F_TRD = fund('FUND-TRD')
 
   const P1 = period(1)
   const P2 = period(2)
@@ -352,7 +473,6 @@ async function main() {
   const NURSE = actor('nurse@school.local')
   const LIBRARIAN = actor('librarian@school.local')
   const BOARDING_OFFICER = actor('boarding@school.local')
-  const DEAN = actor('dean@school.local')
 
   // --- Classes and streams ---------------------------------------------------
   console.log('Classes and streams...')
@@ -602,8 +722,20 @@ async function main() {
 
   // --- Bank accounts ---------------------------------------------------------
   console.log('Bank accounts...')
-  await bankingService.createAccount({ accountId: BANK, fundId: F_TUI, bankName: 'Kenya Commercial Bank', accountNumber: '1102938475', branch: 'Kilimani' })
-  await bankingService.createAccount({ accountId: CAPITATION_BANK, fundId: F_CAP, bankName: 'Kenya Commercial Bank', accountNumber: '1102938476', branch: 'Kilimani' })
+  await bankingService.createAccount({
+    accountId: BANK,
+    fundId: F_TUI,
+    bankName: 'Kenya Commercial Bank',
+    accountNumber: '1102938475',
+    branch: 'Kilimani',
+  })
+  await bankingService.createAccount({
+    accountId: CAPITATION_BANK,
+    fundId: F_CAP,
+    bankName: 'Kenya Commercial Bank',
+    accountNumber: '1102938476',
+    branch: 'Kilimani',
+  })
 
   // --- Government capitation -------------------------------------------------
   console.log('FDSE capitation...')
@@ -611,7 +743,8 @@ async function main() {
     name: 'Free Day Secondary Education (FDSE) Capitation',
     fundId: F_CAP,
     revenueAccountId: CAPITATION_INCOME,
-    conditionsDescription: 'Disbursed per enrolled learner per MoE guidelines; spend restricted to tuition and approved operational voteheads.',
+    conditionsDescription:
+      'Disbursed per enrolled learner per MoE guidelines; spend restricted to tuition and approved operational voteheads.',
   })
 
   // The real disbursement pattern: 50% in Term 1, 30% in Term 2, 20% in Term 3.
@@ -633,7 +766,9 @@ async function main() {
       amountReceived: Math.round(annualCapitation * t.share),
       dateReceived: t.date,
       conditionsMet: t.conditionsMet,
-      notes: t.conditionsMet ? 'Enrolment return accepted by the sub-county director.' : 'Awaiting acceptance of the Term 3 enrolment return.',
+      notes: t.conditionsMet
+        ? 'Enrolment return accepted by the sub-county director.'
+        : 'Awaiting acceptance of the Term 3 enrolment return.',
       recordedBy: BURSAR,
     })
   }
@@ -645,7 +780,11 @@ async function main() {
 
   for (const cls of classes) {
     for (const boarding of ['day', 'boarder'] as const) {
-      for (const [term, periodId] of [[1, P1], [2, P2], [3, P3]] as const) {
+      for (const [term, periodId] of [
+        [1, P1],
+        [2, P2],
+        [3, P3],
+      ] as const) {
         const items = [
           { accountId: TUITION_INCOME, fundId: F_TUI, description: 'Tuition', amount: 5_500 + cls.level * 500 },
           { accountId: ACTIVITY_INCOME, fundId: F_PTA, description: 'Activity & PTA', amount: 2_000 },
@@ -671,7 +810,11 @@ async function main() {
   let paymentCount = 0
   let receiptedTotal = 0
 
-  for (const [term, periodId, invoiceDate] of [[1, P1, TERM_1.start], [2, P2, TERM_2.start], [3, P3, TERM_3.start]] as const) {
+  for (const [term, periodId, invoiceDate] of [
+    [1, P1, TERM_1.start],
+    [2, P2, TERM_2.start],
+    [3, P3, TERM_3.start],
+  ] as const) {
     for (const student of allStudents) {
       const structureId = feeStructureFor.get(`${student.classId}|${student.boarding}|${term}`)!
 
@@ -732,16 +875,58 @@ async function main() {
     { name: 'Text Book Centre', kraPin: 'P051987654B', contactPerson: 'Anne Kilonzo', phone: '0733400500' },
     { name: 'Kilimani Hardware Supplies', kraPin: 'P051555444C', contactPerson: 'Ali Hassan', phone: '0711900800' },
   ]) {
-    suppliers.push(await procurementService.createSupplier({ ...s, bankName: 'Equity Bank', bankAccountNo: String(randInt(1000000000, 1999999999)) }))
+    suppliers.push(
+      await procurementService.createSupplier({ ...s, bankName: 'Equity Bank', bankAccountNo: String(randInt(1000000000, 1999999999)) }),
+    )
   }
 
   const procurementRuns = [
-    { supplier: 0, department: 'Kitchen / Boarding', account: FOOD, fundId: F_BRD, description: 'Maize (90kg bags)', quantity: 120, unitCost: 4_800, date: '2026-01-20', pay: true },
-    { supplier: 1, department: 'Academics', account: TEACHING_MATERIALS, fundId: F_CAP, description: 'Form 1 textbook set', quantity: 60, unitCost: 3_200, date: '2026-02-10', pay: true },
-    { supplier: 2, department: 'Maintenance', account: REPAIRS, fundId: F_DEV, description: 'Roofing sheets and timber', quantity: 40, unitCost: 2_750, date: '2026-05-18', pay: true },
+    {
+      supplier: 0,
+      department: 'Kitchen / Boarding',
+      account: FOOD,
+      fundId: F_BRD,
+      description: 'Maize (90kg bags)',
+      quantity: 120,
+      unitCost: 4_800,
+      date: '2026-01-20',
+      pay: true,
+    },
+    {
+      supplier: 1,
+      department: 'Academics',
+      account: TEACHING_MATERIALS,
+      fundId: F_CAP,
+      description: 'Form 1 textbook set',
+      quantity: 60,
+      unitCost: 3_200,
+      date: '2026-02-10',
+      pay: true,
+    },
+    {
+      supplier: 2,
+      department: 'Maintenance',
+      account: REPAIRS,
+      fundId: F_DEV,
+      description: 'Roofing sheets and timber',
+      quantity: 40,
+      unitCost: 2_750,
+      date: '2026-05-18',
+      pay: true,
+    },
     // Left unpaid on purpose: gives the Procurement dashboard widget and the
     // Principal's approval queue something real to show.
-    { supplier: 0, department: 'Kitchen / Boarding', account: FOOD, fundId: F_BRD, description: 'Beans (90kg bags)', quantity: 45, unitCost: 9_500, date: '2026-09-03', pay: false },
+    {
+      supplier: 0,
+      department: 'Kitchen / Boarding',
+      account: FOOD,
+      fundId: F_BRD,
+      description: 'Beans (90kg bags)',
+      quantity: 45,
+      unitCost: 9_500,
+      date: '2026-09-03',
+      pay: false,
+    },
   ]
 
   let poCount = 0
@@ -822,9 +1007,24 @@ async function main() {
       bankAccountNo: String(randInt(1000000000, 1999999999)),
       employmentDate: `${randInt(2015, 2023)}-01-15`,
     })
-    await payrollService.addSalaryComponent(employee.id, { componentType: 'basic', name: 'Basic Salary', amount: e.basic, isPercentageOfBasic: false })
-    await payrollService.addSalaryComponent(employee.id, { componentType: 'allowance', name: 'House Allowance', amount: e.houseAllowance, isPercentageOfBasic: false })
-    await payrollService.addSalaryComponent(employee.id, { componentType: 'allowance', name: 'Responsibility Allowance', amount: 5, isPercentageOfBasic: true })
+    await payrollService.addSalaryComponent(employee.id, {
+      componentType: 'basic',
+      name: 'Basic Salary',
+      amount: e.basic,
+      isPercentageOfBasic: false,
+    })
+    await payrollService.addSalaryComponent(employee.id, {
+      componentType: 'allowance',
+      name: 'House Allowance',
+      amount: e.houseAllowance,
+      isPercentageOfBasic: false,
+    })
+    await payrollService.addSalaryComponent(employee.id, {
+      componentType: 'allowance',
+      name: 'Responsibility Allowance',
+      amount: 5,
+      isPercentageOfBasic: true,
+    })
   }
 
   const payrollMonths: { monthYear: string; periodId: number; entryDate: string }[] = [
@@ -857,19 +1057,95 @@ async function main() {
   // --- Fixed assets ----------------------------------------------------------
   console.log('Fixed assets and depreciation...')
   const categories = {
-    vehicles: await assetsService.createCategory({ name: 'Motor Vehicles', defaultUsefulLifeYears: 8, depreciationMethod: 'straight_line', assetAccountId: PPE, depreciationExpenseAccountId: DEPRECIATION, accumulatedDepreciationAccountId: ACCUM_DEP }),
-    ict: await assetsService.createCategory({ name: 'ICT Equipment', defaultUsefulLifeYears: 4, depreciationMethod: 'straight_line', assetAccountId: PPE, depreciationExpenseAccountId: DEPRECIATION, accumulatedDepreciationAccountId: ACCUM_DEP }),
-    furniture: await assetsService.createCategory({ name: 'Furniture and Fittings', defaultUsefulLifeYears: 10, depreciationMethod: 'straight_line', assetAccountId: PPE, depreciationExpenseAccountId: DEPRECIATION, accumulatedDepreciationAccountId: ACCUM_DEP }),
-    lab: await assetsService.createCategory({ name: 'Laboratory Equipment', defaultUsefulLifeYears: 6, depreciationMethod: 'straight_line', assetAccountId: PPE, depreciationExpenseAccountId: DEPRECIATION, accumulatedDepreciationAccountId: ACCUM_DEP }),
+    vehicles: await assetsService.createCategory({
+      name: 'Motor Vehicles',
+      defaultUsefulLifeYears: 8,
+      depreciationMethod: 'straight_line',
+      assetAccountId: PPE,
+      depreciationExpenseAccountId: DEPRECIATION,
+      accumulatedDepreciationAccountId: ACCUM_DEP,
+    }),
+    ict: await assetsService.createCategory({
+      name: 'ICT Equipment',
+      defaultUsefulLifeYears: 4,
+      depreciationMethod: 'straight_line',
+      assetAccountId: PPE,
+      depreciationExpenseAccountId: DEPRECIATION,
+      accumulatedDepreciationAccountId: ACCUM_DEP,
+    }),
+    furniture: await assetsService.createCategory({
+      name: 'Furniture and Fittings',
+      defaultUsefulLifeYears: 10,
+      depreciationMethod: 'straight_line',
+      assetAccountId: PPE,
+      depreciationExpenseAccountId: DEPRECIATION,
+      accumulatedDepreciationAccountId: ACCUM_DEP,
+    }),
+    lab: await assetsService.createCategory({
+      name: 'Laboratory Equipment',
+      defaultUsefulLifeYears: 6,
+      depreciationMethod: 'straight_line',
+      assetAccountId: PPE,
+      depreciationExpenseAccountId: DEPRECIATION,
+      accumulatedDepreciationAccountId: ACCUM_DEP,
+    }),
   }
 
   const assetList = [
-    { tag: 'KSS/VEH/001', category: categories.vehicles.id, name: 'School Bus - KDA 331P', cost: 6_800_000, fundId: F_DEV, location: 'Main gate', date: '2026-01-15' },
-    { tag: 'KSS/ICT/001', category: categories.ict.id, name: 'Computer Lab - 25 desktop units', cost: 1_250_000, fundId: F_CAP, location: 'Computer Laboratory', date: '2026-02-03' },
-    { tag: 'KSS/ICT/002', category: categories.ict.id, name: 'Staffroom printers and projectors', cost: 320_000, fundId: F_TUI, location: 'Staffroom', date: '2026-02-20' },
-    { tag: 'KSS/FUR/001', category: categories.furniture.id, name: 'Classroom desks and chairs - 240 sets', cost: 960_000, fundId: F_DEV, location: 'Classroom block', date: '2026-01-22' },
-    { tag: 'KSS/FUR/002', category: categories.furniture.id, name: 'Dormitory double-decker beds - 80 units', cost: 720_000, fundId: F_BRD, location: 'Dormitories', date: '2026-04-30' },
-    { tag: 'KSS/LAB/001', category: categories.lab.id, name: 'Chemistry laboratory apparatus', cost: 480_000, fundId: F_CAP, location: 'Chemistry Laboratory', date: '2026-05-06' },
+    {
+      tag: 'KSS/VEH/001',
+      category: categories.vehicles.id,
+      name: 'School Bus - KDA 331P',
+      cost: 6_800_000,
+      fundId: F_DEV,
+      location: 'Main gate',
+      date: '2026-01-15',
+    },
+    {
+      tag: 'KSS/ICT/001',
+      category: categories.ict.id,
+      name: 'Computer Lab - 25 desktop units',
+      cost: 1_250_000,
+      fundId: F_CAP,
+      location: 'Computer Laboratory',
+      date: '2026-02-03',
+    },
+    {
+      tag: 'KSS/ICT/002',
+      category: categories.ict.id,
+      name: 'Staffroom printers and projectors',
+      cost: 320_000,
+      fundId: F_TUI,
+      location: 'Staffroom',
+      date: '2026-02-20',
+    },
+    {
+      tag: 'KSS/FUR/001',
+      category: categories.furniture.id,
+      name: 'Classroom desks and chairs - 240 sets',
+      cost: 960_000,
+      fundId: F_DEV,
+      location: 'Classroom block',
+      date: '2026-01-22',
+    },
+    {
+      tag: 'KSS/FUR/002',
+      category: categories.furniture.id,
+      name: 'Dormitory double-decker beds - 80 units',
+      cost: 720_000,
+      fundId: F_BRD,
+      location: 'Dormitories',
+      date: '2026-04-30',
+    },
+    {
+      tag: 'KSS/LAB/001',
+      category: categories.lab.id,
+      name: 'Chemistry laboratory apparatus',
+      cost: 480_000,
+      fundId: F_CAP,
+      location: 'Chemistry Laboratory',
+      date: '2026-05-06',
+    },
   ]
   for (const a of assetList) {
     await assetsService.acquire({
@@ -1107,7 +1383,8 @@ async function main() {
     const records = allStudents.map((student) => ({
       studentId: student.id,
       attendanceDate: day,
-      status: (chance(0.94) ? 'present' : chance(0.5) ? 'absent' : chance(0.5) ? 'late' : 'excused') as 'present' | 'absent' | 'late' | 'excused',
+      status: (chance(0.94) ? 'present' : chance(0.5) ? 'absent' : chance(0.5) ? 'late' : 'excused') as
+        'present' | 'absent' | 'late' | 'excused',
       recordedBy: TEACHER_USER,
     }))
     const written = await tolerate(`attendance for ${day}`, () => attendanceService.markBulk(records))
@@ -1144,11 +1421,31 @@ async function main() {
   }
 
   const incidents = [
-    { severity: 'minor' as const, description: 'Found outside the classroom during a lesson without permission.', actionTaken: 'Verbal warning issued and the class teacher informed.' },
-    { severity: 'moderate' as const, description: 'Repeated noise-making during evening preps despite prior warnings.', actionTaken: 'Two days of supervised manual work; parent contacted by phone.' },
-    { severity: 'minor' as const, description: 'Reported to the parade in an incomplete school uniform.', actionTaken: 'Uniform corrected the same day; recorded for monitoring.' },
-    { severity: 'major' as const, description: 'Left the school compound without a gate pass during afternoon lessons.', actionTaken: 'Parent summoned; referred to the Deputy Principal for a formal hearing.' },
-    { severity: 'moderate' as const, description: 'Damage to a laboratory stool during a practical session.', actionTaken: 'Restitution agreed with the parent; counselled on laboratory conduct.' },
+    {
+      severity: 'minor' as const,
+      description: 'Found outside the classroom during a lesson without permission.',
+      actionTaken: 'Verbal warning issued and the class teacher informed.',
+    },
+    {
+      severity: 'moderate' as const,
+      description: 'Repeated noise-making during evening preps despite prior warnings.',
+      actionTaken: 'Two days of supervised manual work; parent contacted by phone.',
+    },
+    {
+      severity: 'minor' as const,
+      description: 'Reported to the parade in an incomplete school uniform.',
+      actionTaken: 'Uniform corrected the same day; recorded for monitoring.',
+    },
+    {
+      severity: 'major' as const,
+      description: 'Left the school compound without a gate pass during afternoon lessons.',
+      actionTaken: 'Parent summoned; referred to the Deputy Principal for a formal hearing.',
+    },
+    {
+      severity: 'moderate' as const,
+      description: 'Damage to a laboratory stool during a practical session.',
+      actionTaken: 'Restitution agreed with the parent; counselled on laboratory conduct.',
+    },
   ]
   for (const [i, incident] of incidents.entries()) {
     await disciplineService.create({
@@ -1166,10 +1463,30 @@ async function main() {
   console.log('Dormitories and boarding...')
   const boarders = allStudents.filter((s) => s.boarding === 'boarder')
   const dormitories = [
-    await boardingService.createDormitory({ name: 'Kirinyaga House', gender: 'boys', capacity: 40, wardenStaffId: staffByStaffNo.get('BOM/S06') }),
-    await boardingService.createDormitory({ name: 'Elgon House', gender: 'boys', capacity: 40, wardenStaffId: staffByStaffNo.get('TSC/001') }),
-    await boardingService.createDormitory({ name: 'Nyandarua House', gender: 'girls', capacity: 40, wardenStaffId: staffByStaffNo.get('BOM/S04') }),
-    await boardingService.createDormitory({ name: 'Menengai House', gender: 'girls', capacity: 40, wardenStaffId: staffByStaffNo.get('TSC/004') }),
+    await boardingService.createDormitory({
+      name: 'Kirinyaga House',
+      gender: 'boys',
+      capacity: 40,
+      wardenStaffId: staffByStaffNo.get('BOM/S06'),
+    }),
+    await boardingService.createDormitory({
+      name: 'Elgon House',
+      gender: 'boys',
+      capacity: 40,
+      wardenStaffId: staffByStaffNo.get('TSC/001'),
+    }),
+    await boardingService.createDormitory({
+      name: 'Nyandarua House',
+      gender: 'girls',
+      capacity: 40,
+      wardenStaffId: staffByStaffNo.get('BOM/S04'),
+    }),
+    await boardingService.createDormitory({
+      name: 'Menengai House',
+      gender: 'girls',
+      capacity: 40,
+      wardenStaffId: staffByStaffNo.get('TSC/004'),
+    }),
   ]
 
   const boysDorms = [dormitories[0], dormitories[1]]
@@ -1209,8 +1526,22 @@ async function main() {
   // --- Transport -------------------------------------------------------------
   console.log('Transport routes...')
   const routePlan = [
-    { routeName: 'Route A — Kilimani / Kawangware', vehicleRegistration: 'KDA 331P', driverName: 'Simon Kariuki', capacity: 45, feeAmount: 6_000, stops: ['Kilimani Stage', 'Yaya Centre', 'Kawangware 46', 'Dagoretti Corner'] },
-    { routeName: 'Route B — Langata / Karen', vehicleRegistration: 'KCX 774T', driverName: 'Boniface Otieno', capacity: 40, feeAmount: 7_500, stops: ['Langata Shopping Centre', 'Bomas', 'Karen Roundabout'] },
+    {
+      routeName: 'Route A — Kilimani / Kawangware',
+      vehicleRegistration: 'KDA 331P',
+      driverName: 'Simon Kariuki',
+      capacity: 45,
+      feeAmount: 6_000,
+      stops: ['Kilimani Stage', 'Yaya Centre', 'Kawangware 46', 'Dagoretti Corner'],
+    },
+    {
+      routeName: 'Route B — Langata / Karen',
+      vehicleRegistration: 'KCX 774T',
+      driverName: 'Boniface Otieno',
+      capacity: 40,
+      feeAmount: 7_500,
+      stops: ['Langata Shopping Centre', 'Bomas', 'Karen Roundabout'],
+    },
   ]
   const dayScholars = allStudents.filter((s) => s.boarding === 'day')
   let transportAllocations = 0
@@ -1226,11 +1557,24 @@ async function main() {
     })
     const stops = []
     for (const [order, stopName] of plan.stops.entries()) {
-      stops.push(await transportService.addStop({ routeId: route.id, stopName, stopOrder: order, pickupTime: `0${6 + Math.floor(order / 2)}:${order % 2 === 0 ? '00' : '30'}` }))
+      stops.push(
+        await transportService.addStop({
+          routeId: route.id,
+          stopName,
+          stopOrder: order,
+          pickupTime: `0${6 + Math.floor(order / 2)}:${order % 2 === 0 ? '00' : '30'}`,
+        }),
+      )
     }
 
     for (const student of dayScholars.filter((_, i) => i % routePlan.length === index)) {
-      await transportService.allocate({ studentId: student.id, routeId: route.id, stopId: pick(stops).id, periodId: P3, startDate: TERM_3.start })
+      await transportService.allocate({
+        studentId: student.id,
+        routeId: route.id,
+        stopId: pick(stops).id,
+        periodId: P3,
+        startDate: TERM_3.start,
+      })
       transportAllocations++
     }
   }
@@ -1256,12 +1600,42 @@ async function main() {
   }
 
   const visits = [
-    { complaint: 'Headache and mild fever since morning parade.', diagnosis: 'Suspected malaria', treatment: 'Paracetamol administered; blood slide requested.', referred: false },
-    { complaint: 'Sprained ankle during a games session.', diagnosis: 'Grade 1 ankle sprain', treatment: 'Cold compress, crepe bandage, excused from games for one week.', referred: false },
-    { complaint: 'Persistent abdominal pain over three days.', diagnosis: 'For further investigation', treatment: 'Initial analgesia given.', referred: true },
-    { complaint: 'Sore throat and difficulty swallowing.', diagnosis: 'Tonsillitis', treatment: 'Amoxicillin course started; warm saline gargle advised.', referred: false },
-    { complaint: 'Cut to the left hand from a laboratory glass breakage.', diagnosis: 'Superficial laceration', treatment: 'Cleaned and dressed; tetanus status confirmed current.', referred: false },
-    { complaint: 'Fainted during morning assembly.', diagnosis: 'Suspected anaemia', treatment: 'Rested at the clinic; parent contacted.', referred: true },
+    {
+      complaint: 'Headache and mild fever since morning parade.',
+      diagnosis: 'Suspected malaria',
+      treatment: 'Paracetamol administered; blood slide requested.',
+      referred: false,
+    },
+    {
+      complaint: 'Sprained ankle during a games session.',
+      diagnosis: 'Grade 1 ankle sprain',
+      treatment: 'Cold compress, crepe bandage, excused from games for one week.',
+      referred: false,
+    },
+    {
+      complaint: 'Persistent abdominal pain over three days.',
+      diagnosis: 'For further investigation',
+      treatment: 'Initial analgesia given.',
+      referred: true,
+    },
+    {
+      complaint: 'Sore throat and difficulty swallowing.',
+      diagnosis: 'Tonsillitis',
+      treatment: 'Amoxicillin course started; warm saline gargle advised.',
+      referred: false,
+    },
+    {
+      complaint: 'Cut to the left hand from a laboratory glass breakage.',
+      diagnosis: 'Superficial laceration',
+      treatment: 'Cleaned and dressed; tetanus status confirmed current.',
+      referred: false,
+    },
+    {
+      complaint: 'Fainted during morning assembly.',
+      diagnosis: 'Suspected anaemia',
+      treatment: 'Rested at the clinic; parent contacted.',
+      referred: true,
+    },
   ]
   for (const [i, v] of visits.entries()) {
     const visit = await healthService.createVisit({
@@ -1340,12 +1714,14 @@ async function main() {
   ]
   const clubs = []
   for (const c of clubPlan) {
-    clubs.push(await clubsService.createClub({
-      name: c.name,
-      category: c.category,
-      patronStaffId: staffByStaffNo.get(c.patron),
-      description: `${c.name} meets every Wednesday afternoon during the co-curricular slot.`,
-    }))
+    clubs.push(
+      await clubsService.createClub({
+        name: c.name,
+        category: c.category,
+        patronStaffId: staffByStaffNo.get(c.patron),
+        description: `${c.name} meets every Wednesday afternoon during the co-curricular slot.`,
+      }),
+    )
   }
 
   let memberships = 0
@@ -1396,11 +1772,31 @@ async function main() {
   // --- Notices ---------------------------------------------------------------
   console.log('Notices...')
   const noticePlan = [
-    { title: 'Term 3 Opening — 31 August 2026', body: 'All learners report on Monday 31 August 2026 by 4.00pm. Boarders should carry the full list of personal effects circulated last term. Fee balances for Term 2 must be cleared before reporting.', audience: 'all' as const },
-    { title: 'Form 4 KCSE Registration', body: 'Form 4 candidates must confirm their KCSE registration details at the Deputy Principal’s office before Friday 11 September 2026. Corrections cannot be made after the KNEC deadline.', audience: 'all' as const },
-    { title: 'Parents’ Academic Day — 26 September 2026', body: 'Parents and guardians are invited to the Term 3 Academic Day on Saturday 26 September 2026 from 9.00am. Class teachers will issue Term 2 report forms and discuss individual progress.', audience: 'parents' as const },
-    { title: 'Staff Briefing — Monday 7 September', body: 'All teaching staff to attend a briefing in the staffroom at 4.15pm on the Term 3 examination calendar and syllabus coverage returns.', audience: 'staff' as const },
-    { title: 'Water Rationing Advisory', body: 'Following the county water supply interruption, dormitories will have running water between 5.00am–8.00am and 5.00pm–9.00pm until further notice.', audience: 'all' as const },
+    {
+      title: 'Term 3 Opening — 31 August 2026',
+      body: 'All learners report on Monday 31 August 2026 by 4.00pm. Boarders should carry the full list of personal effects circulated last term. Fee balances for Term 2 must be cleared before reporting.',
+      audience: 'all' as const,
+    },
+    {
+      title: 'Form 4 KCSE Registration',
+      body: 'Form 4 candidates must confirm their KCSE registration details at the Deputy Principal’s office before Friday 11 September 2026. Corrections cannot be made after the KNEC deadline.',
+      audience: 'all' as const,
+    },
+    {
+      title: 'Parents’ Academic Day — 26 September 2026',
+      body: 'Parents and guardians are invited to the Term 3 Academic Day on Saturday 26 September 2026 from 9.00am. Class teachers will issue Term 2 report forms and discuss individual progress.',
+      audience: 'parents' as const,
+    },
+    {
+      title: 'Staff Briefing — Monday 7 September',
+      body: 'All teaching staff to attend a briefing in the staffroom at 4.15pm on the Term 3 examination calendar and syllabus coverage returns.',
+      audience: 'staff' as const,
+    },
+    {
+      title: 'Water Rationing Advisory',
+      body: 'Following the county water supply interruption, dormitories will have running water between 5.00am–8.00am and 5.00pm–9.00pm until further notice.',
+      audience: 'all' as const,
+    },
   ]
   for (const n of noticePlan) {
     await noticesService.create({ ...n, publishedBy: PRINCIPAL, publishNow: true })

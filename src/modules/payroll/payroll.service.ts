@@ -2,12 +2,7 @@ import { payrollRepository } from './payroll.repository.js'
 import { journalService } from '../journal/journal.service.js'
 import { ConflictError, NotFoundError } from '../../common/errors.js'
 import { broadcastChange } from '../../common/events.js'
-import type {
-  AddSalaryComponentInput,
-  CreateEmployeeInput,
-  CreatePayrollRunInput,
-  ProcessPayrollRunInput,
-} from './payroll.schema.js'
+import type { AddSalaryComponentInput, CreateEmployeeInput, CreatePayrollRunInput, ProcessPayrollRunInput } from './payroll.schema.js'
 
 /**
  * Illustrative statutory deduction rates only — Kenya's PAYE bands, NSFF

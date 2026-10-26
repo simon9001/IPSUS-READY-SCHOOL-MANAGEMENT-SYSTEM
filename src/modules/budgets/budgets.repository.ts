@@ -7,7 +7,11 @@ export const budgetsRepository = {
   findAll: () => db.select().from(budgets).orderBy(budgets.fiscalYear),
 
   findById: (id: number) =>
-    db.select().from(budgets).where(eq(budgets.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(budgets)
+      .where(eq(budgets.id, id))
+      .then((rows) => rows[0]),
 
   findLines: (budgetId: number) =>
     db
@@ -35,7 +39,11 @@ export const budgetsRepository = {
   },
 
   addLine: (budgetId: number, data: Omit<NewBudgetLine, 'budgetId'>) =>
-    db.insert(budgetLines).values({ ...data, budgetId }).returning().then((rows) => rows[0]),
+    db
+      .insert(budgetLines)
+      .values({ ...data, budgetId })
+      .returning()
+      .then((rows) => rows[0]),
 
   approve: (id: number, approvedBy: number) =>
     db

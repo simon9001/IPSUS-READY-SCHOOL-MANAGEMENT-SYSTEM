@@ -4,7 +4,9 @@ import { cors } from 'hono/cors'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { AppError } from './common/errors.js'
 import { requestLogger, logError, metricsHandler } from './common/observability.js'
-import { assertDatabaseConnection } from './db/client.js'
+import { logger } from './common/logger.js'
+import { createHealthRoutes } from './common/healthcheck.js'
+import { assertDatabaseConnection, checkDatabase } from './db/client.js'
 import { resolvePort, DEFAULT_PORT } from './common/port.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { attachUser } from './modules/auth/auth.middleware.js'
@@ -81,6 +83,10 @@ app.get('/', (c) => {
 // your own infrastructure.
 app.get('/metrics', metricsHandler)
 
+// Unauthenticated readiness probe — 200 when the database answers, 503 when
+// it doesn't. Reveals nothing beyond up/down.
+app.route('/health', createHealthRoutes(checkDatabase))
+
 app.route('/api/auth', authRoutes)
 app.route('/api/accounts', accountsRoutes)
 app.route('/api/funds', fundsRoutes)
@@ -142,7 +148,7 @@ app.onError((err, c) => {
 
 const rawPort = process.env.PORT
 if (rawPort !== undefined && rawPort.trim() === '') {
-  console.warn(`PORT is set but empty — falling back to ${DEFAULT_PORT}.`)
+  logger.warn(`PORT is set but empty — falling back to ${DEFAULT_PORT}.`)
 }
 const port = resolvePort(rawPort)
 
@@ -151,16 +157,18 @@ const port = resolvePort(rawPort)
 // discover the DB connection is broken.
 try {
   await assertDatabaseConnection()
-  console.log('Database connection OK')
+  logger.info('Database connection OK')
 } catch (err) {
-  console.error('Failed to connect to the database — server will not start.')
-  console.error(err instanceof Error ? err.message : err)
+  logger.fatal({ err }, 'Failed to connect to the database — server will not start.')
   process.exit(1)
 }
 
-serve({
-  fetch: app.fetch,
-  port
-}, (info) => {
-  console.log(`Server is running on port:${info.port}`)
-})
+serve(
+  {
+    fetch: app.fetch,
+    port,
+  },
+  (info) => {
+    logger.info({ port: info.port }, `Server is running on port:${info.port}`)
+  },
+)

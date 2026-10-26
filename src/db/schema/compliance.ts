@@ -11,11 +11,15 @@ export const complianceReportStatusEnum = pgEnum('compliance_report_status', ['d
 export const complianceReports = pgTable('compliance_reports', {
   id: serial('id').primaryKey(),
   reportType: complianceReportTypeEnum('report_type').notNull(),
-  periodId: integer('period_id').notNull().references(() => fiscalPeriods.id),
+  periodId: integer('period_id')
+    .notNull()
+    .references(() => fiscalPeriods.id),
   reportData: jsonb('report_data').notNull(),
   status: complianceReportStatusEnum('status').notNull().default('draft'),
   referenceNumber: varchar('reference_number', { length: 60 }), // government acknowledgment/reference once filed
-  generatedBy: integer('generated_by').notNull().references(() => users.id),
+  generatedBy: integer('generated_by')
+    .notNull()
+    .references(() => users.id),
   generatedAt: timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
   submittedBy: integer('submitted_by').references(() => users.id),
   submittedAt: timestamp('submitted_at', { withTimezone: true }),

@@ -7,7 +7,15 @@ export const staffDisciplineRepository = {
   findRecent: (limit: number) => db.select().from(staffDisciplinaryRecords).orderBy(desc(staffDisciplinaryRecords.createdAt)).limit(limit),
   findByStaff: (staffId: number) => db.select().from(staffDisciplinaryRecords).where(eq(staffDisciplinaryRecords.staffId, staffId)),
   findById: (id: number) =>
-    db.select().from(staffDisciplinaryRecords).where(eq(staffDisciplinaryRecords.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(staffDisciplinaryRecords)
+      .where(eq(staffDisciplinaryRecords.id, id))
+      .then((rows) => rows[0]),
   create: (data: NewStaffDisciplinaryRecord) =>
-    db.insert(staffDisciplinaryRecords).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(staffDisciplinaryRecords)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 }

@@ -8,7 +8,12 @@ export const admissionTypeEnum = pgEnum('admission_type', ['placement', 'transfe
 // decided) and go straight to 'admitted'; 'direct' walks through the full
 // pending -> interview_scheduled -> admitted/waitlisted/rejected flow.
 export const admissionStatusEnum = pgEnum('admission_status', [
-  'pending', 'interview_scheduled', 'admitted', 'waitlisted', 'rejected', 'enrolled',
+  'pending',
+  'interview_scheduled',
+  'admitted',
+  'waitlisted',
+  'rejected',
+  'enrolled',
 ])
 
 export const admissions = pgTable('admissions', {
@@ -26,7 +31,9 @@ export const admissions = pgTable('admissions', {
   guardianName: varchar('guardian_name', { length: 150 }),
   guardianPhone: varchar('guardian_phone', { length: 30 }),
   guardianEmail: varchar('guardian_email', { length: 150 }),
-  targetClassId: integer('target_class_id').notNull().references(() => classes.id),
+  targetClassId: integer('target_class_id')
+    .notNull()
+    .references(() => classes.id),
   boardingStatus: varchar('boarding_status', { length: 10 }).notNull().default('day'), // 'day' | 'boarder'
 
   // NEMIS continuity — applies to placement and transfer
@@ -58,6 +65,8 @@ export const admissions = pgTable('admissions', {
   studentId: integer('student_id').references(() => students.id),
   enrolledAt: timestamp('enrolled_at', { withTimezone: true }),
 
-  recordedBy: integer('recorded_by').notNull().references(() => users.id),
+  recordedBy: integer('recorded_by')
+    .notNull()
+    .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })

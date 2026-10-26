@@ -16,6 +16,9 @@ export const appraisalsService = {
 
   async update(id: number, input: UpdateAppraisalInput) {
     await this.getById(id)
-    return appraisalsRepository.update(id, { ...input, overallRating: input.overallRating !== undefined ? String(input.overallRating) : undefined })
+    return appraisalsRepository.update(id, {
+      ...input,
+      overallRating: input.overallRating !== undefined ? String(input.overallRating) : undefined,
+    })
   },
 }

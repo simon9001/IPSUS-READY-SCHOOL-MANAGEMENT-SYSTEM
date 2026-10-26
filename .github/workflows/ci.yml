@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version comes from the packageManager field in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      # Fails if coverage drops below the thresholds in vitest.config.ts.
+      - run: pnpm test:coverage
+      - run: pnpm build
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      # Production dependencies only; fails on high or critical advisories.
+      - run: pnpm audit --prod --audit-level high
+
+  smoke:
+    name: Migrate, seed and boot against Postgres
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: accounts
+          POSTGRES_PASSWORD: accounts_dev_password
+          POSTGRES_DB: school_accounts
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U accounts -d school_accounts"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://accounts:accounts_dev_password@127.0.0.1:5432/school_accounts
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else
+      CORS_ORIGIN: http://localhost:5173
+      PORT: 4100
+      NODE_ENV: production
+      SEED_ADMIN_EMAIL: admin@school.local
+      SEED_ADMIN_PASSWORD: ChangeMe123!
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations to an empty database
+        run: pnpm db:migrate
+      - run: pnpm db:seed
+      # Should be a no-op straight after seeding; fails loudly if rbac.ts and
+      # the seed have drifted into conflicting definitions.
+      - run: pnpm db:sync-rbac
+      - run: pnpm build
+
+      - name: Boot the API and probe /health
+        run: |
+          node dist/index.js > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4100/health; then echo; exit 0; fi
+            sleep 1
+          done
+          echo "API did not become healthy within 30s"
+          cat server.log
+          exit 1
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t school-api:ci .

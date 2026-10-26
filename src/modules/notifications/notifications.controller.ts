@@ -6,8 +6,7 @@ import type { CreateTemplateInput, SendNotificationInput } from './notifications
 
 export const notificationsController = {
   listTemplates: async (c: Context) => ok(c, await notificationsService.listTemplates()),
-  createTemplate: async (c: Context) =>
-    created(c, await notificationsService.createTemplate(getValidated<CreateTemplateInput>(c, 'json'))),
+  createTemplate: async (c: Context) => created(c, await notificationsService.createTemplate(getValidated<CreateTemplateInput>(c, 'json'))),
 
   listByRecipient: async (c: Context) => ok(c, await notificationsService.listByRecipient(Number(c.req.param('userId')))),
   send: async (c: Context) => created(c, await notificationsService.send(getValidated<SendNotificationInput>(c, 'json'))),

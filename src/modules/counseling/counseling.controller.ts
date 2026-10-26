@@ -7,6 +7,5 @@ import type { CreateCounselingSessionInput } from './counseling.schema.js'
 export const counselingController = {
   listByStudent: async (c: Context) => ok(c, await counselingService.listByStudent(Number(c.req.param('studentId')))),
   getById: async (c: Context) => ok(c, await counselingService.getById(Number(c.req.param('id')))),
-  create: async (c: Context) =>
-    created(c, await counselingService.create(getValidated<CreateCounselingSessionInput>(c, 'json'))),
+  create: async (c: Context) => created(c, await counselingService.create(getValidated<CreateCounselingSessionInput>(c, 'json'))),
 }

@@ -3,11 +3,12 @@ import { config } from 'dotenv'
 // full module bodies) evaluate before the importing file's own top-level
 // code, so callers doing `config(...)` then `import { db } from './client.js'`
 // would otherwise have this module read env vars before the override ran.
-config({ override: true })
+config({ override: true, quiet: true })
 
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import * as schema from './schema/index.js'
+import { logger } from '../common/logger.js'
 
 const connectionString = process.env.DATABASE_URL
 
@@ -25,7 +26,7 @@ const queryClient = postgres(connectionString, {
   ssl: isLocalHost ? false : 'require',
   prepare: false,
   onnotice: () => {}, // Silences routine NOTICE logs (e.g. column already exists)
-  debug: process.env.DB_DEBUG === '1' ? (_c: unknown, query: string, params: unknown) => console.log('[sql]', query, params) : undefined,
+  debug: process.env.DB_DEBUG === '1' ? (_c: unknown, query: string, params: unknown) => logger.info({ query, params }, 'sql') : undefined,
 })
 export const db = drizzle(queryClient, { schema })
 
@@ -34,6 +35,11 @@ export const db = drizzle(queryClient, { schema })
 // would otherwise let the server start and accept traffic, only failing
 // once a request happened to touch the database. Call this before serve()
 // so a bad connection stops the process at startup instead.
+/** Cheapest possible round trip — used by the /health readiness probe. */
+export async function checkDatabase(): Promise<void> {
+  await queryClient`select 1`
+}
+
 export async function assertDatabaseConnection(): Promise<void> {
   await queryClient`select 1`
   await queryClient`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url text`
