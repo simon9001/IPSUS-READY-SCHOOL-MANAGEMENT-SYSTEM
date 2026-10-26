@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, pgEnum, unique } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, integer, pgEnum } from 'drizzle-orm/pg-core'
 import { classes, streams } from './students.js'
 import { subjects } from './subjects.js'
 import { teachers } from './teachers.js'

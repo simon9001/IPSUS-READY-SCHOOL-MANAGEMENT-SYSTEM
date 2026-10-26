@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, numeric, date, pgEnum, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, integer, numeric, date, pgEnum, timestamp } from 'drizzle-orm/pg-core'
 import { accounts } from './accounts.js'
 import { funds } from './funds.js'
 import { fiscalPeriods } from './periods.js'

@@ -313,7 +313,6 @@ async function main() {
   const BOARDING_INCOME = acct('4010')
   const ACTIVITY_INCOME = acct('4020')
   const CAPITATION_INCOME = acct('4100')
-  const TRADING_INCOME = acct('4300')
   const SALARIES = acct('5000')
   const TEACHING_MATERIALS = acct('5100')
   const FOOD = acct('5200')
@@ -329,7 +328,6 @@ async function main() {
   const F_BRD = fund('FUND-BRD')
   const F_DEV = fund('FUND-DEV')
   const F_PTA = fund('FUND-PTA')
-  const F_TRD = fund('FUND-TRD')
 
   const P1 = period(1)
   const P2 = period(2)
@@ -352,7 +350,6 @@ async function main() {
   const NURSE = actor('nurse@school.local')
   const LIBRARIAN = actor('librarian@school.local')
   const BOARDING_OFFICER = actor('boarding@school.local')
-  const DEAN = actor('dean@school.local')
 
   // --- Classes and streams ---------------------------------------------------
   console.log('Classes and streams...')
