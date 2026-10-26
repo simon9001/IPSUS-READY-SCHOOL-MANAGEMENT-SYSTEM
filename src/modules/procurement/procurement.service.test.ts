@@ -15,6 +15,7 @@ const repo = vi.hoisted(() => ({
   findSupplierInvoiceById: vi.fn(),
   createSupplierPayment: vi.fn(),
   markInvoicePaid: vi.fn(),
+  totalPaidForInvoice: vi.fn(),
   attachPaymentJournalEntry: vi.fn(),
 }))
 const postSystemEntry = vi.hoisted(() => vi.fn())
@@ -195,9 +196,18 @@ describe('procurementService.createSupplierPayment', () => {
     paidBy: 4,
   })
 
+  // Payments recorded against invoice 80, so the running total behaves like
+  // the real supplier_payments table across successive calls.
+  let recorded: string[]
+
   beforeEach(() => {
+    recorded = []
     repo.findSupplierInvoiceById.mockResolvedValue({ id: 80, invoiceNo: 'INV-88', amount: '2000.00', status: 'approved' })
-    repo.createSupplierPayment.mockResolvedValue({ id: 90 })
+    repo.createSupplierPayment.mockImplementation(async (data: { amount: string }) => {
+      recorded.push(data.amount)
+      return { id: 90 + recorded.length }
+    })
+    repo.totalPaidForInvoice.mockImplementation(async () => recorded.reduce((sum, amount) => sum + Number(amount), 0))
   })
 
   it('refuses to pay an invoice that is already paid, posting nothing', async () => {
@@ -223,5 +233,15 @@ describe('procurementService.createSupplierPayment', () => {
   it('leaves the invoice open after a partial payment', async () => {
     await procurementService.createSupplierPayment(pay(500))
     expect(repo.markInvoicePaid).not.toHaveBeenCalled()
+  })
+
+  it('marks the invoice paid once instalments add up to the full amount', async () => {
+    await procurementService.createSupplierPayment(pay(1200))
+    await procurementService.createSupplierPayment(pay('500.00'))
+    expect(repo.markInvoicePaid).not.toHaveBeenCalled()
+
+    await procurementService.createSupplierPayment(pay(300))
+    expect(repo.markInvoicePaid).toHaveBeenCalledTimes(1)
+    expect(repo.markInvoicePaid).toHaveBeenCalledWith(80)
   })
 })

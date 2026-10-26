@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import {
   goodsReceivedNotes,
@@ -137,6 +137,13 @@ export const procurementRepository = {
       .values(data)
       .returning()
       .then((rows) => rows[0]),
+  /** Everything paid against an invoice so far, as a number of shillings. */
+  totalPaidForInvoice: (supplierInvoiceId: number) =>
+    db
+      .select({ total: sql<string>`coalesce(sum(${supplierPayments.amount}), 0)` })
+      .from(supplierPayments)
+      .where(eq(supplierPayments.supplierInvoiceId, supplierInvoiceId))
+      .then((rows) => Number(rows[0].total)),
   attachPaymentJournalEntry: (id: number, journalEntryId: number) =>
     db
       .update(supplierPayments)

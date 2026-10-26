@@ -199,7 +199,11 @@ export const procurementService = {
       ],
     })
 
-    if (Number(input.amount) >= Number(invoice.amount)) {
+    // Compare the running total, not this one payment — an invoice settled in
+    // instalments must still end up 'paid'. The payment just inserted above is
+    // included in the total.
+    const totalPaid = await procurementRepository.totalPaidForInvoice(input.supplierInvoiceId)
+    if (totalPaid >= Number(invoice.amount)) {
       await procurementRepository.markInvoicePaid(input.supplierInvoiceId)
     }
 
