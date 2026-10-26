@@ -111,3 +111,11 @@ jobs:
           echo "API did not become healthy within 30s"
           cat server.log
           exit 1
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t school-api:ci .
