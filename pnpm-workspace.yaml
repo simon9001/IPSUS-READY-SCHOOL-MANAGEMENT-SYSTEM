@@ -1,0 +1,4 @@
+allowBuilds:
+  # esbuild (pulled in by tsx, vitest and drizzle-kit) downloads its native
+  # binary in a postinstall script; pnpm skips that unless allowed here.
+  esbuild: true
