@@ -3,7 +3,7 @@ import { config } from 'dotenv'
 // full module bodies) evaluate before the importing file's own top-level
 // code, so callers doing `config(...)` then `import { db } from './client.js'`
 // would otherwise have this module read env vars before the override ran.
-config({ override: true })
+config({ override: true, quiet: true })
 
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
