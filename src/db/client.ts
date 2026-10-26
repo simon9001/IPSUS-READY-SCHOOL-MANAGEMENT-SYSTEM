@@ -35,6 +35,11 @@ export const db = drizzle(queryClient, { schema })
 // would otherwise let the server start and accept traffic, only failing
 // once a request happened to touch the database. Call this before serve()
 // so a bad connection stops the process at startup instead.
+/** Cheapest possible round trip — used by the /health readiness probe. */
+export async function checkDatabase(): Promise<void> {
+  await queryClient`select 1`
+}
+
 export async function assertDatabaseConnection(): Promise<void> {
   await queryClient`select 1`
   await queryClient`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url text`

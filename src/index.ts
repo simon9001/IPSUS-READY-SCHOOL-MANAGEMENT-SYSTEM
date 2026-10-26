@@ -5,7 +5,8 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { AppError } from './common/errors.js'
 import { requestLogger, logError, metricsHandler } from './common/observability.js'
 import { logger } from './common/logger.js'
-import { assertDatabaseConnection } from './db/client.js'
+import { createHealthRoutes } from './common/healthcheck.js'
+import { assertDatabaseConnection, checkDatabase } from './db/client.js'
 import { resolvePort, DEFAULT_PORT } from './common/port.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { attachUser } from './modules/auth/auth.middleware.js'
@@ -81,6 +82,10 @@ app.get('/', (c) => {
 // network/reverse-proxy level before this is ever reachable from outside
 // your own infrastructure.
 app.get('/metrics', metricsHandler)
+
+// Unauthenticated readiness probe — 200 when the database answers, 503 when
+// it doesn't. Reveals nothing beyond up/down.
+app.route('/health', createHealthRoutes(checkDatabase))
 
 app.route('/api/auth', authRoutes)
 app.route('/api/accounts', accountsRoutes)
