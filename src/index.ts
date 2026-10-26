@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { AppError } from './common/errors.js'
 import { requestLogger, logError, metricsHandler } from './common/observability.js'
+import { logger } from './common/logger.js'
 import { assertDatabaseConnection } from './db/client.js'
 import { resolvePort, DEFAULT_PORT } from './common/port.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
@@ -142,7 +143,7 @@ app.onError((err, c) => {
 
 const rawPort = process.env.PORT
 if (rawPort !== undefined && rawPort.trim() === '') {
-  console.warn(`PORT is set but empty — falling back to ${DEFAULT_PORT}.`)
+  logger.warn(`PORT is set but empty — falling back to ${DEFAULT_PORT}.`)
 }
 const port = resolvePort(rawPort)
 
@@ -151,10 +152,9 @@ const port = resolvePort(rawPort)
 // discover the DB connection is broken.
 try {
   await assertDatabaseConnection()
-  console.log('Database connection OK')
+  logger.info('Database connection OK')
 } catch (err) {
-  console.error('Failed to connect to the database — server will not start.')
-  console.error(err instanceof Error ? err.message : err)
+  logger.fatal({ err }, 'Failed to connect to the database — server will not start.')
   process.exit(1)
 }
 
@@ -164,6 +164,6 @@ serve(
     port,
   },
   (info) => {
-    console.log(`Server is running on port:${info.port}`)
+    logger.info({ port: info.port }, `Server is running on port:${info.port}`)
   },
 )

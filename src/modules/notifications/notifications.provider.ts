@@ -1,3 +1,5 @@
+import { logger } from '../../common/logger.js'
+
 export interface SendResult {
   success: boolean
   failureReason?: string
@@ -14,7 +16,7 @@ export interface NotificationProvider {
  */
 export const consoleNotificationProvider: NotificationProvider = {
   async send({ channel, to, subject, body }) {
-    console.log(`[notification:${channel}] to=${to}${subject ? ` subject="${subject}"` : ''} body="${body}"`)
+    logger.info({ channel, to, subject, body }, 'notification (console provider, not dispatched)')
     return { success: true }
   },
 }
