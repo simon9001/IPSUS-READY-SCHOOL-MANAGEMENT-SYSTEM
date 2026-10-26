@@ -95,6 +95,14 @@ export const procurementRepository = {
       return grn
     })
   },
+  /** PO item ids that have appeared on any GRN raised against this PO. */
+  findReceivedItemIdsForPurchaseOrder: (purchaseOrderId: number) =>
+    db
+      .selectDistinct({ purchaseOrderItemId: grnItems.purchaseOrderItemId })
+      .from(grnItems)
+      .innerJoin(goodsReceivedNotes, eq(grnItems.grnId, goodsReceivedNotes.id))
+      .where(eq(goodsReceivedNotes.purchaseOrderId, purchaseOrderId))
+      .then((rows) => rows.map((r) => r.purchaseOrderItemId)),
   updatePurchaseOrderStatus: (id: number, status: 'partially_received' | 'received') =>
     db
       .update(purchaseOrders)

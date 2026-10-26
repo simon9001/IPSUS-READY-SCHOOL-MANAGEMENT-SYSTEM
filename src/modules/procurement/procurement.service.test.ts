@@ -9,6 +9,7 @@ const repo = vi.hoisted(() => ({
   findPurchaseOrderById: vi.fn(),
   findPurchaseOrderItems: vi.fn(),
   createGrn: vi.fn(),
+  findReceivedItemIdsForPurchaseOrder: vi.fn(),
   updatePurchaseOrderStatus: vi.fn(),
   createSupplierInvoice: vi.fn(),
   attachInvoiceJournalEntry: vi.fn(),
@@ -113,9 +114,18 @@ describe('procurementService.createGrn', () => {
     items: itemIds.map((id) => ({ purchaseOrderItemId: id, quantityReceived: 1 })),
   })
 
+  // PO item ids on every GRN recorded so far, like the grn_items table.
+  let receivedSoFar: number[]
+
   beforeEach(() => {
+    receivedSoFar = []
     repo.findPurchaseOrderById.mockResolvedValue({ id: 30, status: 'issued' })
     repo.findPurchaseOrderItems.mockResolvedValue([{ id: 301 }, { id: 302 }, { id: 303 }])
+    repo.createGrn.mockImplementation(async (data: object, items: { purchaseOrderItemId: number }[]) => {
+      receivedSoFar.push(...items.map((item) => item.purchaseOrderItemId))
+      return { id: 50, ...data }
+    })
+    repo.findReceivedItemIdsForPurchaseOrder.mockImplementation(async () => [...new Set(receivedSoFar)])
   })
 
   it('returns 404 and records nothing for an unknown purchase order', async () => {
@@ -132,6 +142,18 @@ describe('procurementService.createGrn', () => {
   it('marks the PO partially_received when the GRN covers only some items', async () => {
     await procurementService.createGrn(grn([301, 303]))
     expect(repo.updatePurchaseOrderStatus).toHaveBeenCalledWith(30, 'partially_received')
+  })
+
+  it('completes the PO when a delivery is split across several GRNs', async () => {
+    await procurementService.createGrn(grn([301]))
+    await procurementService.createGrn(grn([302]))
+    await procurementService.createGrn(grn([303]))
+
+    expect(repo.updatePurchaseOrderStatus.mock.calls.map((call) => call[1])).toEqual([
+      'partially_received',
+      'partially_received',
+      'received',
+    ])
   })
 
   it('stores received quantities as strings for the numeric column', async () => {

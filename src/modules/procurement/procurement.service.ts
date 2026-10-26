@@ -98,8 +98,9 @@ export const procurementService = {
     return po
   },
 
-  /** Simplified receipt tracking: a GRN covering every item on the PO marks
-   *  it 'received'; a GRN covering only some items marks it 'partially_received'. */
+  /** Simplified receipt tracking: once every item on the PO has appeared on
+   *  at least one GRN — this one or an earlier one — the PO is 'received';
+   *  until then it is 'partially_received'. Quantities are not compared. */
   async createGrn(input: CreateGrnInput) {
     const po = await procurementRepository.findPurchaseOrderById(input.purchaseOrderId)
     if (!po) throw new NotFoundError(`Purchase order ${input.purchaseOrderId} not found`)
@@ -115,7 +116,9 @@ export const procurementService = {
       input.items.map((item) => ({ ...item, quantityReceived: String(item.quantityReceived) })),
     )
 
-    const receivedItemIds = new Set(input.items.map((item) => item.purchaseOrderItemId))
+    // Includes the GRN just created, so a delivery split across several GRNs
+    // still completes the PO.
+    const receivedItemIds = new Set(await procurementRepository.findReceivedItemIdsForPurchaseOrder(input.purchaseOrderId))
     const status = poItems.every((item) => receivedItemIds.has(item.id)) ? 'received' : 'partially_received'
     await procurementRepository.updatePurchaseOrderStatus(input.purchaseOrderId, status)
 
