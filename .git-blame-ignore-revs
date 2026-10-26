@@ -1,0 +1,3 @@
+# Bulk formatting commits — `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+# style: apply prettier across the codebase
+b7b18b0b2241dbd0b82815dedf7d0d0953796e86
