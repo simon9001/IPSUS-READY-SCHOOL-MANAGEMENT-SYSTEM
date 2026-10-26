@@ -20,5 +20,10 @@ export const guardiansRepository = {
 
   findGuardiansByStudent: (studentId: number) => db.select().from(guardianStudents).where(eq(guardianStudents.studentId, studentId)),
 
-  link: (data: NewGuardianStudent) => db.insert(guardianStudents).values(data).returning().then((rows) => rows[0]),
+  link: (data: NewGuardianStudent) =>
+    db
+      .insert(guardianStudents)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 }

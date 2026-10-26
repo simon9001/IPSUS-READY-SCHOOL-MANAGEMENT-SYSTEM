@@ -6,12 +6,10 @@ import type { CreateGrantTypeInput, RecordDisbursementInput } from './grants.sch
 
 export const grantsController = {
   listTypes: async (c: Context) => ok(c, await grantsService.listTypes()),
-  createType: async (c: Context) =>
-    created(c, await grantsService.createType(getValidated<CreateGrantTypeInput>(c, 'json'))),
+  createType: async (c: Context) => created(c, await grantsService.createType(getValidated<CreateGrantTypeInput>(c, 'json'))),
 
   listDisbursements: async (c: Context) => ok(c, await grantsService.listDisbursements()),
-  getDisbursementById: async (c: Context) =>
-    ok(c, await grantsService.getDisbursementById(Number(c.req.param('id')))),
+  getDisbursementById: async (c: Context) => ok(c, await grantsService.getDisbursementById(Number(c.req.param('id')))),
   recordDisbursement: async (c: Context) =>
     created(c, await grantsService.recordDisbursement(getValidated<RecordDisbursementInput>(c, 'json'))),
 }

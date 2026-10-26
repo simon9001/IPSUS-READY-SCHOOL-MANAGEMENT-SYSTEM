@@ -9,4 +9,9 @@ export const contractsRoutes = new Hono()
 contractsRoutes.get('/staff/:staffId', requirePermission('contracts.view'), contractsController.listByStaff)
 contractsRoutes.get('/:id', requirePermission('contracts.view'), contractsController.getById)
 contractsRoutes.post('/', requirePermission('contracts.manage'), zValidator('json', createContractSchema), contractsController.create)
-contractsRoutes.patch('/:id/status', requirePermission('contracts.manage'), zValidator('json', updateContractStatusSchema), contractsController.updateStatus)
+contractsRoutes.patch(
+  '/:id/status',
+  requirePermission('contracts.manage'),
+  zValidator('json', updateContractStatusSchema),
+  contractsController.updateStatus,
+)

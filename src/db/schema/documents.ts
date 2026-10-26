@@ -3,7 +3,12 @@ import { students } from './students.js'
 import { users } from './identity.js'
 
 export const documentTypeEnum = pgEnum('document_type', [
-  'leaving_certificate', 'transcript', 'admission_letter', 'fee_clearance_letter', 'conduct_certificate', 'custom_letter',
+  'leaving_certificate',
+  'transcript',
+  'admission_letter',
+  'fee_clearance_letter',
+  'conduct_certificate',
+  'custom_letter',
 ])
 
 export const documentTemplates = pgTable('document_templates', {
@@ -27,6 +32,8 @@ export const generatedDocuments = pgTable('generated_documents', {
   templateId: integer('template_id').references(() => documentTemplates.id),
   content: text('content').notNull(),
   status: documentStatusEnum('status').notNull().default('issued'),
-  issuedBy: integer('issued_by').notNull().references(() => users.id),
+  issuedBy: integer('issued_by')
+    .notNull()
+    .references(() => users.id),
   issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
 })

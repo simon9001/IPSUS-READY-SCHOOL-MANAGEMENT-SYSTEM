@@ -13,7 +13,11 @@ import type { NewFeeInvoice, NewFeeInvoiceItem, NewFeePayment, NewFeePaymentAllo
 export const feesRepository = {
   findAllStructures: () => db.select().from(feeStructures),
   findStructureById: (id: number) =>
-    db.select().from(feeStructures).where(eq(feeStructures.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(feeStructures)
+      .where(eq(feeStructures.id, id))
+      .then((rows) => rows[0]),
   findStructureItems: (feeStructureId: number) =>
     db.select().from(feeStructureItems).where(eq(feeStructureItems.feeStructureId, feeStructureId)),
 
@@ -27,10 +31,13 @@ export const feesRepository = {
 
   findAllInvoices: () => db.select().from(feeInvoices),
   findInvoiceById: (id: number) =>
-    db.select().from(feeInvoices).where(eq(feeInvoices.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(feeInvoices)
+      .where(eq(feeInvoices.id, id))
+      .then((rows) => rows[0]),
   findInvoicesByStudent: (studentId: number) => db.select().from(feeInvoices).where(eq(feeInvoices.studentId, studentId)),
-  findInvoiceItems: (invoiceId: number) =>
-    db.select().from(feeInvoiceItems).where(eq(feeInvoiceItems.invoiceId, invoiceId)),
+  findInvoiceItems: (invoiceId: number) => db.select().from(feeInvoiceItems).where(eq(feeInvoiceItems.invoiceId, invoiceId)),
 
   async createInvoice(data: NewFeeInvoice, items: Omit<NewFeeInvoiceItem, 'invoiceId'>[]) {
     return db.transaction(async (tx) => {
@@ -44,10 +51,20 @@ export const feesRepository = {
   },
 
   attachInvoiceJournalEntry: (id: number, journalEntryId: number) =>
-    db.update(feeInvoices).set({ journalEntryId }).where(eq(feeInvoices.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(feeInvoices)
+      .set({ journalEntryId })
+      .where(eq(feeInvoices.id, id))
+      .returning()
+      .then((rows) => rows[0]),
 
   updateInvoiceStatus: (id: number, status: 'open' | 'partially_paid' | 'paid') =>
-    db.update(feeInvoices).set({ status }).where(eq(feeInvoices.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(feeInvoices)
+      .set({ status })
+      .where(eq(feeInvoices.id, id))
+      .returning()
+      .then((rows) => rows[0]),
 
   async allocatedForItem(invoiceItemId: number) {
     const [row] = await db
@@ -58,13 +75,21 @@ export const feesRepository = {
   },
 
   createPayment: (data: NewFeePayment) =>
-    db.insert(feePayments).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(feePayments)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   attachPaymentJournalEntry: (id: number, journalEntryId: number) =>
-    db.update(feePayments).set({ journalEntryId }).where(eq(feePayments.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(feePayments)
+      .set({ journalEntryId })
+      .where(eq(feePayments.id, id))
+      .returning()
+      .then((rows) => rows[0]),
 
-  createAllocations: (allocations: NewFeePaymentAllocation[]) =>
-    db.insert(feePaymentAllocations).values(allocations).returning(),
+  createAllocations: (allocations: NewFeePaymentAllocation[]) => db.insert(feePaymentAllocations).values(allocations).returning(),
 
   findPaymentsByStudent: (studentId: number) => db.select().from(feePayments).where(eq(feePayments.studentId, studentId)),
 }

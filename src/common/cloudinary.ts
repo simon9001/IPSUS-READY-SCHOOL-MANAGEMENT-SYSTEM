@@ -9,10 +9,7 @@ export interface CloudinaryUploadResult {
  * Uploads an image (base64 data URI or image URL) directly to Cloudinary
  * using HMAC SHA1 signature with the configured API key and secret.
  */
-export async function uploadToCloudinary(
-  fileBase64OrUrl: string,
-  folder = 'school_passports',
-): Promise<string> {
+export async function uploadToCloudinary(fileBase64OrUrl: string, folder = 'school_passports'): Promise<string> {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'vxfoi1gm'
   const apiKey = process.env.CLOUDINARY_API_KEY || '177843973847651'
   const apiSecret = process.env.CLOUDINARY_API_SECRET || 'CllM0L6ZoyHm65VuAeBvisk_2sg'

@@ -7,20 +7,15 @@ import type { AssignTeacherInput, CreateStrandInput, CreateSubjectInput, OfferSu
 export const subjectsController = {
   list: async (c: Context) => ok(c, await subjectsService.list()),
   getById: async (c: Context) => ok(c, await subjectsService.getById(Number(c.req.param('id')))),
-  create: async (c: Context) =>
-    created(c, await subjectsService.create(getValidated<CreateSubjectInput>(c, 'json'))),
+  create: async (c: Context) => created(c, await subjectsService.create(getValidated<CreateSubjectInput>(c, 'json'))),
 
   listStrands: async (c: Context) => ok(c, await subjectsService.listStrands(Number(c.req.param('subjectId')))),
-  createStrand: async (c: Context) =>
-    created(c, await subjectsService.createStrand(getValidated<CreateStrandInput>(c, 'json'))),
+  createStrand: async (c: Context) => created(c, await subjectsService.createStrand(getValidated<CreateStrandInput>(c, 'json'))),
 
-  listOfferingsByClass: async (c: Context) =>
-    ok(c, await subjectsService.listOfferingsByClass(Number(c.req.param('classId')))),
-  offerToClass: async (c: Context) =>
-    created(c, await subjectsService.offerToClass(getValidated<OfferSubjectToClassInput>(c, 'json'))),
+  listOfferingsByClass: async (c: Context) => ok(c, await subjectsService.listOfferingsByClass(Number(c.req.param('classId')))),
+  offerToClass: async (c: Context) => created(c, await subjectsService.offerToClass(getValidated<OfferSubjectToClassInput>(c, 'json'))),
 
   listAssignments: async (c: Context) =>
     ok(c, await subjectsService.listAssignments(Number(c.req.param('classId')), Number(c.req.query('periodId')))),
-  assignTeacher: async (c: Context) =>
-    created(c, await subjectsService.assignTeacher(getValidated<AssignTeacherInput>(c, 'json'))),
+  assignTeacher: async (c: Context) => created(c, await subjectsService.assignTeacher(getValidated<AssignTeacherInput>(c, 'json'))),
 }

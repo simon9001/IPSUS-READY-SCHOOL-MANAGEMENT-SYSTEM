@@ -36,7 +36,11 @@ async function compileNemisEnrollment(periodId: number): Promise<NemisEnrollment
   }
 
   const newAdmissionsInPeriod = allAdmissions.filter(
-    (a) => a.status === 'enrolled' && a.enrolledAt && a.enrolledAt.toISOString().slice(0, 10) >= period.startDate && a.enrolledAt.toISOString().slice(0, 10) <= period.endDate,
+    (a) =>
+      a.status === 'enrolled' &&
+      a.enrolledAt &&
+      a.enrolledAt.toISOString().slice(0, 10) >= period.startDate &&
+      a.enrolledAt.toISOString().slice(0, 10) <= period.endDate,
   ).length
 
   const exitsMap = new Map<string, number>()
@@ -49,7 +53,11 @@ async function compileNemisEnrollment(periodId: number): Promise<NemisEnrollment
   return {
     periodId,
     totalActiveStudents: active.length,
-    byClass: [...byClassMap.entries()].map(([classId, count]) => ({ classId, className: classNameById.get(classId) ?? `#${classId}`, count })),
+    byClass: [...byClassMap.entries()].map(([classId, count]) => ({
+      classId,
+      className: classNameById.get(classId) ?? `#${classId}`,
+      count,
+    })),
     byGender: [...byGenderMap.entries()].map(([gender, count]) => ({ gender, count })),
     byBoardingStatus: [...byBoardingMap.entries()].map(([boardingStatus, count]) => ({ boardingStatus, count })),
     newAdmissionsInPeriod,

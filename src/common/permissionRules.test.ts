@@ -28,27 +28,19 @@ describe('mergePermissions', () => {
 
 describe('administratorIds', () => {
   it('counts a holder whose permission comes from a role', () => {
-    expect(administratorIds([
-      { userId: 1, status: 'active', hasViaRole: true, override: null },
-    ])).toEqual([1])
+    expect(administratorIds([{ userId: 1, status: 'active', hasViaRole: true, override: null }])).toEqual([1])
   })
 
   it('counts a holder whose permission comes from a granted override', () => {
-    expect(administratorIds([
-      { userId: 2, status: 'active', hasViaRole: false, override: true },
-    ])).toEqual([2])
+    expect(administratorIds([{ userId: 2, status: 'active', hasViaRole: false, override: true }])).toEqual([2])
   })
 
   it('does not count a user whose permission is revoked by an override', () => {
-    expect(administratorIds([
-      { userId: 3, status: 'active', hasViaRole: true, override: false },
-    ])).toEqual([])
+    expect(administratorIds([{ userId: 3, status: 'active', hasViaRole: true, override: false }])).toEqual([])
   })
 
   it('does not count an inactive user', () => {
-    expect(administratorIds([
-      { userId: 4, status: 'suspended', hasViaRole: true, override: null },
-    ])).toEqual([])
+    expect(administratorIds([{ userId: 4, status: 'suspended', hasViaRole: true, override: null }])).toEqual([])
   })
 })
 

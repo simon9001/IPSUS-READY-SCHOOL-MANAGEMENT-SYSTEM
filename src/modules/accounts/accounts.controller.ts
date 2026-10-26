@@ -9,11 +9,9 @@ export const accountsController = {
 
   getById: async (c: Context) => ok(c, await accountsService.getById(Number(c.req.param('id')))),
 
-  create: async (c: Context) =>
-    created(c, await accountsService.create(getValidated<CreateAccountInput>(c, 'json'))),
+  create: async (c: Context) => created(c, await accountsService.create(getValidated<CreateAccountInput>(c, 'json'))),
 
-  update: async (c: Context) =>
-    ok(c, await accountsService.update(Number(c.req.param('id')), getValidated<UpdateAccountInput>(c, 'json'))),
+  update: async (c: Context) => ok(c, await accountsService.update(Number(c.req.param('id')), getValidated<UpdateAccountInput>(c, 'json'))),
 
   deactivate: async (c: Context) => ok(c, await accountsService.deactivate(Number(c.req.param('id')))),
 }

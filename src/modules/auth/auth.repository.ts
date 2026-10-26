@@ -5,10 +5,18 @@ import { mergePermissions } from '../../common/permissionRules.js'
 
 export const authRepository = {
   findUserByEmail: (email: string) =>
-    db.select().from(users).where(eq(users.email, email)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .then((rows) => rows[0]),
 
   findUserById: (id: number) =>
-    db.select().from(users).where(eq(users.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .then((rows) => rows[0]),
 
   async findRolesAndPermissions(userId: number) {
     const roleRows = await db
@@ -36,7 +44,10 @@ export const authRepository = {
 
     return {
       roles: roleRows.map((r) => r.code),
-      permissions: mergePermissions(permissionRows.map((p) => p.code), overrideRows),
+      permissions: mergePermissions(
+        permissionRows.map((p) => p.code),
+        overrideRows,
+      ),
     }
   },
 
@@ -47,7 +58,12 @@ export const authRepository = {
     db.update(users).set({ failedLoginAttempts, lockedUntil }).where(eq(users.id, userId)),
 
   updateUser: (userId: number, data: { fullName?: string; phone?: string; avatarUrl?: string | null }) =>
-    db.update(users).set({ ...data, updatedAt: new Date() }).where(eq(users.id, userId)).returning().then((rows) => rows[0]),
+    db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning()
+      .then((rows) => rows[0]),
 
   updatePassword: (userId: number, passwordHash: string) =>
     db.update(users).set({ passwordHash, mustChangePassword: false, updatedAt: new Date() }).where(eq(users.id, userId)),

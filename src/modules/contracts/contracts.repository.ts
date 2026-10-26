@@ -7,8 +7,22 @@ export const contractsRepository = {
   findAll: () => db.select().from(staffContracts),
   findByStaff: (staffId: number) => db.select().from(staffContracts).where(eq(staffContracts.staffId, staffId)),
   findById: (id: number) =>
-    db.select().from(staffContracts).where(eq(staffContracts.id, id)).then((rows) => rows[0]),
-  create: (data: NewStaffContract) => db.insert(staffContracts).values(data).returning().then((rows) => rows[0]),
+    db
+      .select()
+      .from(staffContracts)
+      .where(eq(staffContracts.id, id))
+      .then((rows) => rows[0]),
+  create: (data: NewStaffContract) =>
+    db
+      .insert(staffContracts)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
   updateStatus: (id: number, status: 'active' | 'expired' | 'terminated') =>
-    db.update(staffContracts).set({ status }).where(eq(staffContracts.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(staffContracts)
+      .set({ status })
+      .where(eq(staffContracts.id, id))
+      .returning()
+      .then((rows) => rows[0]),
 }

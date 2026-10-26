@@ -9,4 +9,9 @@ export const appraisalsRoutes = new Hono()
 appraisalsRoutes.get('/staff/:staffId', requirePermission('appraisals.view'), appraisalsController.listByStaff)
 appraisalsRoutes.get('/:id', requirePermission('appraisals.view'), appraisalsController.getById)
 appraisalsRoutes.post('/', requirePermission('appraisals.manage'), zValidator('json', createAppraisalSchema), appraisalsController.create)
-appraisalsRoutes.patch('/:id', requirePermission('appraisals.manage'), zValidator('json', updateAppraisalSchema), appraisalsController.update)
+appraisalsRoutes.patch(
+  '/:id',
+  requirePermission('appraisals.manage'),
+  zValidator('json', updateAppraisalSchema),
+  appraisalsController.update,
+)

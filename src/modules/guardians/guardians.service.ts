@@ -14,7 +14,14 @@ export const guardiansService = {
    */
   async notifyGuardians(
     studentId: number,
-    params: { channel: 'sms' | 'email' | 'in_app'; subject?: string; body: string; relatedEntityType?: string; relatedEntityId?: string; createdBy?: number },
+    params: {
+      channel: 'sms' | 'email' | 'in_app'
+      subject?: string
+      body: string
+      relatedEntityType?: string
+      relatedEntityId?: string
+      createdBy?: number
+    },
   ) {
     try {
       const links = await guardiansRepository.findGuardiansByStudent(studentId)

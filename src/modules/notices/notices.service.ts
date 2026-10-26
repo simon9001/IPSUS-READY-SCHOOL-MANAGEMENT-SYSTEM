@@ -19,6 +19,7 @@ export const noticesService = {
     return noticesRepository.create({ ...notice, publishedAt: publishNow ? new Date() : undefined })
   },
 
-  listForParents: (classId?: number) => noticesRepository.findPublishedForAudience('parents', new Date().toISOString().slice(0, 10), classId),
+  listForParents: (classId?: number) =>
+    noticesRepository.findPublishedForAudience('parents', new Date().toISOString().slice(0, 10), classId),
   listForStaff: () => noticesRepository.findPublishedForAudience('staff', new Date().toISOString().slice(0, 10)),
 }

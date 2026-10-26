@@ -15,8 +15,7 @@ import type {
 export const procurementController = {
   listSuppliers: async (c: Context) => ok(c, await procurementService.listSuppliers()),
   getSupplierById: async (c: Context) => ok(c, await procurementService.getSupplierById(Number(c.req.param('id')))),
-  createSupplier: async (c: Context) =>
-    created(c, await procurementService.createSupplier(getValidated<CreateSupplierInput>(c, 'json'))),
+  createSupplier: async (c: Context) => created(c, await procurementService.createSupplier(getValidated<CreateSupplierInput>(c, 'json'))),
 
   listRequisitions: async (c: Context) => ok(c, await procurementService.listRequisitions()),
   getRequisitionById: async (c: Context) => ok(c, await procurementService.getRequisitionById(Number(c.req.param('id')))),
@@ -31,12 +30,10 @@ export const procurementController = {
   createPurchaseOrder: async (c: Context) =>
     created(c, await procurementService.createPurchaseOrder(getValidated<CreatePurchaseOrderInput>(c, 'json'))),
 
-  createGrn: async (c: Context) =>
-    created(c, await procurementService.createGrn(getValidated<CreateGrnInput>(c, 'json'))),
+  createGrn: async (c: Context) => created(c, await procurementService.createGrn(getValidated<CreateGrnInput>(c, 'json'))),
 
   listSupplierInvoices: async (c: Context) => ok(c, await procurementService.listSupplierInvoices()),
-  getSupplierInvoiceById: async (c: Context) =>
-    ok(c, await procurementService.getSupplierInvoiceById(Number(c.req.param('id')))),
+  getSupplierInvoiceById: async (c: Context) => ok(c, await procurementService.getSupplierInvoiceById(Number(c.req.param('id')))),
   createSupplierInvoice: async (c: Context) =>
     created(c, await procurementService.createSupplierInvoice(getValidated<CreateSupplierInvoiceInput>(c, 'json'))),
 

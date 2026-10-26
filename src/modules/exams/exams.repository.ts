@@ -1,14 +1,26 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { examResults, examStrandResults, examTimetableEntries, exams, gradingBands, gradingScales, subjectStrands, subjects } from '../../db/schema/index.js'
+import {
+  examResults,
+  examStrandResults,
+  examTimetableEntries,
+  exams,
+  gradingBands,
+  gradingScales,
+  subjectStrands,
+  subjects,
+} from '../../db/schema/index.js'
 import type { NewExam, NewExamResult, NewExamStrandResult, NewExamTimetableEntry, NewGradingBand, NewGradingScale } from './exams.types.js'
 
 export const examsRepository = {
   findAllScales: () => db.select().from(gradingScales),
   findScaleById: (id: number) =>
-    db.select().from(gradingScales).where(eq(gradingScales.id, id)).then((rows) => rows[0]),
-  findBandsForScale: (gradingScaleId: number) =>
-    db.select().from(gradingBands).where(eq(gradingBands.gradingScaleId, gradingScaleId)),
+    db
+      .select()
+      .from(gradingScales)
+      .where(eq(gradingScales.id, id))
+      .then((rows) => rows[0]),
+  findBandsForScale: (gradingScaleId: number) => db.select().from(gradingBands).where(eq(gradingBands.gradingScaleId, gradingScaleId)),
   async createScale(data: NewGradingScale, bands: Omit<NewGradingBand, 'gradingScaleId'>[]) {
     return db.transaction(async (tx) => {
       const [scale] = await tx.insert(gradingScales).values(data).returning()
@@ -19,10 +31,24 @@ export const examsRepository = {
 
   findAllExams: () => db.select().from(exams),
   findExamById: (id: number) =>
-    db.select().from(exams).where(eq(exams.id, id)).then((rows) => rows[0]),
-  createExam: (data: NewExam) => db.insert(exams).values(data).returning().then((rows) => rows[0]),
+    db
+      .select()
+      .from(exams)
+      .where(eq(exams.id, id))
+      .then((rows) => rows[0]),
+  createExam: (data: NewExam) =>
+    db
+      .insert(exams)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
   updateExamStatus: (id: number, status: 'marks_entry' | 'completed' | 'published') =>
-    db.update(exams).set({ status }).where(eq(exams.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(exams)
+      .set({ status })
+      .where(eq(exams.id, id))
+      .returning()
+      .then((rows) => rows[0]),
 
   upsertResult: (data: NewExamResult) =>
     db
@@ -30,7 +56,15 @@ export const examsRepository = {
       .values(data)
       .onConflictDoUpdate({
         target: [examResults.examId, examResults.studentId, examResults.subjectId],
-        set: { marks: data.marks, maxMarks: data.maxMarks, grade: data.grade, points: data.points, remarks: data.remarks, enteredBy: data.enteredBy, enteredAt: new Date() },
+        set: {
+          marks: data.marks,
+          maxMarks: data.maxMarks,
+          grade: data.grade,
+          points: data.points,
+          remarks: data.remarks,
+          enteredBy: data.enteredBy,
+          enteredAt: new Date(),
+        },
       })
       .returning()
       .then((rows) => rows[0]),
@@ -58,7 +92,15 @@ export const examsRepository = {
       .values(data)
       .onConflictDoUpdate({
         target: [examStrandResults.examId, examStrandResults.studentId, examStrandResults.strandId],
-        set: { marks: data.marks, maxMarks: data.maxMarks, grade: data.grade, points: data.points, remarks: data.remarks, enteredBy: data.enteredBy, enteredAt: new Date() },
+        set: {
+          marks: data.marks,
+          maxMarks: data.maxMarks,
+          grade: data.grade,
+          points: data.points,
+          remarks: data.remarks,
+          enteredBy: data.enteredBy,
+          enteredAt: new Date(),
+        },
       })
       .returning()
       .then((rows) => rows[0]),
@@ -72,5 +114,9 @@ export const examsRepository = {
 
   findTimetableByExam: (examId: number) => db.select().from(examTimetableEntries).where(eq(examTimetableEntries.examId, examId)),
   addTimetableEntry: (data: NewExamTimetableEntry) =>
-    db.insert(examTimetableEntries).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(examTimetableEntries)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 }

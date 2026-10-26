@@ -18,15 +18,21 @@ export const borrowingStatusEnum = pgEnum('borrowing_status', ['borrowed', 'retu
 
 export const bookBorrowings = pgTable('book_borrowings', {
   id: serial('id').primaryKey(),
-  bookId: integer('book_id').notNull().references(() => libraryBooks.id),
-  studentId: integer('student_id').notNull().references(() => students.id),
+  bookId: integer('book_id')
+    .notNull()
+    .references(() => libraryBooks.id),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id),
   borrowedDate: date('borrowed_date').notNull(),
   dueDate: date('due_date').notNull(),
   returnedDate: date('returned_date'),
   status: borrowingStatusEnum('status').notNull().default('borrowed'),
   fineAmount: numeric('fine_amount', { precision: 10, scale: 2 }).notNull().default('0'),
   finePaid: boolean('fine_paid').notNull().default(false),
-  issuedBy: integer('issued_by').notNull().references(() => users.id),
+  issuedBy: integer('issued_by')
+    .notNull()
+    .references(() => users.id),
   returnedTo: integer('returned_to').references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })

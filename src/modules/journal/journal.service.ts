@@ -18,7 +18,9 @@ function assertBalanced(lines: JournalLineInput[]) {
     totalCredit += toAmount(line.credit)
   }
   if (Math.round(totalDebit * 100) !== Math.round(totalCredit * 100)) {
-    throw new ValidationError(`Journal entry is not balanced: total debit ${totalDebit.toFixed(2)} != total credit ${totalCredit.toFixed(2)}`)
+    throw new ValidationError(
+      `Journal entry is not balanced: total debit ${totalDebit.toFixed(2)} != total credit ${totalCredit.toFixed(2)}`,
+    )
   }
 }
 
@@ -33,11 +35,7 @@ async function nextEntryNo(fiscalYear: number): Promise<string> {
   return `JE-${fiscalYear}-${String(count + 1).padStart(6, '0')}`
 }
 
-async function insertEntry(
-  input: CreateJournalEntryInput,
-  status: 'posted' | 'pending_approval',
-  extra: Record<string, unknown>,
-) {
+async function insertEntry(input: CreateJournalEntryInput, status: 'posted' | 'pending_approval', extra: Record<string, unknown>) {
   assertBalanced(input.lines)
   await assertPeriodOpen(input.periodId)
 
@@ -83,13 +81,11 @@ export const journalService = {
 
   /** Used by other modules (fees, payroll, procurement, assets, grants) whose
    *  own sub-process already carries its own approval — posts immediately. */
-  postSystemEntry: (input: CreateJournalEntryInput) =>
-    insertEntry(input, 'posted', { postedBy: input.createdBy, postedAt: new Date() }),
+  postSystemEntry: (input: CreateJournalEntryInput) => insertEntry(input, 'posted', { postedBy: input.createdBy, postedAt: new Date() }),
 
   /** Manual/adjusting entries raised by the Bursar sit pending until a
    *  Principal or BOM Treasurer approves them (maker-checker). */
-  createManualEntry: (input: CreateJournalEntryInput) =>
-    insertEntry(input, 'pending_approval', { submittedAt: new Date() }),
+  createManualEntry: (input: CreateJournalEntryInput) => insertEntry(input, 'pending_approval', { submittedAt: new Date() }),
 
   async approve(id: number, approverId: number) {
     const entry = await journalRepository.findById(id)

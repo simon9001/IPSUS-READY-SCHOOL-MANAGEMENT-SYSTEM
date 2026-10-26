@@ -158,9 +158,12 @@ try {
   process.exit(1)
 }
 
-serve({
-  fetch: app.fetch,
-  port
-}, (info) => {
-  console.log(`Server is running on port:${info.port}`)
-})
+serve(
+  {
+    fetch: app.fetch,
+    port,
+  },
+  (info) => {
+    console.log(`Server is running on port:${info.port}`)
+  },
+)

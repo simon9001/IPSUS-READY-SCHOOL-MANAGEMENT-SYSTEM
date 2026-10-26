@@ -28,7 +28,14 @@ export const leaveService = {
     const leaveType = await leaveRepository.findTypeById(leaveTypeId)
     if (!leaveType) throw new NotFoundError(`Leave type ${leaveTypeId} not found`)
     const daysTaken = await leaveRepository.approvedDaysTakenInYear(staffId, leaveTypeId, year)
-    return { staffId, leaveTypeId, year, daysAllocated: leaveType.defaultDaysPerYear, daysTaken, daysRemaining: leaveType.defaultDaysPerYear - daysTaken }
+    return {
+      staffId,
+      leaveTypeId,
+      year,
+      daysAllocated: leaveType.defaultDaysPerYear,
+      daysTaken,
+      daysRemaining: leaveType.defaultDaysPerYear - daysTaken,
+    }
   },
 
   async apply(input: CreateLeaveRequestInput) {

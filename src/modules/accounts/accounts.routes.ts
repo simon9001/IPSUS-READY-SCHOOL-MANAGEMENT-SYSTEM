@@ -14,5 +14,10 @@ export const accountsRoutes = new Hono()
 accountsRoutes.get('/', requireAuth(), accountsController.list)
 accountsRoutes.get('/:id', requireAuth(), accountsController.getById)
 accountsRoutes.post('/', requirePermission('ledger.accounts.manage'), zValidator('json', createAccountSchema), accountsController.create)
-accountsRoutes.patch('/:id', requirePermission('ledger.accounts.manage'), zValidator('json', updateAccountSchema), accountsController.update)
+accountsRoutes.patch(
+  '/:id',
+  requirePermission('ledger.accounts.manage'),
+  zValidator('json', updateAccountSchema),
+  accountsController.update,
+)
 accountsRoutes.post('/:id/deactivate', requirePermission('ledger.accounts.manage'), accountsController.deactivate)

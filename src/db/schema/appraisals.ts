@@ -7,9 +7,15 @@ export const appraisalStatusEnum = pgEnum('appraisal_status', ['draft', 'complet
 
 export const staffAppraisals = pgTable('staff_appraisals', {
   id: serial('id').primaryKey(),
-  staffId: integer('staff_id').notNull().references(() => staff.id),
-  periodId: integer('period_id').notNull().references(() => fiscalPeriods.id),
-  appraiserId: integer('appraiser_id').notNull().references(() => users.id),
+  staffId: integer('staff_id')
+    .notNull()
+    .references(() => staff.id),
+  periodId: integer('period_id')
+    .notNull()
+    .references(() => fiscalPeriods.id),
+  appraiserId: integer('appraiser_id')
+    .notNull()
+    .references(() => users.id),
   overallRating: numeric('overall_rating', { precision: 3, scale: 1 }), // e.g. 1.0-5.0
   strengths: text('strengths'),
   areasForImprovement: text('areas_for_improvement'),

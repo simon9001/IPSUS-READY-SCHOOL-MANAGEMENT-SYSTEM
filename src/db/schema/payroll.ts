@@ -28,7 +28,9 @@ export const salaryComponentTypeEnum = pgEnum('salary_component_type', ['basic',
 
 export const salaryComponents = pgTable('salary_components', {
   id: serial('id').primaryKey(),
-  employeeId: integer('employee_id').notNull().references(() => employees.id, { onDelete: 'cascade' }),
+  employeeId: integer('employee_id')
+    .notNull()
+    .references(() => employees.id, { onDelete: 'cascade' }),
   componentType: salaryComponentTypeEnum('component_type').notNull(),
   name: varchar('name', { length: 100 }).notNull(),
   amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
@@ -39,7 +41,9 @@ export const payrollRunStatusEnum = pgEnum('payroll_run_status', ['draft', 'proc
 
 export const payrollRuns = pgTable('payroll_runs', {
   id: serial('id').primaryKey(),
-  periodId: integer('period_id').notNull().references(() => fiscalPeriods.id),
+  periodId: integer('period_id')
+    .notNull()
+    .references(() => fiscalPeriods.id),
   monthYear: varchar('month_year', { length: 7 }).notNull(), // "2026-01"
   status: payrollRunStatusEnum('status').notNull().default('draft'),
   processedBy: integer('processed_by').references(() => users.id),
@@ -49,8 +53,12 @@ export const payrollRuns = pgTable('payroll_runs', {
 
 export const payslips = pgTable('payslips', {
   id: serial('id').primaryKey(),
-  payrollRunId: integer('payroll_run_id').notNull().references(() => payrollRuns.id, { onDelete: 'cascade' }),
-  employeeId: integer('employee_id').notNull().references(() => employees.id),
+  payrollRunId: integer('payroll_run_id')
+    .notNull()
+    .references(() => payrollRuns.id, { onDelete: 'cascade' }),
+  employeeId: integer('employee_id')
+    .notNull()
+    .references(() => employees.id),
   grossPay: numeric('gross_pay', { precision: 14, scale: 2 }).notNull(),
   paye: numeric('paye', { precision: 14, scale: 2 }).notNull().default('0'),
   nssf: numeric('nssf', { precision: 14, scale: 2 }).notNull().default('0'),

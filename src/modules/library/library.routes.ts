@@ -14,5 +14,15 @@ libraryRoutes.get('/students/:studentId/borrowings', requirePermission('library.
 libraryRoutes.get('/overdue', requirePermission('library.view'), libraryController.listOverdue)
 
 libraryRoutes.post('/borrowings', requirePermission('library.manage'), zValidator('json', borrowBookSchema), libraryController.borrow)
-libraryRoutes.post('/borrowings/:id/return', requirePermission('library.manage'), zValidator('json', returnBookSchema), libraryController.returnBook)
-libraryRoutes.post('/borrowings/:id/pay-fine', requirePermission('library.manage'), zValidator('json', payFineSchema), libraryController.payFine)
+libraryRoutes.post(
+  '/borrowings/:id/return',
+  requirePermission('library.manage'),
+  zValidator('json', returnBookSchema),
+  libraryController.returnBook,
+)
+libraryRoutes.post(
+  '/borrowings/:id/pay-fine',
+  requirePermission('library.manage'),
+  zValidator('json', payFineSchema),
+  libraryController.payFine,
+)

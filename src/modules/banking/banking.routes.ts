@@ -14,13 +14,33 @@ export const bankingRoutes = new Hono()
 
 bankingRoutes.get('/accounts', requirePermission('banking.manage'), bankingController.listAccounts)
 bankingRoutes.get('/accounts/:id', requirePermission('banking.manage'), bankingController.getAccountById)
-bankingRoutes.post('/accounts', requirePermission('banking.manage'), zValidator('json', createBankAccountSchema), bankingController.createAccount)
+bankingRoutes.post(
+  '/accounts',
+  requirePermission('banking.manage'),
+  zValidator('json', createBankAccountSchema),
+  bankingController.createAccount,
+)
 
 bankingRoutes.get('/accounts/:bankAccountId/reconciliations', requirePermission('banking.manage'), bankingController.listReconciliations)
-bankingRoutes.post('/reconciliations', requirePermission('banking.manage'), zValidator('json', createReconciliationSchema), bankingController.createReconciliation)
-bankingRoutes.post('/reconciliations/:id/reconcile', requirePermission('banking.reconcile'), zValidator('json', reconcileSchema), bankingController.markReconciled)
+bankingRoutes.post(
+  '/reconciliations',
+  requirePermission('banking.manage'),
+  zValidator('json', createReconciliationSchema),
+  bankingController.createReconciliation,
+)
+bankingRoutes.post(
+  '/reconciliations/:id/reconcile',
+  requirePermission('banking.reconcile'),
+  zValidator('json', reconcileSchema),
+  bankingController.markReconciled,
+)
 
 bankingRoutes.get('/imprest', requirePermission('banking.manage'), bankingController.listImprestRequests)
 bankingRoutes.get('/imprest/:id', requirePermission('banking.manage'), bankingController.getImprestRequestById)
 bankingRoutes.post('/imprest', requirePermission('imprest.issue'), zValidator('json', issueImprestSchema), bankingController.issueImprest)
-bankingRoutes.post('/imprest/:id/retire', requirePermission('imprest.retire'), zValidator('json', retireImprestSchema), bankingController.retireImprest)
+bankingRoutes.post(
+  '/imprest/:id/retire',
+  requirePermission('imprest.retire'),
+  zValidator('json', retireImprestSchema),
+  bankingController.retireImprest,
+)

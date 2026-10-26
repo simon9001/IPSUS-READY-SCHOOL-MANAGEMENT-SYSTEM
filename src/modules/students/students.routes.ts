@@ -9,7 +9,12 @@ export const studentsRoutes = new Hono()
 studentsRoutes.get('/classes', requirePermission('students.view'), studentsController.listClasses)
 studentsRoutes.post('/classes', requirePermission('students.manage'), zValidator('json', createClassSchema), studentsController.createClass)
 studentsRoutes.get('/classes/:classId/streams', requirePermission('students.view'), studentsController.listStreams)
-studentsRoutes.post('/streams', requirePermission('students.manage'), zValidator('json', createStreamSchema), studentsController.createStream)
+studentsRoutes.post(
+  '/streams',
+  requirePermission('students.manage'),
+  zValidator('json', createStreamSchema),
+  studentsController.createStream,
+)
 studentsRoutes.get('/classes/:classId/students', requirePermission('students.view'), studentsController.listByClass)
 
 studentsRoutes.get('/', requirePermission('students.view'), studentsController.list)

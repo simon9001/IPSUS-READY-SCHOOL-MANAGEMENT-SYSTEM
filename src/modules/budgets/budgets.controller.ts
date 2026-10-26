@@ -9,8 +9,7 @@ export const budgetsController = {
 
   getById: async (c: Context) => ok(c, await budgetsService.getById(Number(c.req.param('id')))),
 
-  create: async (c: Context) =>
-    created(c, await budgetsService.create(getValidated<CreateBudgetInput>(c, 'json'))),
+  create: async (c: Context) => created(c, await budgetsService.create(getValidated<CreateBudgetInput>(c, 'json'))),
 
   addLine: async (c: Context) =>
     created(c, await budgetsService.addLine(Number(c.req.param('id')), getValidated<AddBudgetLineInput>(c, 'json'))),

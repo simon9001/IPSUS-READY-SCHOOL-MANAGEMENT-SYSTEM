@@ -1,12 +1,7 @@
 import { bankingRepository } from './banking.repository.js'
 import { journalService } from '../journal/journal.service.js'
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js'
-import type {
-  CreateBankAccountInput,
-  CreateReconciliationInput,
-  IssueImprestInput,
-  RetireImprestInput,
-} from './banking.schema.js'
+import type { CreateBankAccountInput, CreateReconciliationInput, IssueImprestInput, RetireImprestInput } from './banking.schema.js'
 
 export const bankingService = {
   listAccounts: () => bankingRepository.findAllAccounts(),

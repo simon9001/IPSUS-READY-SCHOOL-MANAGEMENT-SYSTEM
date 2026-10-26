@@ -6,19 +6,45 @@ import type { NewAsset, NewAssetCategory, NewAssetDisposal, NewDepreciationEntry
 export const assetsRepository = {
   findAllCategories: () => db.select().from(assetCategories),
   findCategoryById: (id: number) =>
-    db.select().from(assetCategories).where(eq(assetCategories.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(assetCategories)
+      .where(eq(assetCategories.id, id))
+      .then((rows) => rows[0]),
   createCategory: (data: NewAssetCategory) =>
-    db.insert(assetCategories).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(assetCategories)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   findAll: () => db.select().from(assets),
   findById: (id: number) =>
-    db.select().from(assets).where(eq(assets.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(assets)
+      .where(eq(assets.id, id))
+      .then((rows) => rows[0]),
   create: (data: NewAsset) =>
-    db.insert(assets).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(assets)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
   attachJournalEntry: (id: number, journalEntryId: number) =>
-    db.update(assets).set({ journalEntryId }).where(eq(assets.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(assets)
+      .set({ journalEntryId })
+      .where(eq(assets.id, id))
+      .returning()
+      .then((rows) => rows[0]),
   markDisposed: (id: number) =>
-    db.update(assets).set({ status: 'disposed' }).where(eq(assets.id, id)).returning().then((rows) => rows[0]),
+    db
+      .update(assets)
+      .set({ status: 'disposed' })
+      .where(eq(assets.id, id))
+      .returning()
+      .then((rows) => rows[0]),
 
   findInUse: () => db.select().from(assets).where(eq(assets.status, 'in_use')),
 
@@ -31,8 +57,16 @@ export const assetsRepository = {
   },
 
   createDepreciationEntry: (data: NewDepreciationEntry) =>
-    db.insert(depreciationEntries).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(depreciationEntries)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   createDisposal: (data: NewAssetDisposal) =>
-    db.insert(assetDisposals).values(data).returning().then((rows) => rows[0]),
+    db
+      .insert(assetDisposals)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 }

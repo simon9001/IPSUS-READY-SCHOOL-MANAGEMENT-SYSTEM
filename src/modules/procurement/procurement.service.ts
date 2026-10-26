@@ -50,7 +50,10 @@ export const procurementService = {
     const requisition = await procurementRepository.findRequisitionById(id)
     if (!requisition) throw new NotFoundError(`Requisition ${id} not found`)
     if (requisition.status !== 'submitted') throw new ConflictError(`Requisition ${id} is ${requisition.status}, not submitted`)
-    const approved = await procurementRepository.updateRequisitionStatus(id, 'approved', { approvedBy: input.approvedBy, approvedAt: new Date() })
+    const approved = await procurementRepository.updateRequisitionStatus(id, 'approved', {
+      approvedBy: input.approvedBy,
+      approvedAt: new Date(),
+    })
     broadcastChange('procurement', 'requisition_approved')
     broadcastChange('dashboard', 'updated')
     return approved
@@ -103,7 +106,12 @@ export const procurementService = {
 
     const poItems = await procurementRepository.findPurchaseOrderItems(input.purchaseOrderId)
     const grn = await procurementRepository.createGrn(
-      { grnNo: `GRN-${Date.now()}`, purchaseOrderId: input.purchaseOrderId, receivedDate: input.receivedDate, receivedBy: input.receivedBy },
+      {
+        grnNo: `GRN-${Date.now()}`,
+        purchaseOrderId: input.purchaseOrderId,
+        receivedDate: input.receivedDate,
+        receivedBy: input.receivedBy,
+      },
       input.items.map((item) => ({ ...item, quantityReceived: String(item.quantityReceived) })),
     )
 
@@ -147,7 +155,12 @@ export const procurementService = {
       sourceReference: `supplier-invoice-${invoice.id}`,
       createdBy: input.createdBy,
       lines: [
-        ...input.lines.map((line) => ({ accountId: line.accountId, fundId: input.fundId, debit: line.amount, description: line.description })),
+        ...input.lines.map((line) => ({
+          accountId: line.accountId,
+          fundId: input.fundId,
+          debit: line.amount,
+          description: line.description,
+        })),
         { accountId: input.creditorsAccountId, fundId: input.fundId, credit: amount },
       ],
     })

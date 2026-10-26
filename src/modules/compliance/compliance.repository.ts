@@ -6,8 +6,17 @@ import type { NewComplianceReport } from './compliance.types.js'
 export const complianceRepository = {
   findAll: () => db.select().from(complianceReports),
   findById: (id: number) =>
-    db.select().from(complianceReports).where(eq(complianceReports.id, id)).then((rows) => rows[0]),
-  create: (data: NewComplianceReport) => db.insert(complianceReports).values(data).returning().then((rows) => rows[0]),
+    db
+      .select()
+      .from(complianceReports)
+      .where(eq(complianceReports.id, id))
+      .then((rows) => rows[0]),
+  create: (data: NewComplianceReport) =>
+    db
+      .insert(complianceReports)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
   submit: (id: number, referenceNumber: string, submittedBy: number) =>
     db
       .update(complianceReports)

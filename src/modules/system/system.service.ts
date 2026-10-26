@@ -1,13 +1,6 @@
 import { systemRepository } from './system.repository.js'
 import { PERMISSIONS, ROLES } from '../identity/rbac.js'
-import type {
-  AccountFlag,
-  RbacDrift,
-  RuntimeStatus,
-  SegregationConflict,
-  SystemHealth,
-  SystemRbacStatus,
-} from './system.types.js'
+import type { AccountFlag, RbacDrift, RuntimeStatus, SegregationConflict, SystemHealth, SystemRbacStatus } from './system.types.js'
 
 /**
  * Maker-checker pairs the RBAC design deliberately keeps apart: no single role

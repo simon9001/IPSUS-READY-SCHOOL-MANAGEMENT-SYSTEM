@@ -21,11 +21,21 @@ export const dayOfWeekEnum = pgEnum('day_of_week', ['monday', 'tuesday', 'wednes
 // each term as teacher assignments and subject offerings change.
 export const timetableEntries = pgTable('timetable_entries', {
   id: serial('id').primaryKey(),
-  classId: integer('class_id').notNull().references(() => classes.id),
+  classId: integer('class_id')
+    .notNull()
+    .references(() => classes.id),
   streamId: integer('stream_id').references(() => streams.id),
-  subjectId: integer('subject_id').notNull().references(() => subjects.id),
-  teacherId: integer('teacher_id').notNull().references(() => teachers.id),
-  lessonPeriodId: integer('lesson_period_id').notNull().references(() => lessonPeriods.id),
+  subjectId: integer('subject_id')
+    .notNull()
+    .references(() => subjects.id),
+  teacherId: integer('teacher_id')
+    .notNull()
+    .references(() => teachers.id),
+  lessonPeriodId: integer('lesson_period_id')
+    .notNull()
+    .references(() => lessonPeriods.id),
   dayOfWeek: dayOfWeekEnum('day_of_week').notNull(),
-  periodId: integer('period_id').notNull().references(() => fiscalPeriods.id),
+  periodId: integer('period_id')
+    .notNull()
+    .references(() => fiscalPeriods.id),
 })

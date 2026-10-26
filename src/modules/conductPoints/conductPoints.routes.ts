@@ -7,8 +7,18 @@ import { awardPointsSchema, createRuleSchema } from './conductPoints.schema.js'
 export const conductPointsRoutes = new Hono()
 
 conductPointsRoutes.get('/rules', requirePermission('conduct_points.view'), conductPointsController.listRules)
-conductPointsRoutes.post('/rules', requirePermission('conduct_points.manage'), zValidator('json', createRuleSchema), conductPointsController.createRule)
+conductPointsRoutes.post(
+  '/rules',
+  requirePermission('conduct_points.manage'),
+  zValidator('json', createRuleSchema),
+  conductPointsController.createRule,
+)
 
 conductPointsRoutes.get('/students/:studentId', requirePermission('conduct_points.view'), conductPointsController.listByStudent)
 conductPointsRoutes.get('/students/:studentId/score', requirePermission('conduct_points.view'), conductPointsController.score)
-conductPointsRoutes.post('/', requirePermission('conduct_points.manage'), zValidator('json', awardPointsSchema), conductPointsController.award)
+conductPointsRoutes.post(
+  '/',
+  requirePermission('conduct_points.manage'),
+  zValidator('json', awardPointsSchema),
+  conductPointsController.award,
+)

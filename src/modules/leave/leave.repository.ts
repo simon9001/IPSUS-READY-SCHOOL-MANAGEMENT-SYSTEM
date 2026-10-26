@@ -6,15 +6,33 @@ import type { NewLeaveRequest, NewLeaveType } from './leave.types.js'
 export const leaveRepository = {
   findAllTypes: () => db.select().from(leaveTypes),
   findTypeById: (id: number) =>
-    db.select().from(leaveTypes).where(eq(leaveTypes.id, id)).then((rows) => rows[0]),
-  createType: (data: NewLeaveType) => db.insert(leaveTypes).values(data).returning().then((rows) => rows[0]),
+    db
+      .select()
+      .from(leaveTypes)
+      .where(eq(leaveTypes.id, id))
+      .then((rows) => rows[0]),
+  createType: (data: NewLeaveType) =>
+    db
+      .insert(leaveTypes)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   findAll: () => db.select().from(leaveRequests),
   findById: (id: number) =>
-    db.select().from(leaveRequests).where(eq(leaveRequests.id, id)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(leaveRequests)
+      .where(eq(leaveRequests.id, id))
+      .then((rows) => rows[0]),
   findByStaff: (staffId: number) => db.select().from(leaveRequests).where(eq(leaveRequests.staffId, staffId)),
 
-  create: (data: NewLeaveRequest) => db.insert(leaveRequests).values(data).returning().then((rows) => rows[0]),
+  create: (data: NewLeaveRequest) =>
+    db
+      .insert(leaveRequests)
+      .values(data)
+      .returning()
+      .then((rows) => rows[0]),
 
   decide: (id: number, status: 'approved' | 'rejected', approverId: number) =>
     db

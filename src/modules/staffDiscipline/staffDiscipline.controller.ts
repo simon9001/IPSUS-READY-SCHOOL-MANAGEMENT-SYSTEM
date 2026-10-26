@@ -7,6 +7,5 @@ import type { CreateStaffDisciplineRecordInput } from './staffDiscipline.schema.
 export const staffDisciplineController = {
   listByStaff: async (c: Context) => ok(c, await staffDisciplineService.listByStaff(Number(c.req.param('staffId')))),
   getById: async (c: Context) => ok(c, await staffDisciplineService.getById(Number(c.req.param('id')))),
-  create: async (c: Context) =>
-    created(c, await staffDisciplineService.create(getValidated<CreateStaffDisciplineRecordInput>(c, 'json'))),
+  create: async (c: Context) => created(c, await staffDisciplineService.create(getValidated<CreateStaffDisciplineRecordInput>(c, 'json'))),
 }

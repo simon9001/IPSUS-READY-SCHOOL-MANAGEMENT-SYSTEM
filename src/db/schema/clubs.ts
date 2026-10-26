@@ -18,8 +18,12 @@ export const membershipStatusEnum = pgEnum('membership_status', ['active', 'inac
 
 export const clubMemberships = pgTable('club_memberships', {
   id: serial('id').primaryKey(),
-  clubId: integer('club_id').notNull().references(() => clubs.id),
-  studentId: integer('student_id').notNull().references(() => students.id),
+  clubId: integer('club_id')
+    .notNull()
+    .references(() => clubs.id),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id),
   joinedDate: date('joined_date').notNull(),
   role: varchar('role', { length: 60 }), // e.g. "Chairperson", "Captain", "Member"
   status: membershipStatusEnum('status').notNull().default('active'),
@@ -39,8 +43,12 @@ export const competitions = pgTable('competitions', {
 
 export const competitionParticipants = pgTable('competition_participants', {
   id: serial('id').primaryKey(),
-  competitionId: integer('competition_id').notNull().references(() => competitions.id),
-  studentId: integer('student_id').notNull().references(() => students.id),
+  competitionId: integer('competition_id')
+    .notNull()
+    .references(() => competitions.id),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id),
   result: varchar('result', { length: 100 }), // "1st Place", "Qualified for Nationals"
   achievement: text('achievement'),
 })

@@ -7,8 +7,18 @@ import { createTemplateSchema, sendNotificationSchema } from './notifications.sc
 export const notificationsRoutes = new Hono()
 
 notificationsRoutes.get('/templates', requirePermission('notifications.send'), notificationsController.listTemplates)
-notificationsRoutes.post('/templates', requirePermission('notifications.send'), zValidator('json', createTemplateSchema), notificationsController.createTemplate)
+notificationsRoutes.post(
+  '/templates',
+  requirePermission('notifications.send'),
+  zValidator('json', createTemplateSchema),
+  notificationsController.createTemplate,
+)
 
 // A user reading their own notification inbox just needs to be logged in.
 notificationsRoutes.get('/users/:userId', requireAuth(), notificationsController.listByRecipient)
-notificationsRoutes.post('/send', requirePermission('notifications.send'), zValidator('json', sendNotificationSchema), notificationsController.send)
+notificationsRoutes.post(
+  '/send',
+  requirePermission('notifications.send'),
+  zValidator('json', sendNotificationSchema),
+  notificationsController.send,
+)

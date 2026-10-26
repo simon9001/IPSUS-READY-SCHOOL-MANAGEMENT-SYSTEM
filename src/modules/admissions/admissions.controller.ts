@@ -18,10 +18,8 @@ export const admissionsController = {
 
   capturePlacement: async (c: Context) =>
     created(c, await admissionsService.capturePlacement(getValidated<CapturePlacementInput>(c, 'json'))),
-  captureTransfer: async (c: Context) =>
-    created(c, await admissionsService.captureTransfer(getValidated<CaptureTransferInput>(c, 'json'))),
-  applyDirect: async (c: Context) =>
-    created(c, await admissionsService.applyDirect(getValidated<ApplyDirectInput>(c, 'json'))),
+  captureTransfer: async (c: Context) => created(c, await admissionsService.captureTransfer(getValidated<CaptureTransferInput>(c, 'json'))),
+  applyDirect: async (c: Context) => created(c, await admissionsService.applyDirect(getValidated<ApplyDirectInput>(c, 'json'))),
 
   scheduleInterview: async (c: Context) =>
     ok(c, await admissionsService.scheduleInterview(Number(c.req.param('id')), getValidated<ScheduleInterviewInput>(c, 'json'))),

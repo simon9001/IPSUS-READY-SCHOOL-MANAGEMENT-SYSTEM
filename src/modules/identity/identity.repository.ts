@@ -25,9 +25,18 @@ export const identityRepository = {
   findAllUsers: () => db.select(safeUserColumns).from(users).orderBy(users.id),
 
   findUserById: (id: number) =>
-    db.select(safeUserColumns).from(users).where(eq(users.id, id)).then((rows) => rows[0]),
+    db
+      .select(safeUserColumns)
+      .from(users)
+      .where(eq(users.id, id))
+      .then((rows) => rows[0]),
 
-  findUserByEmail: (email: string) => db.select().from(users).where(eq(users.email, email)).then((rows) => rows[0]),
+  findUserByEmail: (email: string) =>
+    db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .then((rows) => rows[0]),
 
   findAllUserRoleLinks: () =>
     db
@@ -43,7 +52,11 @@ export const identityRepository = {
       .where(eq(userRoles.userId, userId)),
 
   countRolesForUser: (userId: number) =>
-    db.select({ roleId: userRoles.roleId }).from(userRoles).where(eq(userRoles.userId, userId)).then((rows) => rows.length),
+    db
+      .select({ roleId: userRoles.roleId })
+      .from(userRoles)
+      .where(eq(userRoles.userId, userId))
+      .then((rows) => rows.length),
 
   async createUser(input: CreateUserInput & { passwordHash: string }) {
     const [user] = await db
@@ -60,7 +73,12 @@ export const identityRepository = {
   },
 
   updateUser: (id: number, data: UpdateUserInput) =>
-    db.update(users).set({ ...data, updatedAt: new Date() }).where(eq(users.id, id)).returning(safeUserColumns).then((rows) => rows[0]),
+    db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning(safeUserColumns)
+      .then((rows) => rows[0]),
 
   setPasswordHash: (id: number, passwordHash: string) =>
     db.update(users).set({ passwordHash, mustChangePassword: true, updatedAt: new Date() }).where(eq(users.id, id)),
@@ -73,7 +91,12 @@ export const identityRepository = {
 
   findAllRoles: () => db.select().from(roles).orderBy(roles.name),
 
-  findRoleById: (id: number) => db.select().from(roles).where(eq(roles.id, id)).then((rows) => rows[0]),
+  findRoleById: (id: number) =>
+    db
+      .select()
+      .from(roles)
+      .where(eq(roles.id, id))
+      .then((rows) => rows[0]),
 
   findAllPermissions: () => db.select().from(permissions).orderBy(permissions.module, permissions.code),
 
@@ -85,7 +108,11 @@ export const identityRepository = {
       .where(eq(rolePermissions.roleId, roleId)),
 
   findPermissionByCode: (code: string) =>
-    db.select().from(permissions).where(eq(permissions.code, code)).then((rows) => rows[0]),
+    db
+      .select()
+      .from(permissions)
+      .where(eq(permissions.code, code))
+      .then((rows) => rows[0]),
 
   findOverridesForUser: (userId: number) =>
     db
@@ -106,10 +133,7 @@ export const identityRepository = {
   deleteOverride: (userId: number, permissionId: number) =>
     db
       .delete(userPermissionOverrides)
-      .where(and(
-        eq(userPermissionOverrides.userId, userId),
-        eq(userPermissionOverrides.permissionId, permissionId),
-      )),
+      .where(and(eq(userPermissionOverrides.userId, userId), eq(userPermissionOverrides.permissionId, permissionId))),
 
   /**
    * Every user with the raw material the guard needs: whether a role grants

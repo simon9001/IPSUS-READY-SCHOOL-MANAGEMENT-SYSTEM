@@ -6,7 +6,9 @@ export const contractStatusEnum = pgEnum('contract_status', ['active', 'expired'
 
 export const staffContracts = pgTable('staff_contracts', {
   id: serial('id').primaryKey(),
-  staffId: integer('staff_id').notNull().references(() => staff.id),
+  staffId: integer('staff_id')
+    .notNull()
+    .references(() => staff.id),
   contractType: contractTypeEnum('contract_type').notNull(),
   startDate: date('start_date').notNull(),
   endDate: date('end_date'),

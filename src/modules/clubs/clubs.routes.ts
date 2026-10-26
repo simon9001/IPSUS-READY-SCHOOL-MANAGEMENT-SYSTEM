@@ -16,7 +16,17 @@ clubsRoutes.post('/memberships', requirePermission('clubs.manage'), zValidator('
 
 clubsRoutes.get('/competitions', requirePermission('clubs.view'), clubsController.listCompetitions)
 clubsRoutes.get('/competitions/:id', requirePermission('clubs.view'), clubsController.getCompetitionById)
-clubsRoutes.post('/competitions', requirePermission('clubs.manage'), zValidator('json', createCompetitionSchema), clubsController.createCompetition)
+clubsRoutes.post(
+  '/competitions',
+  requirePermission('clubs.manage'),
+  zValidator('json', createCompetitionSchema),
+  clubsController.createCompetition,
+)
 
 clubsRoutes.get('/competitions/:competitionId/participants', requirePermission('clubs.view'), clubsController.listParticipantsByCompetition)
-clubsRoutes.post('/competitions/participants', requirePermission('clubs.manage'), zValidator('json', addParticipantSchema), clubsController.addParticipant)
+clubsRoutes.post(
+  '/competitions/participants',
+  requirePermission('clubs.manage'),
+  zValidator('json', addParticipantSchema),
+  clubsController.addParticipant,
+)

@@ -20,10 +20,16 @@ export const bedAllocationStatusEnum = pgEnum('bed_allocation_status', ['active'
 
 export const bedAllocations = pgTable('bed_allocations', {
   id: serial('id').primaryKey(),
-  studentId: integer('student_id').notNull().references(() => students.id),
-  dormitoryId: integer('dormitory_id').notNull().references(() => dormitories.id),
+  studentId: integer('student_id')
+    .notNull()
+    .references(() => students.id),
+  dormitoryId: integer('dormitory_id')
+    .notNull()
+    .references(() => dormitories.id),
   bedNumber: varchar('bed_number', { length: 20 }).notNull(),
-  periodId: integer('period_id').notNull().references(() => fiscalPeriods.id),
+  periodId: integer('period_id')
+    .notNull()
+    .references(() => fiscalPeriods.id),
   allocatedDate: date('allocated_date').notNull(),
   vacatedDate: date('vacated_date'),
   status: bedAllocationStatusEnum('status').notNull().default('active'),
@@ -34,12 +40,20 @@ export const boardingAttendanceStatusEnum = pgEnum('boarding_attendance_status',
 // Distinct from academic `attendance_records` (day/class attendance) — this
 // tracks whether a boarder was actually in the dormitory at night, a
 // welfare/safety concern separate from classroom presence.
-export const boardingAttendance = pgTable('boarding_attendance', {
-  id: serial('id').primaryKey(),
-  studentId: integer('student_id').notNull().references(() => students.id),
-  attendanceDate: date('attendance_date').notNull(),
-  status: boardingAttendanceStatusEnum('status').notNull(),
-  remarks: text('remarks'),
-  recordedBy: integer('recorded_by').notNull().references(() => users.id),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [unique().on(t.studentId, t.attendanceDate)])
+export const boardingAttendance = pgTable(
+  'boarding_attendance',
+  {
+    id: serial('id').primaryKey(),
+    studentId: integer('student_id')
+      .notNull()
+      .references(() => students.id),
+    attendanceDate: date('attendance_date').notNull(),
+    status: boardingAttendanceStatusEnum('status').notNull(),
+    remarks: text('remarks'),
+    recordedBy: integer('recorded_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.studentId, t.attendanceDate)],
+)

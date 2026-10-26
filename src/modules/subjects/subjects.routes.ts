@@ -11,10 +11,25 @@ subjectsRoutes.get('/:id', requirePermission('subjects.view'), subjectsControlle
 subjectsRoutes.post('/', requirePermission('subjects.manage'), zValidator('json', createSubjectSchema), subjectsController.create)
 
 subjectsRoutes.get('/:subjectId/strands', requirePermission('subjects.view'), subjectsController.listStrands)
-subjectsRoutes.post('/strands', requirePermission('subjects.manage'), zValidator('json', createStrandSchema), subjectsController.createStrand)
+subjectsRoutes.post(
+  '/strands',
+  requirePermission('subjects.manage'),
+  zValidator('json', createStrandSchema),
+  subjectsController.createStrand,
+)
 
 subjectsRoutes.get('/classes/:classId/offerings', requirePermission('subjects.view'), subjectsController.listOfferingsByClass)
-subjectsRoutes.post('/offerings', requirePermission('subjects.manage'), zValidator('json', offerSubjectToClassSchema), subjectsController.offerToClass)
+subjectsRoutes.post(
+  '/offerings',
+  requirePermission('subjects.manage'),
+  zValidator('json', offerSubjectToClassSchema),
+  subjectsController.offerToClass,
+)
 
 subjectsRoutes.get('/classes/:classId/assignments', requirePermission('subjects.view'), subjectsController.listAssignments)
-subjectsRoutes.post('/assignments', requirePermission('subjects.manage'), zValidator('json', assignTeacherSchema), subjectsController.assignTeacher)
+subjectsRoutes.post(
+  '/assignments',
+  requirePermission('subjects.manage'),
+  zValidator('json', assignTeacherSchema),
+  subjectsController.assignTeacher,
+)

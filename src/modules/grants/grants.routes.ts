@@ -11,4 +11,9 @@ grantsRoutes.post('/types', requirePermission('grants.record'), zValidator('json
 
 grantsRoutes.get('/disbursements', requirePermission('grants.view'), grantsController.listDisbursements)
 grantsRoutes.get('/disbursements/:id', requirePermission('grants.view'), grantsController.getDisbursementById)
-grantsRoutes.post('/disbursements', requirePermission('grants.record'), zValidator('json', recordDisbursementSchema), grantsController.recordDisbursement)
+grantsRoutes.post(
+  '/disbursements',
+  requirePermission('grants.record'),
+  zValidator('json', recordDisbursementSchema),
+  grantsController.recordDisbursement,
+)

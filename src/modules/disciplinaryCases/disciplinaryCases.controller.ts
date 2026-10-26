@@ -22,7 +22,13 @@ export const disciplinaryCasesController = {
   summonParent: async (c: Context) =>
     ok(c, await disciplinaryCasesService.summonParent(Number(c.req.param('id')), getValidated<SummonParentInput>(c, 'json'))),
   recordParentAttendance: async (c: Context) =>
-    ok(c, await disciplinaryCasesService.recordParentAttendance(Number(c.req.param('id')), getValidated<RecordParentAttendanceInput>(c, 'json'))),
+    ok(
+      c,
+      await disciplinaryCasesService.recordParentAttendance(
+        Number(c.req.param('id')),
+        getValidated<RecordParentAttendanceInput>(c, 'json'),
+      ),
+    ),
   recordHearing: async (c: Context) =>
     ok(c, await disciplinaryCasesService.recordHearing(Number(c.req.param('id')), getValidated<RecordHearingInput>(c, 'json'))),
   bomReview: async (c: Context) =>
