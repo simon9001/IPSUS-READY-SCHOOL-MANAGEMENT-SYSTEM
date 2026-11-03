@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    globalSetup: ['src/test/global-setup.ts'],
     // End-to-end suites boot a WASM Postgres and apply every migration first.
     hookTimeout: 120_000,
     testTimeout: 30_000,
