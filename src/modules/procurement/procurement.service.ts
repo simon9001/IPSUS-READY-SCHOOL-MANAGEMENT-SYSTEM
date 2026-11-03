@@ -147,6 +147,10 @@ export const procurementService = {
       const supplier = await procurementRepository.findSupplierById(input.supplierId)
       if (!supplier) throw new NotFoundError(`Supplier ${input.supplierId} not found`)
 
+      // Entering the same bill twice would record the debt twice, and it could then be paid twice.
+      const duplicate = await procurementRepository.findSupplierInvoiceByNumber(input.supplierId, input.invoiceNo)
+      if (duplicate) throw new ConflictError(`Invoice ${input.invoiceNo} from ${supplier.name} is already recorded`)
+
       const amount = input.lines.reduce((sum, line) => sum + Number(line.amount), 0)
       const invoice = await procurementRepository.createSupplierInvoice({
         invoiceNo: input.invoiceNo,

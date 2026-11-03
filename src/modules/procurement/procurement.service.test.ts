@@ -3,6 +3,7 @@ import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '.
 
 const repo = vi.hoisted(() => ({
   findSupplierById: vi.fn(),
+  findSupplierInvoiceByNumber: vi.fn(),
   findRequisitionById: vi.fn(),
   updateRequisitionStatus: vi.fn(),
   createPurchaseOrder: vi.fn(),
