@@ -396,3 +396,92 @@ describe('library', () => {
     expect(overdue.body.data.map((b: { id?: number; borrowing?: { id: number } }) => b.borrowing?.id ?? b.id)).toContain(loan.body.data.id)
   })
 })
+
+describe('guardians and the parent portal', () => {
+  it('shows parents their own child, and nobody else’s', async () => {
+    const [own, stranger] = [await newStudent(), await newStudent()]
+    const parent = await userWithRole('parent')
+    const otherParent = await userWithRole('parent')
+    await api('POST', '/api/guardians', { as: staff, body: { userId: parent.id, studentId: own.id, relationship: 'father' } })
+
+    const children = await api('GET', `/api/portal/${parent.id}/children`, { as: parent })
+    expect(children.body.data).toHaveLength(1)
+
+    const paths = [`fee-statement`, `attendance`].flatMap((part) => [
+      [`/api/portal/${parent.id}/students/${own.id}/${part}`, 200],
+      [`/api/portal/${parent.id}/students/${stranger.id}/${part}`, 403],
+      [`/api/portal/${otherParent.id}/students/${own.id}/${part}`, 403],
+    ])
+    for (const [path, status] of paths) {
+      expect((await api('GET', path as string, { as: parent })).status, path as string).toBe(status)
+    }
+  })
+
+  it('refuses to link the same guardian to a student twice', async () => {
+    const student = await newStudent()
+    const parent = await userWithRole('parent')
+    const body = { userId: parent.id, studentId: student.id, relationship: 'guardian' }
+    expect((await api('POST', '/api/guardians', { as: staff, body })).status).toBe(201)
+    expect((await api('POST', '/api/guardians', { as: staff, body })).status).toBe(409)
+  })
+
+  it('shows a parent only notices meant for parents', async () => {
+    const student = await newStudent()
+    const parent = await userWithRole('parent')
+    await api('POST', '/api/guardians', { as: staff, body: { userId: parent.id, studentId: student.id, relationship: 'mother' } })
+    await api('POST', '/api/notices', {
+      as: staff,
+      body: { title: 'Parents day', body: 'Saturday', audience: 'parents', publishedBy: 1, publishNow: true },
+    })
+    await api('POST', '/api/notices', {
+      as: staff,
+      body: { title: 'Staff meeting', body: 'Monday', audience: 'staff', publishedBy: 1, publishNow: true },
+    })
+
+    const notices = await api('GET', `/api/portal/${parent.id}/notices`, { as: parent })
+    const titles = notices.body.data.map((n: { title: string }) => n.title)
+    expect(titles).toContain('Parents day')
+    expect(titles).not.toContain('Staff meeting')
+  })
+})
+
+describe('notifications', () => {
+  it('lets a user read their own, and only their own', async () => {
+    const [owner, snooper] = [await userWithRole('teacher'), await userWithRole('teacher')]
+    await api('POST', '/api/notifications/send', { as: staff, body: { channel: 'in_app', body: 'Private', recipientUserId: owner.id } })
+
+    expect((await api('GET', `/api/notifications/users/${owner.id}`, { as: owner })).body.data).toHaveLength(1)
+    expect((await api('GET', `/api/notifications/users/${owner.id}`, { as: snooper })).status).toBe(403)
+  })
+
+  it('lets staff who send notifications look up what a user was sent', async () => {
+    const owner = await userWithRole('teacher')
+    expect((await api('GET', `/api/notifications/users/${owner.id}`, { as: staff })).status).toBe(200)
+  })
+
+  it('renders a template, and records a failure when there is nowhere to send it', async () => {
+    const template = await api('POST', '/api/notifications/templates', {
+      as: staff,
+      body: { code: 'fee-reminder', channel: 'sms', bodyTemplate: 'Dear {{name}}, fees are due' },
+    })
+    expect(template.status).toBe(201)
+
+    const sent = await api('POST', '/api/notifications/send', {
+      as: staff,
+      body: { templateCode: 'fee-reminder', templateData: { name: 'Asha' }, recipientPhone: '0700000000' },
+    })
+    expect(sent.body.data).toMatchObject({ status: 'sent', body: 'Dear Asha, fees are due' })
+
+    const noPhone = await userWithRole('teacher')
+    const failed = await api('POST', '/api/notifications/send', {
+      as: staff,
+      body: { templateCode: 'fee-reminder', recipientUserId: noPhone.id },
+    })
+    expect(failed.body.data.status).toBe('failed')
+  })
+
+  it('returns 404 for an unknown template', async () => {
+    const res = await api('POST', '/api/notifications/send', { as: staff, body: { templateCode: 'nope', recipientPhone: '0700000000' } })
+    expect(res.status).toBe(404)
+  })
+})

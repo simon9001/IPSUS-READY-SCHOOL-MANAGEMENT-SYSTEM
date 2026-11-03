@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../common/validate.js'
-import { requireAuth, requirePermission } from '../../common/auth.js'
+import { requirePermission, requireSelfOrPermission } from '../../common/auth.js'
 import { notificationsController } from './notifications.controller.js'
 import { createTemplateSchema, sendNotificationSchema } from './notifications.schema.js'
 
@@ -14,8 +14,9 @@ notificationsRoutes.post(
   notificationsController.createTemplate,
 )
 
-// A user reading their own notification inbox just needs to be logged in.
-notificationsRoutes.get('/users/:userId', requireAuth(), notificationsController.listByRecipient)
+// Bodies can name a student and a disciplinary outcome, so being logged in is
+// not enough: it's your own inbox, or you're staff who send notifications.
+notificationsRoutes.get('/users/:userId', requireSelfOrPermission('userId', 'notifications.send'), notificationsController.listByRecipient)
 notificationsRoutes.post(
   '/send',
   requirePermission('notifications.send'),
