@@ -1,6 +1,6 @@
 import { journalRepository } from './journal.repository.js'
 import { periodsRepository } from '../periods/periods.repository.js'
-import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js'
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../common/errors.js'
 import { broadcastChange } from '../../common/events.js'
 import type { CreateJournalEntryInput, JournalLineInput } from './journal.schema.js'
 import type { TrialBalanceResult } from './journal.types.js'
@@ -91,6 +91,7 @@ export const journalService = {
     const entry = await journalRepository.findById(id)
     if (!entry) throw new NotFoundError(`Journal entry ${id} not found`)
     if (entry.status !== 'pending_approval') throw new ConflictError(`Entry is ${entry.status}, not pending approval`)
+    if (entry.createdBy === approverId) throw new ForbiddenError('A journal entry must be approved by someone other than its creator')
     await assertPeriodOpen(entry.periodId)
     const approved = await journalRepository.approve(id, approverId)
     broadcastChange('journal', 'approved')

@@ -1,6 +1,6 @@
 import { procurementRepository } from './procurement.repository.js'
 import { journalService } from '../journal/journal.service.js'
-import { ConflictError, NotFoundError } from '../../common/errors.js'
+import { ConflictError, ForbiddenError, NotFoundError } from '../../common/errors.js'
 import { broadcastChange } from '../../common/events.js'
 import type {
   ApproveRequisitionInput,
@@ -50,6 +50,9 @@ export const procurementService = {
     const requisition = await procurementRepository.findRequisitionById(id)
     if (!requisition) throw new NotFoundError(`Requisition ${id} not found`)
     if (requisition.status !== 'submitted') throw new ConflictError(`Requisition ${id} is ${requisition.status}, not submitted`)
+    if (requisition.requestedBy === input.approvedBy) {
+      throw new ForbiddenError('A requisition must be approved by someone other than its requester')
+    }
     const approved = await procurementRepository.updateRequisitionStatus(id, 'approved', {
       approvedBy: input.approvedBy,
       approvedAt: new Date(),

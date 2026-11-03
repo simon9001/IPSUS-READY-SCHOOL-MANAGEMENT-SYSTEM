@@ -21,7 +21,7 @@ Once `status = 'closed'`, the journal service refuses new postings into that per
 
 Two posting paths:
 - **`POST /journal-entries`** (manual) — starts `pending_approval`, requires a separate `/approve` call from a different actor (maker-checker)
-- **`POST /journal-entries/system`** (used internally by other modules' services) — posts immediately, since the calling module's own workflow already carries an approval step
+- **`POST /journal-entries/system`** (requires `ledger.journal.approve`; other modules' services call the service directly rather than this route) — posts immediately, since the calling module's own workflow already carries an approval step
 
 `GET /reports/trial-balance?asOfDate=...&fundId=...` — cumulative debit/credit per account as of a date, optionally scoped to one fund, with an `isBalanced` flag. Verified in testing to always reconcile because nothing bypasses `journalService`.
 

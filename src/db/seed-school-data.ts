@@ -38,6 +38,8 @@ import { feesService } from '../modules/fees/fees.service.js'
 import { grantsService } from '../modules/grants/grants.service.js'
 import { budgetsService } from '../modules/budgets/budgets.service.js'
 import { procurementService } from '../modules/procurement/procurement.service.js'
+import { procurementRepository } from '../modules/procurement/procurement.repository.js'
+import { budgetsRepository } from '../modules/budgets/budgets.repository.js'
 import { payrollService } from '../modules/payroll/payroll.service.js'
 import { assetsService } from '../modules/assets/assets.service.js'
 import { inventoryService } from '../modules/inventory/inventory.service.js'
@@ -717,7 +719,9 @@ async function main() {
       { accountId: ADMIN_EXPENSE, fundId: F_TUI, amount: 750_000 },
     ],
   })
-  await budgetsService.approve(budget.id, PRINCIPAL)
+  // Repository, not service: without db:seed-demo-users every actor is the admin,
+  // and the service would rightly refuse a creator approving their own budget.
+  await budgetsRepository.approve(budget.id, PRINCIPAL)
   console.log(`  Budget "${budget.name}" approved`)
 
   // --- Bank accounts ---------------------------------------------------------
@@ -939,7 +943,7 @@ async function main() {
       requestDate: run.date,
       items: [{ description: run.description, quantity: run.quantity, estimatedUnitCost: run.unitCost, accountId: run.account }],
     })
-    await procurementService.approveRequisition(requisition.id, { approvedBy: PRINCIPAL })
+    await procurementRepository.updateRequisitionStatus(requisition.id, 'approved', { approvedBy: PRINCIPAL, approvedAt: new Date() })
 
     const po = await procurementService.createPurchaseOrder({
       supplierId: suppliers[run.supplier].id,

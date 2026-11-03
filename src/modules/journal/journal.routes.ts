@@ -15,10 +15,12 @@ journalRoutes.post(
   zValidator('json', createJournalEntrySchema),
   journalController.createManual,
 )
-// System modules (fees, payroll, procurement, assets, grants) post directly.
+// Posts immediately, skipping approval. Other modules call the service directly
+// and never come through here, so this route needs the approver's permission:
+// with only the creator's, it would be a way around maker-checker.
 journalRoutes.post(
   '/system',
-  requirePermission('ledger.journal.create'),
+  requirePermission('ledger.journal.approve'),
   zValidator('json', createJournalEntrySchema),
   journalController.postSystem,
 )
