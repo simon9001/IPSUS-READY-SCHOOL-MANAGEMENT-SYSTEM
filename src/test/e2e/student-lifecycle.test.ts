@@ -485,3 +485,90 @@ describe('notifications', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('conduct, counselling, promotions and documents', () => {
+  it('totals merit and demerit points, from a rule or a direct award', async () => {
+    const student = await newStudent()
+    const rule = await api('POST', '/api/conduct-points/rules', {
+      as: staff,
+      body: { code: 'LATE', description: 'Late to class', points: -2 },
+    })
+    expect(rule.status).toBe(201)
+
+    const award = (body: object) =>
+      api('POST', '/api/conduct-points', { as: staff, body: { studentId: student.id, periodId: refs.period(1), awardedBy: 1, ...body } })
+    expect((await award({ ruleId: rule.body.data.id })).status).toBe(201)
+    expect((await award({ points: 5, reason: 'Helped a classmate' })).status).toBe(201)
+    expect((await award({})).status).toBe(400)
+
+    const score = await api('GET', `/api/conduct-points/students/${student.id}/score?periodId=${refs.period(1)}`, { as: staff })
+    expect(score.body.data.totalPoints).toBe(3)
+  })
+
+  it('keeps counselling records, and gates them behind their own permission', async () => {
+    const student = await newStudent()
+    const counselor = await userWithRole('counselor')
+    const session = await api('POST', '/api/counseling', {
+      as: counselor,
+      body: { studentId: student.id, counselorId: counselor.id, sessionDate: '2026-03-01', category: 'family', notes: 'Confidential' },
+    })
+    expect(session.status).toBe(201)
+    expect((await api('GET', `/api/counseling/students/${student.id}`, { as: counselor })).body.data).toHaveLength(1)
+    expect((await api('GET', `/api/counseling/${session.body.data.id}`, { as: await userWithRole('teacher') })).status).toBe(403)
+  })
+
+  it('records a promotion and a discipline incident against the student', async () => {
+    const student = await newStudent()
+    const promoted = await api('POST', '/api/promotions', {
+      as: staff,
+      body: {
+        studentId: student.id,
+        fromClassId: classId,
+        academicYear: 2026,
+        outcome: 'repeated',
+        decisionDate: '2026-11-20',
+        recordedBy: 1,
+      },
+    })
+    expect(promoted.status).toBe(201)
+    expect((await api('GET', `/api/promotions/students/${student.id}`, { as: staff })).body.data).toHaveLength(1)
+
+    const incident = await api('POST', '/api/discipline', {
+      as: staff,
+      body: { studentId: student.id, incidentDate: '2026-02-02', description: 'Fighting', severity: 'major', recordedBy: 1 },
+    })
+    expect(incident.body.data.recordedBy).toBe(staff.id)
+    expect((await api('GET', `/api/discipline/${incident.body.data.id}`, { as: staff })).status).toBe(200)
+  })
+
+  it('issues letters from a template, and can revoke them', async () => {
+    const student = await newStudent()
+    const template = await api('POST', '/api/documents/templates', {
+      as: staff,
+      body: { code: 'leaving', documentType: 'leaving_certificate', bodyTemplate: 'Certificate for {{studentName}} {{note}}' },
+    })
+    expect(template.status).toBe(201)
+
+    const letter = await api('POST', '/api/documents/letters', {
+      as: staff,
+      body: { templateCode: 'leaving', studentId: student.id, templateData: { note: 'with thanks' }, issuedBy: 1 },
+    })
+    expect(letter.status).toBe(201)
+    expect(letter.body.data.content).toContain('with thanks')
+
+    const revoked = await api('POST', `/api/documents/${letter.body.data.id}/revoke`, { as: staff, body: {} })
+    expect(revoked.status).toBe(200)
+
+    expect((await api('POST', '/api/documents/letters', { as: staff, body: { templateCode: 'none', issuedBy: 1 } })).status).toBe(404)
+    expect((await api('GET', `/api/documents/students/${student.id}`, { as: staff })).status).toBe(200)
+  })
+
+  it('refuses a transcript with no results, and states a fee balance on a clearance letter', async () => {
+    const student = await newStudent()
+    expect((await api('POST', '/api/documents/transcripts', { as: staff, body: { studentId: student.id, issuedBy: 1 } })).status).toBe(400)
+
+    const clearance = await api('POST', '/api/documents/fee-clearance', { as: staff, body: { studentId: student.id, issuedBy: 1 } })
+    expect(clearance.status).toBe(201)
+    expect(clearance.body.data.content).toContain('NO outstanding fee balance')
+  })
+})
