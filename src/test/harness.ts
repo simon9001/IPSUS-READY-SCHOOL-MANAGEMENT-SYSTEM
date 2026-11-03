@@ -4,6 +4,7 @@ import { app } from '../app.js'
 import { db } from '../db/client.js'
 import { accounts, funds, fiscalPeriods, permissions, roles, userPermissionOverrides, userRoles, users } from '../db/schema/index.js'
 import { seedBaseData } from '../db/seed-base.js'
+import { PERMISSIONS } from '../modules/identity/rbac.js'
 
 // A bcrypt hash of "Passw0rd!2026" at the cost of 4, so creating test users stays fast.
 export const TEST_PASSWORD = 'Passw0rd!2026'
@@ -40,6 +41,11 @@ export async function userWithPermissions(...codes: string[]): Promise<Actor> {
     await db.insert(userPermissionOverrides).values({ userId: actor.id, permissionId: permission.id, granted: true, assignedBy: actor.id })
   }
   return actor
+}
+
+/** Holds every permission, for tests about a workflow rather than about who may run it. */
+export async function superUser(): Promise<Actor> {
+  return userWithPermissions(...PERMISSIONS.map((p) => p.code))
 }
 
 async function createUser(email: string): Promise<Actor> {

@@ -3,7 +3,7 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { AppError } from './common/errors.js'
+import { AppError, toClientError } from './common/errors.js'
 import { requestLogger, logError, metricsHandler } from './common/observability.js'
 import { createHealthRoutes } from './common/healthcheck.js'
 import { checkDatabase } from './db/client.js'
@@ -145,9 +145,10 @@ app.route('/api/realtime', realtimeRoutes)
 app.route('/api/search', searchRoutes)
 
 app.onError((err, c) => {
-  if (err instanceof AppError) {
-    logError(c, err, err.statusCode)
-    return c.json({ success: false, error: err.message }, err.statusCode as ContentfulStatusCode)
+  const known = err instanceof AppError ? err : toClientError(err)
+  if (known) {
+    logError(c, err, known.statusCode)
+    return c.json({ success: false, error: known.message }, known.statusCode as ContentfulStatusCode)
   }
   logError(c, err, 500)
   return c.json({ success: false, error: 'Internal server error' }, 500)

@@ -42,3 +42,20 @@ export class ForbiddenError extends AppError {
     super(message, 403)
   }
 }
+
+// Constraints are the last line of defence, and hitting one is the caller's
+// mistake rather than a server fault. The driver wraps the Postgres error, and
+// its message names tables and columns, so only the code is ever looked at.
+const CLIENT_ERRORS_BY_POSTGRES_CODE: Record<string, () => AppError> = {
+  '23505': () => new ConflictError('A record with these details already exists'),
+  '23503': () => new ValidationError('This refers to a record that does not exist, or is still in use'),
+  '22003': () => new ValidationError('A number is too large'),
+}
+
+export function toClientError(err: unknown): AppError | undefined {
+  for (let current = err; current && typeof current === 'object'; current = (current as { cause?: unknown }).cause) {
+    const code = (current as { code?: unknown }).code
+    if (typeof code === 'string' && code in CLIENT_ERRORS_BY_POSTGRES_CODE) return CLIENT_ERRORS_BY_POSTGRES_CODE[code]()
+  }
+  return undefined
+}
