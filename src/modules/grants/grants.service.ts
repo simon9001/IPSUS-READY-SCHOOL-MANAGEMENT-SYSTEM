@@ -1,4 +1,5 @@
 import { grantsRepository } from './grants.repository.js'
+import { withTransaction } from '../../db/client.js'
 import { journalService } from '../journal/journal.service.js'
 import { NotFoundError } from '../../common/errors.js'
 import type { CreateGrantTypeInput, RecordDisbursementInput } from './grants.schema.js'
@@ -22,35 +23,37 @@ export const grantsService = {
    * a future "mark conditions met" action would post it retroactively.
    */
   async recordDisbursement(input: RecordDisbursementInput) {
-    const grantType = await grantsRepository.findTypeById(input.grantTypeId)
-    if (!grantType) throw new NotFoundError(`Grant type ${input.grantTypeId} not found`)
+    return withTransaction(async () => {
+      const grantType = await grantsRepository.findTypeById(input.grantTypeId)
+      if (!grantType) throw new NotFoundError(`Grant type ${input.grantTypeId} not found`)
 
-    const disbursement = await grantsRepository.createDisbursement({
-      grantTypeId: input.grantTypeId,
-      periodId: input.periodId,
-      expectedAmount: input.expectedAmount !== undefined ? String(input.expectedAmount) : undefined,
-      amountReceived: String(input.amountReceived),
-      dateReceived: input.dateReceived,
-      conditionsMet: input.conditionsMet,
-      notes: input.notes,
-      recordedBy: input.recordedBy,
+      const disbursement = await grantsRepository.createDisbursement({
+        grantTypeId: input.grantTypeId,
+        periodId: input.periodId,
+        expectedAmount: input.expectedAmount !== undefined ? String(input.expectedAmount) : undefined,
+        amountReceived: String(input.amountReceived),
+        dateReceived: input.dateReceived,
+        conditionsMet: input.conditionsMet,
+        notes: input.notes,
+        recordedBy: input.recordedBy,
+      })
+
+      if (!input.conditionsMet) return disbursement
+
+      const entry = await journalService.postSystemEntry({
+        periodId: input.periodId,
+        entryDate: input.dateReceived,
+        description: `${grantType.name} disbursement received`,
+        sourceModule: 'grants',
+        sourceReference: `grant-disbursement-${disbursement.id}`,
+        createdBy: input.recordedBy,
+        lines: [
+          { accountId: input.cashAccountId, fundId: grantType.fundId, debit: input.amountReceived },
+          { accountId: grantType.revenueAccountId, fundId: grantType.fundId, credit: input.amountReceived },
+        ],
+      })
+
+      return grantsRepository.attachJournalEntry(disbursement.id, entry.id)
     })
-
-    if (!input.conditionsMet) return disbursement
-
-    const entry = await journalService.postSystemEntry({
-      periodId: input.periodId,
-      entryDate: input.dateReceived,
-      description: `${grantType.name} disbursement received`,
-      sourceModule: 'grants',
-      sourceReference: `grant-disbursement-${disbursement.id}`,
-      createdBy: input.recordedBy,
-      lines: [
-        { accountId: input.cashAccountId, fundId: grantType.fundId, debit: input.amountReceived },
-        { accountId: grantType.revenueAccountId, fundId: grantType.fundId, credit: input.amountReceived },
-      ],
-    })
-
-    return grantsRepository.attachJournalEntry(disbursement.id, entry.id)
   },
 }

@@ -1,4 +1,5 @@
 import { admissionsRepository } from './admissions.repository.js'
+import { withTransaction } from '../../db/client.js'
 import { studentsRepository } from '../students/students.repository.js'
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js'
 import { broadcastChange } from '../../common/events.js'
@@ -114,31 +115,33 @@ export const admissionsService = {
 
   /** Converts an admitted applicant into an actual enrolled student record. */
   async enroll(id: number, input: EnrollAdmissionInput) {
-    const admission = await this.getById(id)
-    if (admission.status !== 'admitted')
-      throw new ConflictError(`Admission ${id} must be 'admitted' before enrolling, currently ${admission.status}`)
+    return withTransaction(async () => {
+      const admission = await this.getById(id)
+      if (admission.status !== 'admitted')
+        throw new ConflictError(`Admission ${id} must be 'admitted' before enrolling, currently ${admission.status}`)
 
-    const student = await studentsRepository.create({
-      admissionNo: input.admissionNo,
-      nemisUpi: admission.nemisUpi,
-      firstName: admission.firstName,
-      lastName: admission.lastName,
-      otherNames: admission.otherNames,
-      gender: admission.gender,
-      dateOfBirth: admission.dateOfBirth,
-      classId: admission.targetClassId,
-      streamId: input.streamId,
-      boardingStatus: admission.boardingStatus as 'day' | 'boarder',
-      guardianName: admission.guardianName,
-      guardianPhone: admission.guardianPhone,
-      guardianEmail: admission.guardianEmail,
-      admissionDate: input.admissionDate,
+      const student = await studentsRepository.create({
+        admissionNo: input.admissionNo,
+        nemisUpi: admission.nemisUpi,
+        firstName: admission.firstName,
+        lastName: admission.lastName,
+        otherNames: admission.otherNames,
+        gender: admission.gender,
+        dateOfBirth: admission.dateOfBirth,
+        classId: admission.targetClassId,
+        streamId: input.streamId,
+        boardingStatus: admission.boardingStatus as 'day' | 'boarder',
+        guardianName: admission.guardianName,
+        guardianPhone: admission.guardianPhone,
+        guardianEmail: admission.guardianEmail,
+        admissionDate: input.admissionDate,
+      })
+
+      const enrolled = await admissionsRepository.update(id, { status: 'enrolled', studentId: student.id, enrolledAt: new Date() })
+      broadcastChange('admissions', 'enrolled')
+      broadcastChange('students', 'enrolled')
+      broadcastChange('dashboard', 'updated')
+      return enrolled
     })
-
-    const enrolled = await admissionsRepository.update(id, { status: 'enrolled', studentId: student.id, enrolledAt: new Date() })
-    broadcastChange('admissions', 'enrolled')
-    broadcastChange('students', 'enrolled')
-    broadcastChange('dashboard', 'updated')
-    return enrolled
   },
 }

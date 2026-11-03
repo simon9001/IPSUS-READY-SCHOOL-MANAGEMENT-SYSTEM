@@ -78,6 +78,15 @@ export async function api<T = Json>(
   return { status: res.status, body, headers: res.headers }
 }
 
+/** A fiscal period already closed, for proving that a refused posting leaves nothing behind. */
+export async function closedPeriod(): Promise<number> {
+  const [period] = await db
+    .insert(fiscalPeriods)
+    .values({ name: 'Closed term', fiscalYear: 2025, term: 3, startDate: '2025-09-01', endDate: '2025-11-30', status: 'closed' })
+    .returning()
+  return period.id
+}
+
 /** Ids of the seeded reference data, by the code that identifies each row. */
 export async function ledgerRefs() {
   const accountRows = await db.select().from(accounts)

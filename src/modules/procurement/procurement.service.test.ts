@@ -21,6 +21,7 @@ const repo = vi.hoisted(() => ({
 }))
 const postSystemEntry = vi.hoisted(() => vi.fn())
 
+vi.mock('../../db/client.js', () => ({ withTransaction: (work: () => Promise<unknown>) => work() }))
 vi.mock('./procurement.repository.js', () => ({ procurementRepository: repo }))
 vi.mock('../journal/journal.service.js', () => ({ journalService: { postSystemEntry } }))
 vi.mock('../../common/events.js', () => ({ broadcastChange: vi.fn() }))
