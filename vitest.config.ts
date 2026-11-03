@@ -26,10 +26,10 @@ export default defineConfig({
       // A ratchet, not a target: set just under the current numbers so CI
       // fails if coverage drops. Raise these whenever a module gains tests.
       thresholds: {
-        statements: 8,
-        branches: 12,
-        functions: 4,
-        lines: 7.5,
+        statements: 85,
+        branches: 68,
+        functions: 80,
+        lines: 87,
       },
     },
   },
