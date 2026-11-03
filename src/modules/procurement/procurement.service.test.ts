@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ConflictError, NotFoundError } from '../../common/errors.js'
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../common/errors.js'
 
 const repo = vi.hoisted(() => ({
   findSupplierById: vi.fn(),
+  findSupplierInvoiceByNumber: vi.fn(),
   findRequisitionById: vi.fn(),
   updateRequisitionStatus: vi.fn(),
   createPurchaseOrder: vi.fn(),
@@ -21,6 +22,7 @@ const repo = vi.hoisted(() => ({
 }))
 const postSystemEntry = vi.hoisted(() => vi.fn())
 
+vi.mock('../../db/client.js', () => ({ withTransaction: (work: () => Promise<unknown>) => work() }))
 vi.mock('./procurement.repository.js', () => ({ procurementRepository: repo }))
 vi.mock('../journal/journal.service.js', () => ({ journalService: { postSystemEntry } }))
 vi.mock('../../common/events.js', () => ({ broadcastChange: vi.fn() }))
@@ -48,6 +50,13 @@ describe('procurementService.approveRequisition', () => {
 
     expect(err).toBeInstanceOf(ConflictError)
     expect(err.message).toContain(status)
+    expect(repo.updateRequisitionStatus).not.toHaveBeenCalled()
+  })
+
+  it('refuses approval by the person who requested it', async () => {
+    repo.findRequisitionById.mockResolvedValue({ id: 1, status: 'submitted', requestedBy: 5 })
+
+    await expect(procurementService.approveRequisition(1, { approvedBy: 5 })).rejects.toBeInstanceOf(ForbiddenError)
     expect(repo.updateRequisitionStatus).not.toHaveBeenCalled()
   })
 
@@ -255,6 +264,13 @@ describe('procurementService.createSupplierPayment', () => {
   it('leaves the invoice open after a partial payment', async () => {
     await procurementService.createSupplierPayment(pay(500))
     expect(repo.markInvoicePaid).not.toHaveBeenCalled()
+  })
+
+  it('refuses a payment above what is still owed, counting earlier instalments', async () => {
+    await procurementService.createSupplierPayment(pay(1500))
+
+    await expect(procurementService.createSupplierPayment(pay('500.01'))).rejects.toBeInstanceOf(ValidationError)
+    expect(recorded).toEqual(['1500'])
   })
 
   it('marks the invoice paid once instalments add up to the full amount', async () => {

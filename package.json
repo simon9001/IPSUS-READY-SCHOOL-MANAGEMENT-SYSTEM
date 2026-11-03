@@ -1,5 +1,6 @@
 {
   "name": "Accounts",
+  "version": "0.2.0",
   "type": "module",
   "packageManager": "pnpm@12.15.0",
   "engines": {
@@ -18,11 +19,12 @@
     "db:seed-school": "tsx src/db/seed-school-data.ts",
     "db:sync-rbac": "tsx src/db/sync-rbac.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p tsconfig.check.json",
     "lint": "eslint src",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "db:check": "drizzle-kit check"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
@@ -38,6 +40,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.14",
     "@eslint/js": "^10.0.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.1",

@@ -4,6 +4,10 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    globalSetup: ['src/test/global-setup.ts'],
+    // End-to-end suites boot a WASM Postgres and apply every migration first.
+    hookTimeout: 120_000,
+    testTimeout: 30_000,
     // Importing any service pulls in src/db/client.ts and auth.service.ts,
     // which refuse to load without these. postgres.js connects lazily, so a
     // placeholder URL is never dialled by unit tests that mock repositories —
@@ -17,15 +21,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/db/seed*.ts', 'src/db/sync-rbac.ts', 'src/db/schema/**'],
+      exclude: ['src/**/*.test.ts', 'src/test/**', 'src/db/seed*.ts', 'src/db/seed/**', 'src/db/sync-rbac.ts', 'src/db/schema/**'],
       reporter: ['text-summary', 'html', 'lcov'],
       // A ratchet, not a target: set just under the current numbers so CI
       // fails if coverage drops. Raise these whenever a module gains tests.
       thresholds: {
-        statements: 8,
-        branches: 12,
-        functions: 4,
-        lines: 7.5,
+        statements: 85,
+        branches: 68,
+        functions: 80,
+        lines: 87,
       },
     },
   },

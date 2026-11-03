@@ -4,6 +4,8 @@
 
 IPSAS-compliant financial system plus academic, communication, HR, admissions, and student-conduct modules for a Kenyan secondary school. Node.js/TypeScript, Hono, Drizzle ORM, PostgreSQL.
 
+**Live API:** <https://ipsus-ready-school-management-system.onrender.com> ([health check](https://ipsus-ready-school-management-system.onrender.com/health)). It's on a plan that sleeps when idle, so the first request after a quiet spell can take a minute.
+
 Full documentation — architecture, database schema, module-by-module design notes, RBAC, IPSAS mapping — lives in [`project-documentation/`](project-documentation/README.md). This README only covers getting it running.
 
 ## Prerequisites
@@ -20,7 +22,7 @@ Full documentation — architecture, database schema, module-by-module design no
 pnpm install
 ```
 
-You can run the unit tests straight away. They need no database and no `.env`:
+You can run the whole test suite straight away. It needs no database, Docker or `.env`:
 
 ```bash
 pnpm test
@@ -106,22 +108,32 @@ curl http://localhost:4100/api/accounts
 
 | Command | Does |
 |---|---|
-| `pnpm test` | Run the unit tests once (vitest) |
+| `pnpm test` | Run every test once (vitest), about 2 minutes |
 | `pnpm test:coverage` | Tests + coverage report in `coverage/`; fails below the floor in `vitest.config.ts` |
 | `pnpm lint` | ESLint over `src/` |
 | `pnpm format` / `pnpm format:check` | Apply / verify Prettier formatting |
-| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm typecheck` | Type-check everything, tests included |
+| `pnpm db:check` | Check the migration files are consistent |
 | `pnpm build` | Type-check + compile to `dist/` (`tsc`) |
 | `pnpm db:generate` | Generate a new migration after editing `src/db/schema/*.ts` |
 | `pnpm db:studio` | Drizzle Studio — a GUI to browse/edit the database |
 
-CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs `format:check`, `lint`, `typecheck`, `test:coverage` and `build` on every push and PR, plus `pnpm audit --prod`, a Docker image build, and a smoke test that migrates and seeds an empty Postgres and then boots the API until `/health` returns 200. Run the first five locally before pushing.
+CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs `format:check`, `lint`, `typecheck`, `db:check`, `test:coverage` and `build` on every push and PR, plus `pnpm audit --prod`, a Docker image build, and a smoke test that migrates and seeds an empty Postgres and then boots the API until `/health` returns 200. Run the first six locally before pushing.
+
+## How it's tested
+
+- **End-to-end suites** ([src/test/e2e/](src/test/e2e/)) send real requests through the whole app, including auth, permissions, validation and SQL, against [PGlite](https://pglite.dev): real Postgres compiled to WASM, running inside the test process, with the real migrations and production seed.
+- **A full school year** ([school.test.ts](src/test/e2e/school.test.ts)) runs the demo seed through the real services, then checks the ledger balances overall and per fund, and that every dashboard widget builds for every role.
+- **A route walk** ([access-control.test.ts](src/test/e2e/access-control.test.ts)) requests every `/api` route with no session and requires a 401, so a new route without auth fails CI.
+- **Unit tests** sit next to the code as `*.test.ts`, for logic that's clearer in isolation.
+
+See [SECURITY.md](SECURITY.md) for the threat model and known gaps.
 
 ## Logging, health and metrics
 
 - **Logs** are structured ([pino](https://getpino.io)): one JSON line per request with method, path, status, duration, user id and a request id (also returned as the `X-Request-Id` response header). In an interactive terminal they're pretty-printed; with `NODE_ENV=production` or when piped, they're raw JSON for a log shipper. Set verbosity with `LOG_LEVEL`.
 - **`GET /health`** is the readiness probe for a load balancer or uptime monitor: it runs `select 1` against the database (2s timeout), returning 200 or 503. Not to be confused with `/api/health`, the student medical module.
-- **`GET /metrics`** is a Prometheus scrape target (unauthenticated, so keep it off the public internet).
+- **`GET /metrics`** is a Prometheus scrape target. It's open in development. In production it needs `METRICS_TOKEN` as a bearer token and returns 404 without one.
 
 ## Running with Docker
 

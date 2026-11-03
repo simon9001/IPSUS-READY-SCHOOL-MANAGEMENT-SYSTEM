@@ -9,6 +9,7 @@ import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import * as schema from './schema/index.js'
 import { logger } from '../common/logger.js'
+import { createScopedDb } from './scoped.js'
 
 const connectionString = process.env.DATABASE_URL
 
@@ -28,7 +29,7 @@ const queryClient = postgres(connectionString, {
   onnotice: () => {}, // Silences routine NOTICE logs (e.g. column already exists)
   debug: process.env.DB_DEBUG === '1' ? (_c: unknown, query: string, params: unknown) => logger.info({ query, params }, 'sql') : undefined,
 })
-export const db = drizzle(queryClient, { schema })
+export const { db, withTransaction } = createScopedDb(drizzle(queryClient, { schema }))
 
 // postgres.js connects lazily — the client above doesn't actually open a
 // socket until the first query runs, so a wrong/unreachable DATABASE_URL

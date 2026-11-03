@@ -47,17 +47,20 @@ export const authService = {
     const user = await authRepository.findUserByEmail(input.email)
     if (!user) throw new ValidationError('Invalid email or password')
 
-    if (user.status !== 'active') throw new ForbiddenError(`Account is ${user.status}`)
     if (user.lockedUntil && user.lockedUntil > new Date()) throw new ForbiddenError('Account is temporarily locked')
 
     const valid = await verifyPassword(input.password, user.passwordHash)
     if (!valid) {
-      const attempts = user.failedLoginAttempts + 1
+      // A lock that has run out starts a fresh count, or one typo would re-lock.
+      const attempts = (user.lockedUntil ? 0 : user.failedLoginAttempts) + 1
       const lockedUntil = attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null
       await authRepository.recordFailedLogin(user.id, attempts, lockedUntil)
       if (lockedUntil) throw new ForbiddenError(`Too many failed attempts — account locked for 15 minutes`)
       throw new ValidationError('Invalid email or password')
     }
+
+    // Checked only after the password, so account status isn't told to strangers.
+    if (user.status !== 'active') throw new ForbiddenError(`Account is ${user.status}`)
 
     await authRepository.recordLogin(user.id)
     const authenticatedUser = await toAuthenticatedUser(user)

@@ -20,7 +20,8 @@ CI runs the same checks (with `format:check`) and will fail the PR otherwise.
 
 ## Tests
 
-- Tests live next to the code as `*.test.ts`.
+- Unit tests live next to the code as `*.test.ts`. End-to-end suites live in `src/test/e2e/` and run the whole app against an in-process Postgres.
+- A new workflow or guard should get an end-to-end test using the helpers in `src/test/harness.ts`. Assert what the caller sees and what ended up in the database, including that a refused request left nothing behind.
 - Service tests mock the module's repository (see `src/modules/procurement/procurement.service.test.ts`), or use an in-memory fake when the logic depends on state across calls (see `src/modules/identity/identity.service.test.ts`). They must not need a real database.
 - The coverage floor in `vitest.config.ts` only ever goes up. If your change raises coverage, raise the floor in the same PR.
 

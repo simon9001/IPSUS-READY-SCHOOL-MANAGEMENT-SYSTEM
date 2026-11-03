@@ -39,6 +39,18 @@ export function requireAuth() {
 // permission (e.g. portal.access) proves you're SOME guardian, not that
 // you're THIS one. Without this, any guardian's token could read any other
 // guardian's linked-children data just by changing the URL's :userId (IDOR).
+// The same ownership check, for records staff also need to look up for someone.
+export function requireSelfOrPermission(paramName: string, code: string) {
+  return async (c: Context, next: Next) => {
+    const user = c.get('user') as AuthUser | undefined
+    if (!user) throw new UnauthorizedError('Authentication required')
+    if (user.id !== Number(c.req.param(paramName)) && !user.permissions.includes(code)) {
+      throw new ForbiddenError('You can only access your own records')
+    }
+    await next()
+  }
+}
+
 export function requireSelf(paramName: string) {
   return async (c: Context, next: Next) => {
     const user = c.get('user') as AuthUser | undefined

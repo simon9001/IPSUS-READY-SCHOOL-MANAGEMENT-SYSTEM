@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import {
   goodsReceivedNotes,
@@ -117,6 +117,12 @@ export const procurementRepository = {
       .select()
       .from(supplierInvoices)
       .where(eq(supplierInvoices.id, id))
+      .then((rows) => rows[0]),
+  findSupplierInvoiceByNumber: (supplierId: number, invoiceNo: string) =>
+    db
+      .select()
+      .from(supplierInvoices)
+      .where(and(eq(supplierInvoices.supplierId, supplierId), eq(supplierInvoices.invoiceNo, invoiceNo)))
       .then((rows) => rows[0]),
   createSupplierInvoice: (data: NewSupplierInvoice) =>
     db

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const createEmployeeSchema = z.object({
   staffNo: z.string().min(1).max(30),
@@ -17,7 +18,7 @@ export const createEmployeeSchema = z.object({
 export const addSalaryComponentSchema = z.object({
   componentType: z.enum(['basic', 'allowance', 'deduction']),
   name: z.string().min(1).max(100),
-  amount: z.union([z.string(), z.number()]),
+  amount: zAmount,
   isPercentageOfBasic: z.boolean().default(false),
 })
 

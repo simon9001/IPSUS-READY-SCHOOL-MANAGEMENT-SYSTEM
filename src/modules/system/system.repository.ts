@@ -1,6 +1,6 @@
 import { count, eq, gt, isNull, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
-import { permissions, rolePermissions, roles, userRoles, users } from '../../db/schema/index.js'
+import { permissions, rolePermissions, roles, userPermissionOverrides, userRoles, users } from '../../db/schema/index.js'
 import type { RoleUsage, UserAccountStats } from './system.types.js'
 
 export const systemRepository = {
@@ -81,6 +81,20 @@ export const systemRepository = {
       .innerJoin(users, eq(userRoles.userId, users.id))
       .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id)),
+
+  /** Per-user grants and revokes, which outrank whatever their roles give them. */
+  userPermissionOverrides: () =>
+    db
+      .select({
+        userId: users.id,
+        email: users.email,
+        fullName: users.fullName,
+        code: permissions.code,
+        granted: userPermissionOverrides.granted,
+      })
+      .from(userPermissionOverrides)
+      .innerJoin(users, eq(userPermissionOverrides.userId, users.id))
+      .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id)),
 
   /** Round-trips a trivial query so the dashboard reports real connectivity
    *  rather than assuming the pool that started at boot is still healthy. */

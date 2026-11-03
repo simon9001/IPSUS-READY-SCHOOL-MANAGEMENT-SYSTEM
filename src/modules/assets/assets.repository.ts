@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { assetCategories, assetDisposals, assets, depreciationEntries } from '../../db/schema/index.js'
 import type { NewAsset, NewAssetCategory, NewAssetDisposal, NewDepreciationEntry } from './assets.types.js'
@@ -55,6 +55,14 @@ export const assetsRepository = {
       .where(eq(depreciationEntries.assetId, assetId))
     return Number(row?.total ?? 0)
   },
+
+  hasDepreciationForPeriod: (assetId: number, periodId: number) =>
+    db
+      .select({ id: depreciationEntries.id })
+      .from(depreciationEntries)
+      .where(and(eq(depreciationEntries.assetId, assetId), eq(depreciationEntries.periodId, periodId)))
+      .limit(1)
+      .then((rows) => rows.length > 0),
 
   createDepreciationEntry: (data: NewDepreciationEntry) =>
     db

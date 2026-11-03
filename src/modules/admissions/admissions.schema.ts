@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 const applicantBioSchema = z.object({
   firstName: z.string().min(1).max(80),
@@ -40,7 +41,7 @@ export const scheduleInterviewSchema = z.object({
 })
 
 export const recordInterviewResultSchema = z.object({
-  interviewScore: z.union([z.string(), z.number()]).optional(),
+  interviewScore: zAmount.optional(),
   interviewNotes: z.string().optional(),
 })
 

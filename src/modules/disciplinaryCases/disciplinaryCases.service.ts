@@ -59,7 +59,8 @@ export const disciplinaryCasesService = {
     disciplinaryCasesRepository.update(id, { parentAttended: input.attended }),
 
   async recordHearing(id: number, input: RecordHearingInput) {
-    await this.getById(id)
+    const record = await this.getById(id)
+    if (record.status === 'decided' || record.status === 'closed') throw new ConflictError(`Case ${id} is already ${record.status}`)
     return disciplinaryCasesRepository.update(id, { ...input, status: 'hearing_held' })
   },
 
@@ -68,6 +69,7 @@ export const disciplinaryCasesService = {
   async bomReview(id: number, input: BomReviewInput) {
     const record = await this.getById(id)
     if (record.caseType !== 'expulsion') throw new ValidationError('BOM review only applies to expulsion cases')
+    if (record.status === 'decided' || record.status === 'closed') throw new ConflictError(`Case ${id} is already ${record.status}`)
     return disciplinaryCasesRepository.update(id, { ...input, status: 'bom_reviewed' })
   },
 

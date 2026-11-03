@@ -56,7 +56,7 @@ export const leaveService = {
     if (!request) throw new NotFoundError(`Leave request ${id} not found`)
     if (request.status !== 'pending') throw new ConflictError(`Leave request ${id} is ${request.status}, not pending`)
 
-    const year = new Date(request.startDate).getFullYear()
+    const year = new Date(request.startDate).getUTCFullYear()
     const bal = await this.balance(request.staffId, request.leaveTypeId, year)
     if (Number(request.daysRequested) > bal.daysRemaining) {
       throw new ValidationError(`Requested ${request.daysRequested} days exceeds remaining balance of ${bal.daysRemaining} days`)

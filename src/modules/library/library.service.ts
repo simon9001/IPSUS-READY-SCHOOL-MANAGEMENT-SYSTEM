@@ -1,6 +1,6 @@
 import { libraryRepository } from './library.repository.js'
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js'
-import type { BorrowBookInput, CreateBookInput, PayFineInput, ReturnBookInput } from './library.schema.js'
+import type { BorrowBookInput, CreateBookInput, ReturnBookInput } from './library.schema.js'
 
 // Placeholder flat rate — adjust to the school's actual library policy.
 const FINE_PER_DAY_LATE = 5
@@ -53,11 +53,11 @@ export const libraryService = {
     })
   },
 
-  async payFine(id: number, input: PayFineInput) {
+  async payFine(id: number) {
     const borrowing = await libraryRepository.findBorrowingById(id)
     if (!borrowing) throw new NotFoundError(`Borrowing ${id} not found`)
     if (Number(borrowing.fineAmount) <= 0) throw new ValidationError(`Borrowing ${id} has no outstanding fine`)
     if (borrowing.finePaid) throw new ConflictError(`Borrowing ${id}'s fine is already paid`)
-    return libraryRepository.updateBorrowing(id, { finePaid: true, returnedTo: input.paidTo })
+    return libraryRepository.updateBorrowing(id, { finePaid: true })
   },
 }

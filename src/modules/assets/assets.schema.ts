@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const createAssetCategorySchema = z.object({
   name: z.string().min(1).max(100),
@@ -15,7 +16,7 @@ export const acquireAssetSchema = z.object({
   name: z.string().min(1).max(150),
   description: z.string().optional(),
   acquisitionDate: z.string().date(),
-  acquisitionCost: z.union([z.string(), z.number()]),
+  acquisitionCost: zAmount,
   fundId: z.number().int().positive(),
   location: z.string().optional(),
   periodId: z.number().int().positive(),
@@ -32,7 +33,7 @@ export const runDepreciationSchema = z.object({
 export const disposeAssetSchema = z.object({
   disposalDate: z.string().date(),
   periodId: z.number().int().positive(),
-  proceeds: z.union([z.string(), z.number()]).default(0),
+  proceeds: zAmount.default(0),
   cashAccountId: z.number().int().positive(),
   gainLossAccountId: z.number().int().positive(),
   recordedBy: z.number().int().positive(),

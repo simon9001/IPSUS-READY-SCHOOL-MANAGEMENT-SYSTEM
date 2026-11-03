@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const createRouteSchema = z.object({
   routeName: z.string().min(1).max(100),
@@ -6,7 +7,7 @@ export const createRouteSchema = z.object({
   driverName: z.string().max(150).optional(),
   driverPhone: z.string().max(30).optional(),
   capacity: z.number().int().positive().optional(),
-  feeAmount: z.union([z.string(), z.number()]).optional(),
+  feeAmount: zAmount.optional(),
 })
 
 export const addStopSchema = z.object({

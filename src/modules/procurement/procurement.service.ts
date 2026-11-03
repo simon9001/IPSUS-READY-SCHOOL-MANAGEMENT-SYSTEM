@@ -1,6 +1,7 @@
 import { procurementRepository } from './procurement.repository.js'
+import { withTransaction } from '../../db/client.js'
 import { journalService } from '../journal/journal.service.js'
-import { ConflictError, NotFoundError } from '../../common/errors.js'
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../common/errors.js'
 import { broadcastChange } from '../../common/events.js'
 import type {
   ApproveRequisitionInput,
@@ -50,6 +51,9 @@ export const procurementService = {
     const requisition = await procurementRepository.findRequisitionById(id)
     if (!requisition) throw new NotFoundError(`Requisition ${id} not found`)
     if (requisition.status !== 'submitted') throw new ConflictError(`Requisition ${id} is ${requisition.status}, not submitted`)
+    if (requisition.requestedBy === input.approvedBy) {
+      throw new ForbiddenError('A requisition must be approved by someone other than its requester')
+    }
     const approved = await procurementRepository.updateRequisitionStatus(id, 'approved', {
       approvedBy: input.approvedBy,
       approvedAt: new Date(),
@@ -76,55 +80,59 @@ export const procurementService = {
     return { ...po, items }
   },
   async createPurchaseOrder(input: CreatePurchaseOrderInput) {
-    const totalAmount = input.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0)
-    const { po } = await procurementRepository.createPurchaseOrder(
-      {
-        lpoNo: `LPO-${Date.now()}`,
-        supplierId: input.supplierId,
-        requisitionId: input.requisitionId,
-        orderDate: input.orderDate,
-        status: 'issued',
-        totalAmount: totalAmount.toFixed(2),
-        approvedBy: input.approvedBy,
-        approvedAt: input.approvedBy ? new Date() : undefined,
-      },
-      input.items.map((item) => ({ ...item, quantity: String(item.quantity), unitCost: String(item.unitCost) })),
-    )
-    if (input.requisitionId) {
-      await procurementRepository.updateRequisitionStatus(input.requisitionId, 'converted_to_lpo')
-    }
-    broadcastChange('procurement', 'po_created')
-    broadcastChange('dashboard', 'updated')
-    return po
+    return withTransaction(async () => {
+      const totalAmount = input.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0)
+      const { po } = await procurementRepository.createPurchaseOrder(
+        {
+          lpoNo: `LPO-${Date.now()}`,
+          supplierId: input.supplierId,
+          requisitionId: input.requisitionId,
+          orderDate: input.orderDate,
+          status: 'issued',
+          totalAmount: totalAmount.toFixed(2),
+          approvedBy: input.approvedBy,
+          approvedAt: input.approvedBy ? new Date() : undefined,
+        },
+        input.items.map((item) => ({ ...item, quantity: String(item.quantity), unitCost: String(item.unitCost) })),
+      )
+      if (input.requisitionId) {
+        await procurementRepository.updateRequisitionStatus(input.requisitionId, 'converted_to_lpo')
+      }
+      broadcastChange('procurement', 'po_created')
+      broadcastChange('dashboard', 'updated')
+      return po
+    })
   },
 
   /** Simplified receipt tracking: once every item on the PO has appeared on
    *  at least one GRN — this one or an earlier one — the PO is 'received';
    *  until then it is 'partially_received'. Quantities are not compared. */
   async createGrn(input: CreateGrnInput) {
-    const po = await procurementRepository.findPurchaseOrderById(input.purchaseOrderId)
-    if (!po) throw new NotFoundError(`Purchase order ${input.purchaseOrderId} not found`)
+    return withTransaction(async () => {
+      const po = await procurementRepository.findPurchaseOrderById(input.purchaseOrderId)
+      if (!po) throw new NotFoundError(`Purchase order ${input.purchaseOrderId} not found`)
 
-    const poItems = await procurementRepository.findPurchaseOrderItems(input.purchaseOrderId)
-    const grn = await procurementRepository.createGrn(
-      {
-        grnNo: `GRN-${Date.now()}`,
-        purchaseOrderId: input.purchaseOrderId,
-        receivedDate: input.receivedDate,
-        receivedBy: input.receivedBy,
-      },
-      input.items.map((item) => ({ ...item, quantityReceived: String(item.quantityReceived) })),
-    )
+      const poItems = await procurementRepository.findPurchaseOrderItems(input.purchaseOrderId)
+      const grn = await procurementRepository.createGrn(
+        {
+          grnNo: `GRN-${Date.now()}`,
+          purchaseOrderId: input.purchaseOrderId,
+          receivedDate: input.receivedDate,
+          receivedBy: input.receivedBy,
+        },
+        input.items.map((item) => ({ ...item, quantityReceived: String(item.quantityReceived) })),
+      )
 
-    // Includes the GRN just created, so a delivery split across several GRNs
-    // still completes the PO.
-    const receivedItemIds = new Set(await procurementRepository.findReceivedItemIdsForPurchaseOrder(input.purchaseOrderId))
-    const status = poItems.every((item) => receivedItemIds.has(item.id)) ? 'received' : 'partially_received'
-    await procurementRepository.updatePurchaseOrderStatus(input.purchaseOrderId, status)
+      // Includes the GRN just created, so a delivery split across several GRNs
+      // still completes the PO.
+      const receivedItemIds = new Set(await procurementRepository.findReceivedItemIdsForPurchaseOrder(input.purchaseOrderId))
+      const status = poItems.every((item) => receivedItemIds.has(item.id)) ? 'received' : 'partially_received'
+      await procurementRepository.updatePurchaseOrderStatus(input.purchaseOrderId, status)
 
-    broadcastChange('procurement', 'grn_created')
-    broadcastChange('dashboard', 'updated')
-    return grn
+      broadcastChange('procurement', 'grn_created')
+      broadcastChange('dashboard', 'updated')
+      return grn
+    })
   },
 
   listSupplierInvoices: () => procurementRepository.findAllSupplierInvoices(),
@@ -135,84 +143,98 @@ export const procurementService = {
   },
 
   async createSupplierInvoice(input: CreateSupplierInvoiceInput) {
-    const supplier = await procurementRepository.findSupplierById(input.supplierId)
-    if (!supplier) throw new NotFoundError(`Supplier ${input.supplierId} not found`)
+    return withTransaction(async () => {
+      const supplier = await procurementRepository.findSupplierById(input.supplierId)
+      if (!supplier) throw new NotFoundError(`Supplier ${input.supplierId} not found`)
 
-    const amount = input.lines.reduce((sum, line) => sum + Number(line.amount), 0)
-    const invoice = await procurementRepository.createSupplierInvoice({
-      invoiceNo: input.invoiceNo,
-      supplierId: input.supplierId,
-      purchaseOrderId: input.purchaseOrderId,
-      grnId: input.grnId,
-      invoiceDate: input.invoiceDate,
-      dueDate: input.dueDate,
-      amount: amount.toFixed(2),
-      status: 'pending',
+      // Entering the same bill twice would record the debt twice, and it could then be paid twice.
+      const duplicate = await procurementRepository.findSupplierInvoiceByNumber(input.supplierId, input.invoiceNo)
+      if (duplicate) throw new ConflictError(`Invoice ${input.invoiceNo} from ${supplier.name} is already recorded`)
+
+      const amount = input.lines.reduce((sum, line) => sum + Number(line.amount), 0)
+      const invoice = await procurementRepository.createSupplierInvoice({
+        invoiceNo: input.invoiceNo,
+        supplierId: input.supplierId,
+        purchaseOrderId: input.purchaseOrderId,
+        grnId: input.grnId,
+        invoiceDate: input.invoiceDate,
+        dueDate: input.dueDate,
+        amount: amount.toFixed(2),
+        status: 'pending',
+      })
+
+      const entry = await journalService.postSystemEntry({
+        periodId: input.periodId,
+        entryDate: input.invoiceDate,
+        description: `Supplier invoice ${input.invoiceNo} - ${supplier.name}`,
+        sourceModule: 'procurement',
+        sourceReference: `supplier-invoice-${invoice.id}`,
+        createdBy: input.createdBy,
+        lines: [
+          ...input.lines.map((line) => ({
+            accountId: line.accountId,
+            fundId: input.fundId,
+            debit: line.amount,
+            description: line.description,
+          })),
+          { accountId: input.creditorsAccountId, fundId: input.fundId, credit: amount },
+        ],
+      })
+
+      const attached = await procurementRepository.attachInvoiceJournalEntry(invoice.id, entry.id)
+      broadcastChange('procurement', 'invoice_created')
+      broadcastChange('dashboard', 'updated')
+      return attached
     })
-
-    const entry = await journalService.postSystemEntry({
-      periodId: input.periodId,
-      entryDate: input.invoiceDate,
-      description: `Supplier invoice ${input.invoiceNo} - ${supplier.name}`,
-      sourceModule: 'procurement',
-      sourceReference: `supplier-invoice-${invoice.id}`,
-      createdBy: input.createdBy,
-      lines: [
-        ...input.lines.map((line) => ({
-          accountId: line.accountId,
-          fundId: input.fundId,
-          debit: line.amount,
-          description: line.description,
-        })),
-        { accountId: input.creditorsAccountId, fundId: input.fundId, credit: amount },
-      ],
-    })
-
-    const attached = await procurementRepository.attachInvoiceJournalEntry(invoice.id, entry.id)
-    broadcastChange('procurement', 'invoice_created')
-    broadcastChange('dashboard', 'updated')
-    return attached
   },
 
   async createSupplierPayment(input: CreateSupplierPaymentInput) {
-    const invoice = await procurementRepository.findSupplierInvoiceById(input.supplierInvoiceId)
-    if (!invoice) throw new NotFoundError(`Supplier invoice ${input.supplierInvoiceId} not found`)
-    if (invoice.status === 'paid') throw new ConflictError(`Supplier invoice ${input.supplierInvoiceId} is already paid`)
+    return withTransaction(async () => {
+      const invoice = await procurementRepository.findSupplierInvoiceById(input.supplierInvoiceId)
+      if (!invoice) throw new NotFoundError(`Supplier invoice ${input.supplierInvoiceId} not found`)
+      if (invoice.status === 'paid') throw new ConflictError(`Supplier invoice ${input.supplierInvoiceId} is already paid`)
 
-    const payment = await procurementRepository.createSupplierPayment({
-      supplierInvoiceId: input.supplierInvoiceId,
-      paymentDate: input.paymentDate,
-      amount: String(input.amount),
-      paymentMethod: input.paymentMethod,
-      referenceNo: input.referenceNo,
-      paidBy: input.paidBy,
-      approvedBy: input.approvedBy,
+      const paidSoFar = await procurementRepository.totalPaidForInvoice(input.supplierInvoiceId)
+      const outstanding = Number(invoice.amount) - paidSoFar
+      if (Math.round(Number(input.amount) * 100) > Math.round(outstanding * 100)) {
+        throw new ValidationError(`Payment exceeds the outstanding balance of ${outstanding.toFixed(2)} on invoice ${invoice.invoiceNo}`)
+      }
+
+      const payment = await procurementRepository.createSupplierPayment({
+        supplierInvoiceId: input.supplierInvoiceId,
+        paymentDate: input.paymentDate,
+        amount: String(input.amount),
+        paymentMethod: input.paymentMethod,
+        referenceNo: input.referenceNo,
+        paidBy: input.paidBy,
+        approvedBy: input.approvedBy,
+      })
+
+      const entry = await journalService.postSystemEntry({
+        periodId: input.periodId,
+        entryDate: input.paymentDate,
+        description: `Payment for supplier invoice ${invoice.invoiceNo}`,
+        sourceModule: 'procurement',
+        sourceReference: `supplier-payment-${payment.id}`,
+        createdBy: input.paidBy,
+        lines: [
+          { accountId: input.creditorsAccountId, fundId: input.fundId, debit: input.amount },
+          { accountId: input.cashAccountId, fundId: input.fundId, credit: input.amount },
+        ],
+      })
+
+      // Compare the running total, not this one payment — an invoice settled in
+      // instalments must still end up 'paid'. The payment just inserted above is
+      // included in the total.
+      const totalPaid = await procurementRepository.totalPaidForInvoice(input.supplierInvoiceId)
+      if (totalPaid >= Number(invoice.amount)) {
+        await procurementRepository.markInvoicePaid(input.supplierInvoiceId)
+      }
+
+      const attached = await procurementRepository.attachPaymentJournalEntry(payment.id, entry.id)
+      broadcastChange('procurement', 'payment_created')
+      broadcastChange('dashboard', 'updated')
+      return attached
     })
-
-    const entry = await journalService.postSystemEntry({
-      periodId: input.periodId,
-      entryDate: input.paymentDate,
-      description: `Payment for supplier invoice ${invoice.invoiceNo}`,
-      sourceModule: 'procurement',
-      sourceReference: `supplier-payment-${payment.id}`,
-      createdBy: input.paidBy,
-      lines: [
-        { accountId: input.creditorsAccountId, fundId: input.fundId, debit: input.amount },
-        { accountId: input.cashAccountId, fundId: input.fundId, credit: input.amount },
-      ],
-    })
-
-    // Compare the running total, not this one payment — an invoice settled in
-    // instalments must still end up 'paid'. The payment just inserted above is
-    // included in the total.
-    const totalPaid = await procurementRepository.totalPaidForInvoice(input.supplierInvoiceId)
-    if (totalPaid >= Number(invoice.amount)) {
-      await procurementRepository.markInvoicePaid(input.supplierInvoiceId)
-    }
-
-    const attached = await procurementRepository.attachPaymentJournalEntry(payment.id, entry.id)
-    broadcastChange('procurement', 'payment_created')
-    broadcastChange('dashboard', 'updated')
-    return attached
   },
 }

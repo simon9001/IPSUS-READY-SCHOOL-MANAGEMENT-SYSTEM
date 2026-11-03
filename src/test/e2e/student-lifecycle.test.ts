@@ -1,0 +1,578 @@
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { api, ledgerRefs, seedDatabase, superUser, userWithPermissions, userWithRole, type Actor } from '../harness.js'
+
+vi.mock('../../db/client.js', () => import('../db.js'))
+
+let staff: Actor
+let refs: Awaited<ReturnType<typeof ledgerRefs>>
+let classId: number
+let nextNo = 1
+
+beforeAll(async () => {
+  await seedDatabase()
+  refs = await ledgerRefs()
+  staff = await superUser()
+  const created = await api('POST', '/api/students/classes', { as: staff, body: { name: 'Form 3', level: 3 } })
+  classId = created.body.data.id
+})
+
+async function newStudent(overrides = {}) {
+  const res = await api('POST', '/api/students', {
+    as: staff,
+    body: { admissionNo: `L${nextNo++}`, firstName: 'Brian', lastName: 'Mutiso', classId, admissionDate: '2026-01-06', ...overrides },
+  })
+  expect(res.status).toBe(201)
+  return res.body.data
+}
+
+describe('students', () => {
+  it('reports a duplicate admission number as a conflict, not a server error', async () => {
+    await newStudent({ admissionNo: 'DUP-1' })
+    const res = await api('POST', '/api/students', {
+      as: staff,
+      body: { admissionNo: 'DUP-1', firstName: 'A', lastName: 'B', classId, admissionDate: '2026-01-06' },
+    })
+    expect(res.status).toBe(409)
+  })
+
+  it('reports a reference to a class that does not exist as a bad request', async () => {
+    const res = await api('POST', '/api/students', {
+      as: staff,
+      body: { admissionNo: `L${nextNo++}`, firstName: 'A', lastName: 'B', classId: 999999, admissionDate: '2026-01-06' },
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('reports an id that is not a number as a bad request', async () => {
+    expect((await api('GET', '/api/students/abc', { as: staff })).status).toBe(400)
+  })
+
+  it('updates a student and lists them by class', async () => {
+    const student = await newStudent()
+    const updated = await api('PATCH', `/api/students/${student.id}`, { as: staff, body: { guardianPhone: '0712000000' } })
+    const inClass = await api('GET', `/api/students/classes/${classId}/students`, { as: staff })
+
+    expect(updated.body.data.guardianPhone).toBe('0712000000')
+    expect(inClass.body.data.map((s: { id: number }) => s.id)).toContain(student.id)
+  })
+})
+
+describe('admissions', () => {
+  const bio = () => ({ firstName: 'Faith', lastName: 'Chebet', targetClassId: classId, recordedBy: staff.id })
+  let nextUpi = 1
+  const upi = () => `UPI${nextUpi++}`
+
+  it('takes a government placement straight to admitted, then enrols it as a student', async () => {
+    const placed = await api('POST', '/api/admissions/placements', {
+      as: staff,
+      body: { ...bio(), nemisUpi: upi(), placementLetterRef: 'PL-1' },
+    })
+    expect(placed.status).toBe(201)
+    expect(placed.body.data.status).toBe('admitted')
+
+    const enrolled = await api('POST', `/api/admissions/${placed.body.data.id}/enroll`, {
+      as: staff,
+      body: { admissionNo: `E${nextNo++}`, admissionDate: '2026-01-10' },
+    })
+    expect(enrolled.status).toBe(201)
+    expect(enrolled.body.data.status).toBe('enrolled')
+    expect((await api('GET', `/api/students/${enrolled.body.data.studentId}`, { as: staff })).body.data.firstName).toBe('Faith')
+  })
+
+  it('refuses a second admission for the same NEMIS UPI', async () => {
+    const nemisUpi = upi()
+    await api('POST', '/api/admissions/transfers', { as: staff, body: { ...bio(), nemisUpi, previousSchoolName: 'Alliance' } })
+    const again = await api('POST', '/api/admissions/placements', { as: staff, body: { ...bio(), nemisUpi, placementLetterRef: 'PL-2' } })
+    expect(again.status).toBe(409)
+  })
+
+  it('takes a direct application through interview to a decision', async () => {
+    const applied = await api('POST', '/api/admissions/applications', { as: staff, body: bio() })
+    const id = applied.body.data.id
+    expect(applied.body.data.status).toBe('pending')
+
+    const noInterviewYet = await api('POST', `/api/admissions/${id}/interview/result`, { as: staff, body: { interviewScore: 70 } })
+    expect(noInterviewYet.status).toBe(409)
+
+    await api('POST', `/api/admissions/${id}/interview/schedule`, {
+      as: staff,
+      body: { interviewDate: '2026-01-05', interviewerId: staff.id },
+    })
+    const result = await api('POST', `/api/admissions/${id}/interview/result`, {
+      as: staff,
+      body: { interviewScore: 70, interviewNotes: 'Good' },
+    })
+    expect(result.body.data.interviewScore).toBe('70.00')
+
+    const decided = await api('POST', `/api/admissions/${id}/decide`, { as: staff, body: { decision: 'admitted', decidedBy: 1 } })
+    expect(decided.body.data.status).toBe('admitted')
+    expect(decided.body.data.decidedBy).toBe(staff.id)
+  })
+
+  it('only interviews direct applicants', async () => {
+    const placed = await api('POST', '/api/admissions/placements', {
+      as: staff,
+      body: { ...bio(), nemisUpi: upi(), placementLetterRef: 'PL-3' },
+    })
+    const res = await api('POST', `/api/admissions/${placed.body.data.id}/interview/schedule`, {
+      as: staff,
+      body: { interviewDate: '2026-01-05', interviewerId: staff.id },
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('requires a reason to reject, and refuses to enrol anyone not admitted', async () => {
+    const applied = await api('POST', '/api/admissions/applications', { as: staff, body: bio() })
+    const id = applied.body.data.id
+
+    expect((await api('POST', `/api/admissions/${id}/decide`, { as: staff, body: { decision: 'rejected', decidedBy: 1 } })).status).toBe(
+      400,
+    )
+    expect(
+      (await api('POST', `/api/admissions/${id}/enroll`, { as: staff, body: { admissionNo: `E${nextNo++}`, admissionDate: '2026-01-10' } }))
+        .status,
+    ).toBe(409)
+  })
+
+  it('leaves the applicant admitted when enrolment fails on a taken admission number', async () => {
+    const placed = await api('POST', '/api/admissions/placements', {
+      as: staff,
+      body: { ...bio(), nemisUpi: upi(), placementLetterRef: 'PL-4' },
+    })
+    const taken = await newStudent()
+
+    const res = await api('POST', `/api/admissions/${placed.body.data.id}/enroll`, {
+      as: staff,
+      body: { admissionNo: taken.admissionNo, admissionDate: '2026-01-10' },
+    })
+
+    expect(res.status).toBe(409)
+    expect((await api('GET', `/api/admissions/${placed.body.data.id}`, { as: staff })).body.data.status).toBe('admitted')
+  })
+})
+
+describe('disciplinary cases', () => {
+  async function openCase(caseType: 'suspension' | 'expulsion', studentId?: number) {
+    const student = studentId ?? (await newStudent()).id
+    const res = await api('POST', '/api/disciplinary-cases', { as: staff, body: { studentId: student, caseType, openedBy: 1 } })
+    expect(res.status).toBe(201)
+    return { id: res.body.data.id as number, studentId: student }
+  }
+
+  const suspend = (id: number) =>
+    api('POST', `/api/disciplinary-cases/${id}/decide`, {
+      as: staff,
+      body: { decision: 'suspended', decidedBy: 1, suspensionStartDate: '2026-02-01', suspensionEndDate: '2026-02-14' },
+    })
+
+  it('suspends a student on decision and reinstates them afterwards', async () => {
+    const { id, studentId } = await openCase('suspension')
+    await api('POST', `/api/disciplinary-cases/${id}/summon-parent`, { as: staff, body: { summonsDate: '2026-01-20' } })
+    await api('POST', `/api/disciplinary-cases/${id}/parent-attendance`, { as: staff, body: { attended: true } })
+    await api('POST', `/api/disciplinary-cases/${id}/hearing`, { as: staff, body: { hearingDate: '2026-01-25', hearingNotes: 'Heard' } })
+
+    expect((await suspend(id)).status).toBe(200)
+    expect((await api('GET', `/api/students/${studentId}`, { as: staff })).body.data.status).toBe('suspended')
+
+    const reinstated = await api('POST', `/api/disciplinary-cases/${id}/reinstate`, { as: staff, body: { reinstatedBy: 1 } })
+    expect(reinstated.body.data.status).toBe('closed')
+    expect((await api('GET', `/api/students/${studentId}`, { as: staff })).body.data.status).toBe('active')
+  })
+
+  it('will not expel without Board of Management review', async () => {
+    const { id, studentId } = await openCase('expulsion')
+
+    const early = await api('POST', `/api/disciplinary-cases/${id}/decide`, { as: staff, body: { decision: 'expelled', decidedBy: 1 } })
+    expect(early.status).toBe(400)
+
+    await api('POST', `/api/disciplinary-cases/${id}/bom-review`, { as: staff, body: { bomReviewDate: '2026-02-01' } })
+    const decided = await api('POST', `/api/disciplinary-cases/${id}/decide`, { as: staff, body: { decision: 'expelled', decidedBy: 1 } })
+
+    expect(decided.status).toBe(200)
+    expect((await api('GET', `/api/students/${studentId}`, { as: staff })).body.data.status).toBe('expelled')
+  })
+
+  it('only sends expulsion cases to the Board', async () => {
+    const { id } = await openCase('suspension')
+    expect(
+      (await api('POST', `/api/disciplinary-cases/${id}/bom-review`, { as: staff, body: { bomReviewDate: '2026-02-01' } })).status,
+    ).toBe(400)
+  })
+
+  it('cannot be reopened once decided, by a hearing or a Board review', async () => {
+    const suspension = await openCase('suspension')
+    await suspend(suspension.id)
+    const hearing = await api('POST', `/api/disciplinary-cases/${suspension.id}/hearing`, {
+      as: staff,
+      body: { hearingDate: '2026-03-01' },
+    })
+    expect(hearing.status).toBe(409)
+    expect((await api('GET', `/api/disciplinary-cases/${suspension.id}`, { as: staff })).body.data.status).toBe('decided')
+
+    const expulsion = await openCase('expulsion')
+    await api('POST', `/api/disciplinary-cases/${expulsion.id}/bom-review`, { as: staff, body: { bomReviewDate: '2026-02-01' } })
+    await api('POST', `/api/disciplinary-cases/${expulsion.id}/decide`, { as: staff, body: { decision: 'dismissed', decidedBy: 1 } })
+    const review = await api('POST', `/api/disciplinary-cases/${expulsion.id}/bom-review`, {
+      as: staff,
+      body: { bomReviewDate: '2026-03-01' },
+    })
+    expect(review.status).toBe(409)
+  })
+
+  it('refuses to decide twice, or to reinstate a case that was not a suspension', async () => {
+    const { id } = await openCase('suspension')
+    await api('POST', `/api/disciplinary-cases/${id}/decide`, { as: staff, body: { decision: 'dismissed', decidedBy: 1 } })
+
+    expect((await suspend(id)).status).toBe(409)
+    expect((await api('POST', `/api/disciplinary-cases/${id}/reinstate`, { as: staff, body: { reinstatedBy: 1 } })).status).toBe(409)
+  })
+
+  it('tells linked guardians about a summons, by SMS', async () => {
+    const student = await newStudent()
+    const parent = await userWithRole('parent')
+    await api('POST', '/api/guardians', { as: staff, body: { userId: parent.id, studentId: student.id, relationship: 'mother' } })
+    const { id } = await openCase('suspension', student.id)
+
+    await api('POST', `/api/disciplinary-cases/${id}/summon-parent`, { as: staff, body: { summonsDate: '2026-01-20' } })
+
+    const inbox = await api('GET', `/api/notifications/users/${parent.id}`, { as: parent })
+    expect(inbox.body.data.some((n: { body: string }) => n.body.includes('summoned'))).toBe(true)
+  })
+})
+
+describe('exams', () => {
+  let examId: number
+  let subjectId: number
+
+  beforeAll(async () => {
+    const scale = await api('POST', '/api/exams/grading-scales', {
+      as: staff,
+      body: {
+        name: 'KCSE',
+        bands: [
+          { minMarks: 80, maxMarks: 100, grade: 'A', points: 12 },
+          { minMarks: 50, maxMarks: 79.99, grade: 'C', points: 6 },
+          { minMarks: 0, maxMarks: 49.99, grade: 'E', points: 1 },
+        ],
+      },
+    })
+    expect(scale.status).toBe(201)
+    const exam = await api('POST', '/api/exams', {
+      as: staff,
+      body: { name: 'CAT 1', periodId: refs.period(1), classId, gradingScaleId: scale.body.data.id, examDate: '2026-02-20' },
+    })
+    expect(exam.status).toBe(201)
+    examId = exam.body.data.id
+    const subject = await api('POST', '/api/subjects', { as: staff, body: { name: 'Mathematics', code: 'MAT' } })
+    expect(subject.status).toBe(201)
+    subjectId = subject.body.data.id
+  })
+
+  const result = (studentId: number, marks: number, maxMarks: number = 100) => ({
+    examId,
+    studentId,
+    subjectId,
+    marks,
+    maxMarks,
+    enteredBy: 1,
+  })
+
+  it('grades a mark by percentage against the exam’s scale', async () => {
+    const student = await newStudent()
+    const res = await api('POST', '/api/exams/results', { as: staff, body: result(student.id, 40, 50) })
+
+    expect(res.status).toBe(201)
+    expect(res.body.data).toMatchObject({ grade: 'A', enteredBy: staff.id })
+  })
+
+  it('replaces a corrected mark rather than adding a second one', async () => {
+    const student = await newStudent()
+    await api('POST', '/api/exams/results', { as: staff, body: result(student.id, 30) })
+    await api('POST', '/api/exams/results', { as: staff, body: result(student.id, 85) })
+
+    const card = await api('GET', `/api/exams/${examId}/report-cards/${student.id}`, { as: staff })
+    expect(card.status).toBe(200)
+    expect(card.body.data.results ?? card.body.data.subjects).toHaveLength(1)
+  })
+
+  it.each([
+    ['more marks than the paper has', 120, 100],
+    ['a paper out of zero', 0, 0],
+  ])('refuses %s', async (_label, marks, maxMarks) => {
+    const student = await newStudent()
+    expect((await api('POST', '/api/exams/results', { as: staff, body: result(student.id, marks, maxMarks) })).status).toBe(400)
+  })
+
+  it('records results in bulk, and reports a missing report card as 404', async () => {
+    const [first, second] = [await newStudent(), await newStudent()]
+    const bulk = await api('POST', '/api/exams/results/bulk', {
+      as: staff,
+      body: { results: [result(first.id, 55), result(second.id, 20)] },
+    })
+    expect(bulk.status).toBe(201)
+    expect(bulk.body.data.map((r: { grade: string }) => r.grade)).toEqual(['C', 'E'])
+
+    const nobody = await newStudent()
+    expect((await api('GET', `/api/exams/${examId}/report-cards/${nobody.id}`, { as: staff })).status).toBe(404)
+  })
+
+  it('schedules one sitting per subject', async () => {
+    const entry = { examId, subjectId, examDate: '2026-02-20', startTime: '08:00', endTime: '10:00' }
+    expect((await api('POST', '/api/exams/timetable', { as: staff, body: entry })).status).toBe(201)
+    expect((await api('POST', '/api/exams/timetable', { as: staff, body: entry })).status).toBe(409)
+    expect((await api('GET', `/api/exams/${examId}/timetable`, { as: staff })).body.data).toHaveLength(1)
+  })
+})
+
+describe('library', () => {
+  async function book(totalCopies = 1) {
+    const res = await api('POST', '/api/library/books', { as: staff, body: { title: 'River and the Source', totalCopies } })
+    expect(res.status).toBe(201)
+    return res.body.data
+  }
+  const borrow = (bookId: number, studentId: number) =>
+    api('POST', '/api/library/borrowings', {
+      as: staff,
+      body: { bookId, studentId, borrowedDate: '2026-02-01', dueDate: '2026-02-08', issuedBy: 1 },
+    })
+  const giveBack = (id: number, returnedDate: string) =>
+    api('POST', `/api/library/borrowings/${id}/return`, { as: staff, body: { returnedDate, returnedTo: staff.id } })
+
+  it('tracks copies out, and refuses a loan when none are left', async () => {
+    const title = await book(1)
+    const [first, second] = [await newStudent(), await newStudent()]
+
+    expect((await borrow(title.id, first.id)).status).toBe(201)
+    expect((await api('GET', `/api/library/books/${title.id}`, { as: staff })).body.data.availableCopies).toBe(0)
+    expect((await borrow(title.id, second.id)).status).toBe(409)
+  })
+
+  it('refuses a second copy of a book to the same student', async () => {
+    const title = await book(5)
+    const student = await newStudent()
+    await borrow(title.id, student.id)
+    expect((await borrow(title.id, student.id)).status).toBe(409)
+  })
+
+  it('charges no fine on time, and 5 a day when late', async () => {
+    const student = await newStudent()
+    const onTime = await borrow((await book()).id, student.id)
+    const late = await borrow((await book()).id, student.id)
+
+    expect((await giveBack(onTime.body.data.id, '2026-02-08')).body.data.fineAmount).toBe('0.00')
+    expect((await giveBack(late.body.data.id, '2026-02-11')).body.data.fineAmount).toBe('15.00')
+  })
+
+  it('takes a fine once, keeping the record of who received the book', async () => {
+    const librarian = await userWithPermissions('library.manage')
+    const student = await newStudent()
+    const late = await borrow((await book()).id, student.id)
+    await giveBack(late.body.data.id, '2026-02-11')
+
+    const paid = await api('POST', `/api/library/borrowings/${late.body.data.id}/pay-fine`, {
+      as: librarian,
+      body: { paidTo: librarian.id },
+    })
+    expect(paid.status).toBe(200)
+    expect(paid.body.data).toMatchObject({ finePaid: true, returnedTo: staff.id })
+
+    expect(
+      (await api('POST', `/api/library/borrowings/${late.body.data.id}/pay-fine`, { as: librarian, body: { paidTo: librarian.id } }))
+        .status,
+    ).toBe(409)
+  })
+
+  it('refuses to take a fine that was never charged, or to return a book twice', async () => {
+    const student = await newStudent()
+    const loan = await borrow((await book()).id, student.id)
+    await giveBack(loan.body.data.id, '2026-02-08')
+
+    expect(
+      (await api('POST', `/api/library/borrowings/${loan.body.data.id}/pay-fine`, { as: staff, body: { paidTo: staff.id } })).status,
+    ).toBe(400)
+    expect((await giveBack(loan.body.data.id, '2026-02-09')).status).toBe(409)
+  })
+
+  it('lists what is overdue on a given date', async () => {
+    const student = await newStudent()
+    const loan = await borrow((await book()).id, student.id)
+    const overdue = await api('GET', '/api/library/overdue?asOfDate=2026-03-01', { as: staff })
+    expect(overdue.body.data.map((b: { id?: number; borrowing?: { id: number } }) => b.borrowing?.id ?? b.id)).toContain(loan.body.data.id)
+  })
+})
+
+describe('guardians and the parent portal', () => {
+  it('shows parents their own child, and nobody else’s', async () => {
+    const [own, stranger] = [await newStudent(), await newStudent()]
+    const parent = await userWithRole('parent')
+    const otherParent = await userWithRole('parent')
+    await api('POST', '/api/guardians', { as: staff, body: { userId: parent.id, studentId: own.id, relationship: 'father' } })
+
+    const children = await api('GET', `/api/portal/${parent.id}/children`, { as: parent })
+    expect(children.body.data).toHaveLength(1)
+
+    const paths = [`fee-statement`, `attendance`].flatMap((part) => [
+      [`/api/portal/${parent.id}/students/${own.id}/${part}`, 200],
+      [`/api/portal/${parent.id}/students/${stranger.id}/${part}`, 403],
+      [`/api/portal/${otherParent.id}/students/${own.id}/${part}`, 403],
+    ])
+    for (const [path, status] of paths) {
+      expect((await api('GET', path as string, { as: parent })).status, path as string).toBe(status)
+    }
+  })
+
+  it('refuses to link the same guardian to a student twice', async () => {
+    const student = await newStudent()
+    const parent = await userWithRole('parent')
+    const body = { userId: parent.id, studentId: student.id, relationship: 'guardian' }
+    expect((await api('POST', '/api/guardians', { as: staff, body })).status).toBe(201)
+    expect((await api('POST', '/api/guardians', { as: staff, body })).status).toBe(409)
+  })
+
+  it('shows a parent only notices meant for parents', async () => {
+    const student = await newStudent()
+    const parent = await userWithRole('parent')
+    await api('POST', '/api/guardians', { as: staff, body: { userId: parent.id, studentId: student.id, relationship: 'mother' } })
+    await api('POST', '/api/notices', {
+      as: staff,
+      body: { title: 'Parents day', body: 'Saturday', audience: 'parents', publishedBy: 1, publishNow: true },
+    })
+    await api('POST', '/api/notices', {
+      as: staff,
+      body: { title: 'Staff meeting', body: 'Monday', audience: 'staff', publishedBy: 1, publishNow: true },
+    })
+
+    const notices = await api('GET', `/api/portal/${parent.id}/notices`, { as: parent })
+    const titles = notices.body.data.map((n: { title: string }) => n.title)
+    expect(titles).toContain('Parents day')
+    expect(titles).not.toContain('Staff meeting')
+  })
+})
+
+describe('notifications', () => {
+  it('lets a user read their own, and only their own', async () => {
+    const [owner, snooper] = [await userWithRole('teacher'), await userWithRole('teacher')]
+    await api('POST', '/api/notifications/send', { as: staff, body: { channel: 'in_app', body: 'Private', recipientUserId: owner.id } })
+
+    expect((await api('GET', `/api/notifications/users/${owner.id}`, { as: owner })).body.data).toHaveLength(1)
+    expect((await api('GET', `/api/notifications/users/${owner.id}`, { as: snooper })).status).toBe(403)
+  })
+
+  it('lets staff who send notifications look up what a user was sent', async () => {
+    const owner = await userWithRole('teacher')
+    expect((await api('GET', `/api/notifications/users/${owner.id}`, { as: staff })).status).toBe(200)
+  })
+
+  it('renders a template, and records a failure when there is nowhere to send it', async () => {
+    const template = await api('POST', '/api/notifications/templates', {
+      as: staff,
+      body: { code: 'fee-reminder', channel: 'sms', bodyTemplate: 'Dear {{name}}, fees are due' },
+    })
+    expect(template.status).toBe(201)
+
+    const sent = await api('POST', '/api/notifications/send', {
+      as: staff,
+      body: { templateCode: 'fee-reminder', templateData: { name: 'Asha' }, recipientPhone: '0700000000' },
+    })
+    expect(sent.body.data).toMatchObject({ status: 'sent', body: 'Dear Asha, fees are due' })
+
+    const noPhone = await userWithRole('teacher')
+    const failed = await api('POST', '/api/notifications/send', {
+      as: staff,
+      body: { templateCode: 'fee-reminder', recipientUserId: noPhone.id },
+    })
+    expect(failed.body.data.status).toBe('failed')
+  })
+
+  it('returns 404 for an unknown template', async () => {
+    const res = await api('POST', '/api/notifications/send', { as: staff, body: { templateCode: 'nope', recipientPhone: '0700000000' } })
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('conduct, counselling, promotions and documents', () => {
+  it('totals merit and demerit points, from a rule or a direct award', async () => {
+    const student = await newStudent()
+    const rule = await api('POST', '/api/conduct-points/rules', {
+      as: staff,
+      body: { code: 'LATE', description: 'Late to class', points: -2 },
+    })
+    expect(rule.status).toBe(201)
+
+    const award = (body: object) =>
+      api('POST', '/api/conduct-points', { as: staff, body: { studentId: student.id, periodId: refs.period(1), awardedBy: 1, ...body } })
+    expect((await award({ ruleId: rule.body.data.id })).status).toBe(201)
+    expect((await award({ points: 5, reason: 'Helped a classmate' })).status).toBe(201)
+    expect((await award({})).status).toBe(400)
+
+    const score = await api('GET', `/api/conduct-points/students/${student.id}/score?periodId=${refs.period(1)}`, { as: staff })
+    expect(score.body.data.totalPoints).toBe(3)
+  })
+
+  it('keeps counselling records, and gates them behind their own permission', async () => {
+    const student = await newStudent()
+    const counselor = await userWithRole('counselor')
+    const session = await api('POST', '/api/counseling', {
+      as: counselor,
+      body: { studentId: student.id, counselorId: counselor.id, sessionDate: '2026-03-01', category: 'family', notes: 'Confidential' },
+    })
+    expect(session.status).toBe(201)
+    expect((await api('GET', `/api/counseling/students/${student.id}`, { as: counselor })).body.data).toHaveLength(1)
+    expect((await api('GET', `/api/counseling/${session.body.data.id}`, { as: await userWithRole('teacher') })).status).toBe(403)
+  })
+
+  it('records a promotion and a discipline incident against the student', async () => {
+    const student = await newStudent()
+    const promoted = await api('POST', '/api/promotions', {
+      as: staff,
+      body: {
+        studentId: student.id,
+        fromClassId: classId,
+        academicYear: 2026,
+        outcome: 'repeated',
+        decisionDate: '2026-11-20',
+        recordedBy: 1,
+      },
+    })
+    expect(promoted.status).toBe(201)
+    expect((await api('GET', `/api/promotions/students/${student.id}`, { as: staff })).body.data).toHaveLength(1)
+
+    const incident = await api('POST', '/api/discipline', {
+      as: staff,
+      body: { studentId: student.id, incidentDate: '2026-02-02', description: 'Fighting', severity: 'major', recordedBy: 1 },
+    })
+    expect(incident.body.data.recordedBy).toBe(staff.id)
+    expect((await api('GET', `/api/discipline/${incident.body.data.id}`, { as: staff })).status).toBe(200)
+  })
+
+  it('issues letters from a template, and can revoke them', async () => {
+    const student = await newStudent()
+    const template = await api('POST', '/api/documents/templates', {
+      as: staff,
+      body: { code: 'leaving', documentType: 'leaving_certificate', bodyTemplate: 'Certificate for {{studentName}} {{note}}' },
+    })
+    expect(template.status).toBe(201)
+
+    const letter = await api('POST', '/api/documents/letters', {
+      as: staff,
+      body: { templateCode: 'leaving', studentId: student.id, templateData: { note: 'with thanks' }, issuedBy: 1 },
+    })
+    expect(letter.status).toBe(201)
+    expect(letter.body.data.content).toContain('with thanks')
+
+    const revoked = await api('POST', `/api/documents/${letter.body.data.id}/revoke`, { as: staff, body: {} })
+    expect(revoked.status).toBe(200)
+
+    expect((await api('POST', '/api/documents/letters', { as: staff, body: { templateCode: 'none', issuedBy: 1 } })).status).toBe(404)
+    expect((await api('GET', `/api/documents/students/${student.id}`, { as: staff })).status).toBe(200)
+  })
+
+  it('refuses a transcript with no results, and states a fee balance on a clearance letter', async () => {
+    const student = await newStudent()
+    expect((await api('POST', '/api/documents/transcripts', { as: staff, body: { studentId: student.id, issuedBy: 1 } })).status).toBe(400)
+
+    const clearance = await api('POST', '/api/documents/fee-clearance', { as: staff, body: { studentId: student.id, issuedBy: 1 } })
+    expect(clearance.status).toBe(201)
+    expect(clearance.body.data.content).toContain('NO outstanding fee balance')
+  })
+})

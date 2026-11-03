@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zAmount, zSignedAmount } from '../../common/validate.js'
 
 export const createBankAccountSchema = z.object({
   accountId: z.number().int().positive(),
@@ -10,7 +11,7 @@ export const createBankAccountSchema = z.object({
 
 export const reconciliationItemSchema = z.object({
   description: z.string().min(1).max(200),
-  amount: z.union([z.string(), z.number()]),
+  amount: zSignedAmount,
   itemType: z.enum(['outstanding_cheque', 'deposit_in_transit', 'bank_charge', 'other']),
 })
 
@@ -18,8 +19,8 @@ export const createReconciliationSchema = z.object({
   bankAccountId: z.number().int().positive(),
   periodId: z.number().int().positive(),
   statementDate: z.string().date(),
-  statementBalance: z.union([z.string(), z.number()]),
-  bookBalance: z.union([z.string(), z.number()]),
+  statementBalance: zSignedAmount,
+  bookBalance: zSignedAmount,
   items: z.array(reconciliationItemSchema).default([]),
 })
 
@@ -30,7 +31,7 @@ export const reconcileSchema = z.object({
 export const issueImprestSchema = z.object({
   requestedBy: z.number().int().positive(),
   purpose: z.string().min(1),
-  amountRequested: z.union([z.string(), z.number()]),
+  amountRequested: zAmount,
   dateIssued: z.string().date(),
   periodId: z.number().int().positive(),
   fundId: z.number().int().positive(),
@@ -45,12 +46,12 @@ export const retireImprestSchema = z.object({
   imprestControlAccountId: z.number().int().positive(),
   cashAccountId: z.number().int().positive().optional(),
   receiptsAttached: z.boolean().default(false),
-  balanceReturned: z.union([z.string(), z.number()]).default(0),
+  balanceReturned: zAmount.default(0),
   expenseLines: z
     .array(
       z.object({
         accountId: z.number().int().positive(),
-        amount: z.union([z.string(), z.number()]),
+        amount: zAmount,
         description: z.string().optional(),
       }),
     )

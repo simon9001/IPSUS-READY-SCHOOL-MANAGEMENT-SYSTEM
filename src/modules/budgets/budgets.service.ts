@@ -1,5 +1,5 @@
 import { budgetsRepository } from './budgets.repository.js'
-import { ConflictError, NotFoundError } from '../../common/errors.js'
+import { ConflictError, ForbiddenError, NotFoundError } from '../../common/errors.js'
 import { broadcastChange } from '../../common/events.js'
 import type { AddBudgetLineInput, CreateBudgetInput } from './budgets.schema.js'
 import type { BudgetVsActualRow } from './budgets.types.js'
@@ -39,6 +39,7 @@ export const budgetsService = {
     const budget = await budgetsRepository.findById(id)
     if (!budget) throw new NotFoundError(`Budget ${id} not found`)
     if (budget.status === 'approved') throw new ConflictError(`Budget ${id} is already approved`)
+    if (budget.createdBy === approvedBy) throw new ForbiddenError('A budget must be approved by someone other than its creator')
     const approved = await budgetsRepository.approve(id, approvedBy)
     broadcastChange('budgets', 'approved')
     broadcastChange('dashboard', 'updated')

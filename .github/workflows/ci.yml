@@ -32,6 +32,12 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm db:check
+      - name: Fail if a schema change was committed without its migration
+        run: |
+          pnpm exec drizzle-kit generate --name=schema_drift_check
+          git diff --exit-code --stat drizzle
+          test -z "$(git status --porcelain drizzle)"
       # Fails if coverage drops below the thresholds in vitest.config.ts.
       - run: pnpm test:coverage
       - run: pnpm build
@@ -99,6 +105,10 @@ jobs:
       # Should be a no-op straight after seeding; fails loudly if rbac.ts and
       # the seed have drifted into conflicting definitions.
       - run: pnpm db:sync-rbac
+      # Runs a year of postings through the production Postgres driver, which the
+      # in-process test database doesn't use. Exits non-zero if the ledger is off.
+      - run: pnpm db:seed-demo-users
+      - run: pnpm db:seed-school
       - run: pnpm build
 
       - name: Boot the API and probe /health

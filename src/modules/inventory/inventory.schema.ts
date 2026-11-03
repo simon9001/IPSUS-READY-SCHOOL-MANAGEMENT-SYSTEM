@@ -1,18 +1,19 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const createItemSchema = z.object({
   itemCode: z.string().min(1).max(30),
   name: z.string().min(1).max(150),
   unit: z.string().min(1).max(20),
   category: z.string().max(60).optional(),
-  reorderLevel: z.union([z.string(), z.number()]).optional(),
+  reorderLevel: zAmount.optional(),
 })
 
 const movementBase = z.object({
   itemId: z.number().int().positive(),
   movementDate: z.string().date(),
-  quantity: z.union([z.string(), z.number()]),
-  unitCost: z.union([z.string(), z.number()]),
+  quantity: zAmount,
+  unitCost: zAmount,
   reference: z.string().max(60).optional(),
   periodId: z.number().int().positive(),
   fundId: z.number().int().positive(),

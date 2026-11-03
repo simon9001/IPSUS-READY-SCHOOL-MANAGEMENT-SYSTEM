@@ -1,10 +1,11 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { appEvents, type ChangeEvent } from '../../common/events.js'
+import { requireAuth } from '../../common/auth.js'
 
 export const realtimeRoutes = new Hono()
 
-realtimeRoutes.get('/events', (c) => {
+realtimeRoutes.get('/events', requireAuth(), (c) => {
   return streamSSE(c, async (stream) => {
     // Initial connection handshake
     await stream.writeSSE({
