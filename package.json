@@ -24,7 +24,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:coverage": "vitest run --coverage",
-    "db:check": "drizzle-kit check && drizzle-kit generate --name=schema_drift_check && git diff --exit-code --stat drizzle && test -z \"$(git status --porcelain drizzle)\""
+    "db:check": "drizzle-kit check"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",

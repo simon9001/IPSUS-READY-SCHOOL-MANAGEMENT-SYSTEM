@@ -32,8 +32,12 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
-      # Fails if a schema change was committed without its migration.
       - run: pnpm db:check
+      - name: Fail if a schema change was committed without its migration
+        run: |
+          pnpm exec drizzle-kit generate --name=schema_drift_check
+          git diff --exit-code --stat drizzle
+          test -z "$(git status --porcelain drizzle)"
       # Fails if coverage drops below the thresholds in vitest.config.ts.
       - run: pnpm test:coverage
       - run: pnpm build
