@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const gradingBandSchema = z.object({
-  minMarks: z.union([z.string(), z.number()]),
-  maxMarks: z.union([z.string(), z.number()]),
+  minMarks: zAmount,
+  maxMarks: zAmount,
   grade: z.string().min(1).max(30),
-  points: z.union([z.string(), z.number()]).optional(),
+  points: zAmount.optional(),
 })
 
 export const createGradingScaleSchema = z.object({
@@ -25,8 +26,8 @@ export const recordExamResultSchema = z.object({
   examId: z.number().int().positive(),
   studentId: z.number().int().positive(),
   subjectId: z.number().int().positive(),
-  marks: z.union([z.string(), z.number()]),
-  maxMarks: z.union([z.string(), z.number()]).default(100),
+  marks: zAmount,
+  maxMarks: zAmount.default(100),
   remarks: z.string().optional(),
   enteredBy: z.number().int().positive(),
 })
@@ -43,8 +44,8 @@ export const recordStrandResultSchema = z
     examId: z.number().int().positive(),
     studentId: z.number().int().positive(),
     strandId: z.number().int().positive(),
-    marks: z.union([z.string(), z.number()]).optional(),
-    maxMarks: z.union([z.string(), z.number()]).default(100),
+    marks: zAmount.optional(),
+    maxMarks: zAmount.default(100),
     grade: z.string().max(30).optional(),
     remarks: z.string().optional(),
     enteredBy: z.number().int().positive(),

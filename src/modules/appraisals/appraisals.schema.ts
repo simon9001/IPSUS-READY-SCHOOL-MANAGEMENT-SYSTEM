@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const createAppraisalSchema = z.object({
   staffId: z.number().int().positive(),
   periodId: z.number().int().positive(),
   appraiserId: z.number().int().positive(),
-  overallRating: z.union([z.string(), z.number()]).optional(),
+  overallRating: zAmount.optional(),
   strengths: z.string().optional(),
   areasForImprovement: z.string().optional(),
   goals: z.string().optional(),

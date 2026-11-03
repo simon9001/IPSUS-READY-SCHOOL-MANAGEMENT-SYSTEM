@@ -1,6 +1,21 @@
 import { zValidator as honoZValidator } from '@hono/zod-validator'
-import type { ZodType } from 'zod'
+import { z, type ZodType } from 'zod'
 import type { Context, ValidationTargets } from 'hono'
+
+// Money and quantity columns are numeric(14,2) and clients send either form.
+// Without a real check, "abc" passes validation and only fails in the database
+// as a 500, or turns into NaN inside a calculation.
+const MAX_AMOUNT = 1e12
+export const zAmount = z.union([
+  z.number().nonnegative().max(MAX_AMOUNT),
+  z.string().regex(/^\d{1,12}(\.\d+)?$/, 'Must be a non-negative number'),
+])
+
+/** For the few figures that can really be negative, such as an overdrawn bank balance. */
+export const zSignedAmount = z.union([
+  z.number().min(-MAX_AMOUNT).max(MAX_AMOUNT),
+  z.string().regex(/^-?\d{1,12}(\.\d+)?$/, 'Must be a number'),
+])
 
 // Thin wrapper so every route gets the same error response shape on a
 // failed validation, instead of each module reimplementing the hook.

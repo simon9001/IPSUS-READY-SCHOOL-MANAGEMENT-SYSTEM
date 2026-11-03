@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const feeStructureItemSchema = z.object({
   accountId: z.number().int().positive(),
   fundId: z.number().int().positive(),
   description: z.string().min(1).max(150),
-  amount: z.union([z.string(), z.number()]),
+  amount: zAmount,
 })
 
 export const createFeeStructureSchema = z.object({
@@ -28,7 +29,7 @@ export const createPaymentSchema = z.object({
   studentId: z.number().int().positive(),
   invoiceId: z.number().int().positive(),
   paymentDate: z.string().date(),
-  amount: z.union([z.string(), z.number()]),
+  amount: zAmount,
   paymentMethod: z.enum(['cash', 'bank', 'mpesa', 'cheque']),
   referenceNo: z.string().max(60).optional(),
   cashAccountId: z.number().int().positive(),

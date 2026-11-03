@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const createSupplierSchema = z.object({
   name: z.string().min(1).max(150),
@@ -12,8 +13,8 @@ export const createSupplierSchema = z.object({
 
 export const requisitionItemSchema = z.object({
   description: z.string().min(1).max(200),
-  quantity: z.union([z.string(), z.number()]),
-  estimatedUnitCost: z.union([z.string(), z.number()]).optional(),
+  quantity: zAmount,
+  estimatedUnitCost: zAmount.optional(),
   accountId: z.number().int().positive(),
 })
 
@@ -30,8 +31,8 @@ export const approveRequisitionSchema = z.object({
 
 export const purchaseOrderItemSchema = z.object({
   description: z.string().min(1).max(200),
-  quantity: z.union([z.string(), z.number()]),
-  unitCost: z.union([z.string(), z.number()]),
+  quantity: zAmount,
+  unitCost: zAmount,
   accountId: z.number().int().positive(),
 })
 
@@ -45,7 +46,7 @@ export const createPurchaseOrderSchema = z.object({
 
 export const grnItemSchema = z.object({
   purchaseOrderItemId: z.number().int().positive(),
-  quantityReceived: z.union([z.string(), z.number()]),
+  quantityReceived: zAmount,
   condition: z.string().max(100).optional(),
 })
 
@@ -71,7 +72,7 @@ export const createSupplierInvoiceSchema = z.object({
     .array(
       z.object({
         accountId: z.number().int().positive(),
-        amount: z.union([z.string(), z.number()]),
+        amount: zAmount,
         description: z.string().optional(),
       }),
     )
@@ -81,7 +82,7 @@ export const createSupplierInvoiceSchema = z.object({
 export const createSupplierPaymentSchema = z.object({
   supplierInvoiceId: z.number().int().positive(),
   paymentDate: z.string().date(),
-  amount: z.union([z.string(), z.number()]),
+  amount: zAmount,
   paymentMethod: z.enum(['bank', 'cheque', 'mpesa']),
   referenceNo: z.string().max(60).optional(),
   fundId: z.number().int().positive(),

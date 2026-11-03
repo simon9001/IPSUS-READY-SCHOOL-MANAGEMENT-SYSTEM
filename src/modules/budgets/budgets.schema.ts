@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import { zAmount } from '../../common/validate.js'
 
 export const budgetLineSchema = z.object({
   accountId: z.number().int().positive(),
   fundId: z.number().int().positive(),
   periodId: z.number().int().positive().optional(),
-  amount: z.union([z.string(), z.number()]),
+  amount: zAmount,
 })
 
 export const createBudgetSchema = z.object({
