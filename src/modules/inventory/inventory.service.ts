@@ -1,7 +1,7 @@
 import { inventoryRepository } from './inventory.repository.js'
 import { withTransaction } from '../../db/client.js'
 import { journalService } from '../journal/journal.service.js'
-import { NotFoundError } from '../../common/errors.js'
+import { NotFoundError, ValidationError } from '../../common/errors.js'
 import type { CreateItemInput, IssueStockInput, ReceiveStockInput } from './inventory.schema.js'
 
 export const inventoryService = {
@@ -52,6 +52,13 @@ export const inventoryService = {
   async issueStock(input: IssueStockInput) {
     return withTransaction(async () => {
       const item = await this.getItemById(input.itemId)
+
+      const movements = await inventoryRepository.findMovementsByItem(input.itemId)
+      const onHand = movements.reduce((sum, m) => sum + Number(m.quantity) * (m.movementType === 'issue' ? -1 : 1), 0)
+      if (Number(input.quantity) > onHand) {
+        throw new ValidationError(`Cannot issue ${input.quantity} ${item.unit} of ${item.name}: only ${onHand} in stock`)
+      }
+
       const amount = Number(input.quantity) * Number(input.unitCost)
 
       const entry = await journalService.postSystemEntry({
