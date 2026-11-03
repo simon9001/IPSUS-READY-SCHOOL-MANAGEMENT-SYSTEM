@@ -43,6 +43,10 @@ describe('students', () => {
     expect(res.status).toBe(400)
   })
 
+  it('reports an id that is not a number as a bad request', async () => {
+    expect((await api('GET', '/api/students/abc', { as: staff })).status).toBe(400)
+  })
+
   it('updates a student and lists them by class', async () => {
     const student = await newStudent()
     const updated = await api('PATCH', `/api/students/${student.id}`, { as: staff, body: { guardianPhone: '0712000000' } })

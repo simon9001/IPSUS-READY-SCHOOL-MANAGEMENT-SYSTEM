@@ -50,6 +50,8 @@ const CLIENT_ERRORS_BY_POSTGRES_CODE: Record<string, () => AppError> = {
   '23505': () => new ConflictError('A record with these details already exists'),
   '23503': () => new ValidationError('This refers to a record that does not exist, or is still in use'),
   '22003': () => new ValidationError('A number is too large'),
+  // Controllers do Number(param), so /students/abc or a missing ?periodId= arrives as NaN.
+  '22P02': () => new ValidationError('An id or number in this request is missing or invalid'),
 }
 
 export function toClientError(err: unknown): AppError | undefined {
