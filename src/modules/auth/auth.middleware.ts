@@ -20,7 +20,9 @@ export async function attachUser(c: Context, next: Next) {
     try {
       const payload = authService.verifyToken(token)
       const user = await authService.me(payload.sub)
-      c.set('user', { id: user.id, permissions: user.permissions })
+      // Checked on every request, so suspending someone takes effect at once rather
+      // than when their token expires up to 8 hours later.
+      if (user.status === 'active') c.set('user', { id: user.id, permissions: user.permissions })
     } catch {
       // invalid/expired token — treated as unauthenticated, not an error
     }

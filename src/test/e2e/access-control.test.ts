@@ -47,6 +47,16 @@ describe('session tokens', () => {
     user = await userWithRole('bursar')
   })
 
+  it('stop working the moment their owner is suspended', async () => {
+    const admin = await userWithRole('system_admin')
+    const person = await userWithRole('bursar')
+    expect((await api('GET', '/api/auth/me', { as: person })).status).toBe(200)
+
+    await api('PATCH', `/api/users/${person.id}`, { as: admin, body: { status: 'suspended' } })
+
+    expect((await api('GET', '/api/auth/me', { as: person })).status).toBe(401)
+  })
+
   it('are not accepted in the query string on ordinary routes', async () => {
     const res = await app.request(`/api/auth/me?token=${user.token}`)
     expect(res.status).toBe(401)
