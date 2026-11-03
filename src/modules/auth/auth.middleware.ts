@@ -11,7 +11,9 @@ import { authService } from './auth.service.js'
  */
 export async function attachUser(c: Context, next: Next) {
   const header = c.req.header('Authorization')
-  const queryToken = c.req.query('token')
+  // EventSource can't set headers, so the event stream alone may pass the token
+  // in the URL. Anywhere else it would end up in proxy logs and browser history.
+  const queryToken = c.req.path.startsWith('/api/realtime/') ? c.req.query('token') : undefined
   const token = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : queryToken
 
   if (token) {

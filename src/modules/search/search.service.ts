@@ -30,7 +30,8 @@ export const searchService = {
     const q = query.trim()
     if (!q || q.length < 2) return []
 
-    const pattern = `%${q}%`
+    // Escaped so that typing % or _ searches for that character, not for everything.
+    const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`
     const permissions = user.permissions ?? []
     const results: SearchResultItem[] = []
 

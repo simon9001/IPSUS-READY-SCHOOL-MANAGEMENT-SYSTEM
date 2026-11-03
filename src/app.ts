@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
+import { secureHeaders } from 'hono/secure-headers'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { AppError } from './common/errors.js'
 import { requestLogger, logError, metricsHandler } from './common/observability.js'
@@ -70,16 +72,22 @@ if (allowedOrigins.length === 0) {
 
 app.use('*', cors({ origin: allowedOrigins, credentials: true }))
 app.use('*', requestLogger)
+app.use('*', secureHeaders())
+// The largest legitimate request is a profile photo sent as a data URI.
+app.use(
+  '*',
+  bodyLimit({
+    maxSize: 10 * 1024 * 1024,
+    onError: (c) => c.json({ success: false, error: 'Request body is too large' }, 413),
+  }),
+)
 app.use('*', attachUser)
 
 app.get('/', (c) => {
   return c.text('Kenyan High School Accounting System API')
 })
 
-// Prometheus scrape target. Left unauthenticated (standard for a metrics
-// endpoint — the scraper has no user login to send) — restrict it at the
-// network/reverse-proxy level before this is ever reachable from outside
-// your own infrastructure.
+// Prometheus scrape target; see metricsHandler for who may read it.
 app.get('/metrics', metricsHandler)
 
 // Unauthenticated readiness probe — 200 when the database answers, 503 when

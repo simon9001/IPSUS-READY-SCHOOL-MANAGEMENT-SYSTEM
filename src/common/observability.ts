@@ -117,7 +117,18 @@ export function logError(c: Context, err: unknown, statusCode: number) {
   }
 }
 
+// Route names, traffic and error rates tell an attacker a lot, and a hosted
+// deployment has no private network to hide them behind. So in production this
+// needs METRICS_TOKEN (sent as a bearer token, which Prometheus supports) and
+// doesn't exist at all without one.
 export async function metricsHandler(c: Context) {
+  const token = process.env.METRICS_TOKEN
+  if (token) {
+    if (c.req.header('Authorization') !== `Bearer ${token}`) return c.json({ success: false, error: 'Authentication required' }, 401)
+  } else if (process.env.NODE_ENV === 'production') {
+    return c.notFound()
+  }
+
   c.header('Content-Type', metricsRegistry.contentType)
   return c.body(await metricsRegistry.metrics())
 }
