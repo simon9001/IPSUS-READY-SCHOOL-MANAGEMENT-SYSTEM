@@ -319,3 +319,80 @@ describe('exams', () => {
     expect((await api('GET', `/api/exams/${examId}/timetable`, { as: staff })).body.data).toHaveLength(1)
   })
 })
+
+describe('library', () => {
+  async function book(totalCopies = 1) {
+    const res = await api('POST', '/api/library/books', { as: staff, body: { title: 'River and the Source', totalCopies } })
+    expect(res.status).toBe(201)
+    return res.body.data
+  }
+  const borrow = (bookId: number, studentId: number) =>
+    api('POST', '/api/library/borrowings', {
+      as: staff,
+      body: { bookId, studentId, borrowedDate: '2026-02-01', dueDate: '2026-02-08', issuedBy: 1 },
+    })
+  const giveBack = (id: number, returnedDate: string) =>
+    api('POST', `/api/library/borrowings/${id}/return`, { as: staff, body: { returnedDate, returnedTo: staff.id } })
+
+  it('tracks copies out, and refuses a loan when none are left', async () => {
+    const title = await book(1)
+    const [first, second] = [await newStudent(), await newStudent()]
+
+    expect((await borrow(title.id, first.id)).status).toBe(201)
+    expect((await api('GET', `/api/library/books/${title.id}`, { as: staff })).body.data.availableCopies).toBe(0)
+    expect((await borrow(title.id, second.id)).status).toBe(409)
+  })
+
+  it('refuses a second copy of a book to the same student', async () => {
+    const title = await book(5)
+    const student = await newStudent()
+    await borrow(title.id, student.id)
+    expect((await borrow(title.id, student.id)).status).toBe(409)
+  })
+
+  it('charges no fine on time, and 5 a day when late', async () => {
+    const student = await newStudent()
+    const onTime = await borrow((await book()).id, student.id)
+    const late = await borrow((await book()).id, student.id)
+
+    expect((await giveBack(onTime.body.data.id, '2026-02-08')).body.data.fineAmount).toBe('0.00')
+    expect((await giveBack(late.body.data.id, '2026-02-11')).body.data.fineAmount).toBe('15.00')
+  })
+
+  it('takes a fine once, keeping the record of who received the book', async () => {
+    const librarian = await userWithPermissions('library.manage')
+    const student = await newStudent()
+    const late = await borrow((await book()).id, student.id)
+    await giveBack(late.body.data.id, '2026-02-11')
+
+    const paid = await api('POST', `/api/library/borrowings/${late.body.data.id}/pay-fine`, {
+      as: librarian,
+      body: { paidTo: librarian.id },
+    })
+    expect(paid.status).toBe(200)
+    expect(paid.body.data).toMatchObject({ finePaid: true, returnedTo: staff.id })
+
+    expect(
+      (await api('POST', `/api/library/borrowings/${late.body.data.id}/pay-fine`, { as: librarian, body: { paidTo: librarian.id } }))
+        .status,
+    ).toBe(409)
+  })
+
+  it('refuses to take a fine that was never charged, or to return a book twice', async () => {
+    const student = await newStudent()
+    const loan = await borrow((await book()).id, student.id)
+    await giveBack(loan.body.data.id, '2026-02-08')
+
+    expect(
+      (await api('POST', `/api/library/borrowings/${loan.body.data.id}/pay-fine`, { as: staff, body: { paidTo: staff.id } })).status,
+    ).toBe(400)
+    expect((await giveBack(loan.body.data.id, '2026-02-09')).status).toBe(409)
+  })
+
+  it('lists what is overdue on a given date', async () => {
+    const student = await newStudent()
+    const loan = await borrow((await book()).id, student.id)
+    const overdue = await api('GET', '/api/library/overdue?asOfDate=2026-03-01', { as: staff })
+    expect(overdue.body.data.map((b: { id?: number; borrowing?: { id: number } }) => b.borrowing?.id ?? b.id)).toContain(loan.body.data.id)
+  })
+})

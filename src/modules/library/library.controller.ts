@@ -2,7 +2,7 @@ import type { Context } from 'hono'
 import { libraryService } from './library.service.js'
 import { ok, created } from '../../common/response.js'
 import { getValidated } from '../../common/validate.js'
-import type { BorrowBookInput, CreateBookInput, PayFineInput, ReturnBookInput } from './library.schema.js'
+import type { BorrowBookInput, CreateBookInput, ReturnBookInput } from './library.schema.js'
 
 export const libraryController = {
   listBooks: async (c: Context) => ok(c, await libraryService.listBooks()),
@@ -16,5 +16,5 @@ export const libraryController = {
   borrow: async (c: Context) => created(c, await libraryService.borrow(getValidated<BorrowBookInput>(c, 'json'))),
   returnBook: async (c: Context) =>
     ok(c, await libraryService.returnBook(Number(c.req.param('id')), getValidated<ReturnBookInput>(c, 'json'))),
-  payFine: async (c: Context) => ok(c, await libraryService.payFine(Number(c.req.param('id')), getValidated<PayFineInput>(c, 'json'))),
+  payFine: async (c: Context) => ok(c, await libraryService.payFine(Number(c.req.param('id')))),
 }
