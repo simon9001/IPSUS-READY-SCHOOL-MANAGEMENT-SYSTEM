@@ -1,5 +1,11 @@
 # Architecture
 
+This is a transactional API service: requests read and write a PostgreSQL database through Drizzle, and schema changes ship as SQL migrations in `drizzle/`. It is not a data pipeline. There are no scheduled jobs, no orchestrator and no warehouse. Reports are computed on request from the live tables.
+
+Data quality is enforced where the data is written: Zod at the API boundary, business rules in the services (balanced journals, open periods, no overpayment), and constraints in the database. CI proves it holds together by applying every migration to an empty database, checking the schema matches them, and running a full year of school data through the real services until the ledger balances.
+
+Anything that writes a document and posts to the ledger runs inside `withTransaction()` from `src/db/client.ts`, so either both land or neither does.
+
 ## Tech stack
 
 | Layer | Choice | Why |
