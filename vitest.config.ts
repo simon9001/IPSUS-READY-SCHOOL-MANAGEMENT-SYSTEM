@@ -20,7 +20,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/test/**', 'src/db/seed*.ts', 'src/db/sync-rbac.ts', 'src/db/schema/**'],
+      exclude: ['src/**/*.test.ts', 'src/test/**', 'src/db/seed*.ts', 'src/db/seed/**', 'src/db/sync-rbac.ts', 'src/db/schema/**'],
       reporter: ['text-summary', 'html', 'lcov'],
       // A ratchet, not a target: set just under the current numbers so CI
       // fails if coverage drops. Raise these whenever a module gains tests.
