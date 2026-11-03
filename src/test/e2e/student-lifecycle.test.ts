@@ -146,3 +146,92 @@ describe('admissions', () => {
     expect((await api('GET', `/api/admissions/${placed.body.data.id}`, { as: staff })).body.data.status).toBe('admitted')
   })
 })
+
+describe('disciplinary cases', () => {
+  async function openCase(caseType: 'suspension' | 'expulsion', studentId?: number) {
+    const student = studentId ?? (await newStudent()).id
+    const res = await api('POST', '/api/disciplinary-cases', { as: staff, body: { studentId: student, caseType, openedBy: 1 } })
+    expect(res.status).toBe(201)
+    return { id: res.body.data.id as number, studentId: student }
+  }
+
+  const suspend = (id: number) =>
+    api('POST', `/api/disciplinary-cases/${id}/decide`, {
+      as: staff,
+      body: { decision: 'suspended', decidedBy: 1, suspensionStartDate: '2026-02-01', suspensionEndDate: '2026-02-14' },
+    })
+
+  it('suspends a student on decision and reinstates them afterwards', async () => {
+    const { id, studentId } = await openCase('suspension')
+    await api('POST', `/api/disciplinary-cases/${id}/summon-parent`, { as: staff, body: { summonsDate: '2026-01-20' } })
+    await api('POST', `/api/disciplinary-cases/${id}/parent-attendance`, { as: staff, body: { attended: true } })
+    await api('POST', `/api/disciplinary-cases/${id}/hearing`, { as: staff, body: { hearingDate: '2026-01-25', hearingNotes: 'Heard' } })
+
+    expect((await suspend(id)).status).toBe(200)
+    expect((await api('GET', `/api/students/${studentId}`, { as: staff })).body.data.status).toBe('suspended')
+
+    const reinstated = await api('POST', `/api/disciplinary-cases/${id}/reinstate`, { as: staff, body: { reinstatedBy: 1 } })
+    expect(reinstated.body.data.status).toBe('closed')
+    expect((await api('GET', `/api/students/${studentId}`, { as: staff })).body.data.status).toBe('active')
+  })
+
+  it('will not expel without Board of Management review', async () => {
+    const { id, studentId } = await openCase('expulsion')
+
+    const early = await api('POST', `/api/disciplinary-cases/${id}/decide`, { as: staff, body: { decision: 'expelled', decidedBy: 1 } })
+    expect(early.status).toBe(400)
+
+    await api('POST', `/api/disciplinary-cases/${id}/bom-review`, { as: staff, body: { bomReviewDate: '2026-02-01' } })
+    const decided = await api('POST', `/api/disciplinary-cases/${id}/decide`, { as: staff, body: { decision: 'expelled', decidedBy: 1 } })
+
+    expect(decided.status).toBe(200)
+    expect((await api('GET', `/api/students/${studentId}`, { as: staff })).body.data.status).toBe('expelled')
+  })
+
+  it('only sends expulsion cases to the Board', async () => {
+    const { id } = await openCase('suspension')
+    expect(
+      (await api('POST', `/api/disciplinary-cases/${id}/bom-review`, { as: staff, body: { bomReviewDate: '2026-02-01' } })).status,
+    ).toBe(400)
+  })
+
+  it('cannot be reopened once decided, by a hearing or a Board review', async () => {
+    const suspension = await openCase('suspension')
+    await suspend(suspension.id)
+    const hearing = await api('POST', `/api/disciplinary-cases/${suspension.id}/hearing`, {
+      as: staff,
+      body: { hearingDate: '2026-03-01' },
+    })
+    expect(hearing.status).toBe(409)
+    expect((await api('GET', `/api/disciplinary-cases/${suspension.id}`, { as: staff })).body.data.status).toBe('decided')
+
+    const expulsion = await openCase('expulsion')
+    await api('POST', `/api/disciplinary-cases/${expulsion.id}/bom-review`, { as: staff, body: { bomReviewDate: '2026-02-01' } })
+    await api('POST', `/api/disciplinary-cases/${expulsion.id}/decide`, { as: staff, body: { decision: 'dismissed', decidedBy: 1 } })
+    const review = await api('POST', `/api/disciplinary-cases/${expulsion.id}/bom-review`, {
+      as: staff,
+      body: { bomReviewDate: '2026-03-01' },
+    })
+    expect(review.status).toBe(409)
+  })
+
+  it('refuses to decide twice, or to reinstate a case that was not a suspension', async () => {
+    const { id } = await openCase('suspension')
+    await api('POST', `/api/disciplinary-cases/${id}/decide`, { as: staff, body: { decision: 'dismissed', decidedBy: 1 } })
+
+    expect((await suspend(id)).status).toBe(409)
+    expect((await api('POST', `/api/disciplinary-cases/${id}/reinstate`, { as: staff, body: { reinstatedBy: 1 } })).status).toBe(409)
+  })
+
+  it('tells linked guardians about a summons, by SMS', async () => {
+    const student = await newStudent()
+    const parent = await userWithRole('parent')
+    await api('POST', '/api/guardians', { as: staff, body: { userId: parent.id, studentId: student.id, relationship: 'mother' } })
+    const { id } = await openCase('suspension', student.id)
+
+    await api('POST', `/api/disciplinary-cases/${id}/summon-parent`, { as: staff, body: { summonsDate: '2026-01-20' } })
+
+    const inbox = await api('GET', `/api/notifications/users/${parent.id}`, { as: parent })
+    expect(inbox.body.data.some((n: { body: string }) => n.body.includes('summoned'))).toBe(true)
+  })
+})
