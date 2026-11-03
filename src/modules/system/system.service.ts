@@ -77,13 +77,21 @@ async function rbacDrift(): Promise<RbacDrift> {
 }
 
 async function segregationConflicts(): Promise<SegregationConflict[]> {
-  const pairs = await systemRepository.userPermissionPairs()
+  const [pairs, overrides] = await Promise.all([systemRepository.userPermissionPairs(), systemRepository.userPermissionOverrides()])
 
   const byUser = new Map<number, { email: string; fullName: string; codes: Set<string> }>()
   for (const pair of pairs) {
     const existing = byUser.get(pair.userId)
     if (existing) existing.codes.add(pair.code)
     else byUser.set(pair.userId, { email: pair.email, fullName: pair.fullName, codes: new Set([pair.code]) })
+  }
+
+  // Same precedence as login: a grant adds to the roles, a revoke beats them.
+  for (const override of overrides) {
+    const user = byUser.get(override.userId) ?? { email: override.email, fullName: override.fullName, codes: new Set<string>() }
+    byUser.set(override.userId, user)
+    if (override.granted) user.codes.add(override.code)
+    else user.codes.delete(override.code)
   }
 
   const conflicts: SegregationConflict[] = []
