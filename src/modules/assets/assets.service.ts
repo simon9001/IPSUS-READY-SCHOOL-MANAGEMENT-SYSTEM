@@ -59,6 +59,9 @@ export const assetsService = {
         const category = await assetsRepository.findCategoryById(asset.categoryId)
         if (!category || category.depreciationMethod !== 'straight_line') continue
 
+        // Re-running a period (a retry, a double click) must not charge again.
+        if (await assetsRepository.hasDepreciationForPeriod(asset.id, input.periodId)) continue
+
         const cost = Number(asset.acquisitionCost)
         const accumulated = await assetsRepository.accumulatedDepreciation(asset.id)
         if (accumulated >= cost) continue
