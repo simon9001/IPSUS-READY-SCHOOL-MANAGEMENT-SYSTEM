@@ -235,3 +235,87 @@ describe('disciplinary cases', () => {
     expect(inbox.body.data.some((n: { body: string }) => n.body.includes('summoned'))).toBe(true)
   })
 })
+
+describe('exams', () => {
+  let examId: number
+  let subjectId: number
+
+  beforeAll(async () => {
+    const scale = await api('POST', '/api/exams/grading-scales', {
+      as: staff,
+      body: {
+        name: 'KCSE',
+        bands: [
+          { minMarks: 80, maxMarks: 100, grade: 'A', points: 12 },
+          { minMarks: 50, maxMarks: 79.99, grade: 'C', points: 6 },
+          { minMarks: 0, maxMarks: 49.99, grade: 'E', points: 1 },
+        ],
+      },
+    })
+    expect(scale.status).toBe(201)
+    const exam = await api('POST', '/api/exams', {
+      as: staff,
+      body: { name: 'CAT 1', periodId: refs.period(1), classId, gradingScaleId: scale.body.data.id, examDate: '2026-02-20' },
+    })
+    expect(exam.status).toBe(201)
+    examId = exam.body.data.id
+    const subject = await api('POST', '/api/subjects', { as: staff, body: { name: 'Mathematics', code: 'MAT' } })
+    expect(subject.status).toBe(201)
+    subjectId = subject.body.data.id
+  })
+
+  const result = (studentId: number, marks: number, maxMarks: number = 100) => ({
+    examId,
+    studentId,
+    subjectId,
+    marks,
+    maxMarks,
+    enteredBy: 1,
+  })
+
+  it('grades a mark by percentage against the exam’s scale', async () => {
+    const student = await newStudent()
+    const res = await api('POST', '/api/exams/results', { as: staff, body: result(student.id, 40, 50) })
+
+    expect(res.status).toBe(201)
+    expect(res.body.data).toMatchObject({ grade: 'A', enteredBy: staff.id })
+  })
+
+  it('replaces a corrected mark rather than adding a second one', async () => {
+    const student = await newStudent()
+    await api('POST', '/api/exams/results', { as: staff, body: result(student.id, 30) })
+    await api('POST', '/api/exams/results', { as: staff, body: result(student.id, 85) })
+
+    const card = await api('GET', `/api/exams/${examId}/report-cards/${student.id}`, { as: staff })
+    expect(card.status).toBe(200)
+    expect(card.body.data.results ?? card.body.data.subjects).toHaveLength(1)
+  })
+
+  it.each([
+    ['more marks than the paper has', 120, 100],
+    ['a paper out of zero', 0, 0],
+  ])('refuses %s', async (_label, marks, maxMarks) => {
+    const student = await newStudent()
+    expect((await api('POST', '/api/exams/results', { as: staff, body: result(student.id, marks, maxMarks) })).status).toBe(400)
+  })
+
+  it('records results in bulk, and reports a missing report card as 404', async () => {
+    const [first, second] = [await newStudent(), await newStudent()]
+    const bulk = await api('POST', '/api/exams/results/bulk', {
+      as: staff,
+      body: { results: [result(first.id, 55), result(second.id, 20)] },
+    })
+    expect(bulk.status).toBe(201)
+    expect(bulk.body.data.map((r: { grade: string }) => r.grade)).toEqual(['C', 'E'])
+
+    const nobody = await newStudent()
+    expect((await api('GET', `/api/exams/${examId}/report-cards/${nobody.id}`, { as: staff })).status).toBe(404)
+  })
+
+  it('schedules one sitting per subject', async () => {
+    const entry = { examId, subjectId, examDate: '2026-02-20', startTime: '08:00', endTime: '10:00' }
+    expect((await api('POST', '/api/exams/timetable', { as: staff, body: entry })).status).toBe(201)
+    expect((await api('POST', '/api/exams/timetable', { as: staff, body: entry })).status).toBe(409)
+    expect((await api('GET', `/api/exams/${examId}/timetable`, { as: staff })).body.data).toHaveLength(1)
+  })
+})

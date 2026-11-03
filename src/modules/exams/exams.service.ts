@@ -1,5 +1,5 @@
 import { examsRepository } from './exams.repository.js'
-import { ConflictError, NotFoundError } from '../../common/errors.js'
+import { ConflictError, NotFoundError, ValidationError } from '../../common/errors.js'
 import type {
   AddExamTimetableEntryInput,
   CreateExamInput,
@@ -8,6 +8,13 @@ import type {
   RecordStrandResultInput,
 } from './exams.schema.js'
 import type { GradingBand, ReportCard } from './exams.types.js'
+
+// A paper out of 0 makes the percentage Infinity or NaN, which matches no band
+// and silently stores an ungraded result.
+function assertMarksPossible(marks: string | number, maxMarks: string | number) {
+  if (Number(maxMarks) <= 0) throw new ValidationError('maxMarks must be greater than zero')
+  if (Number(marks) > Number(maxMarks)) throw new ValidationError(`Marks of ${marks} exceed the paper's maximum of ${maxMarks}`)
+}
 
 function findBand(bands: GradingBand[], percentage: number) {
   return bands.find((b) => percentage >= Number(b.minMarks) && percentage <= Number(b.maxMarks))
@@ -56,6 +63,7 @@ export const examsService = {
   createExam: (input: CreateExamInput) => examsRepository.createExam(input),
 
   async recordResult(input: RecordExamResultInput) {
+    assertMarksPossible(input.marks, input.maxMarks)
     const exam = await examsRepository.findExamById(input.examId)
     if (!exam) throw new NotFoundError(`Exam ${input.examId} not found`)
 
@@ -88,6 +96,7 @@ export const examsService = {
    *  stores a directly-assigned rubric grade (e.g. "Meets Expectation") when
    *  no mark is given — the strand has no marks-mandatory assumption. */
   async recordStrandResult(input: RecordStrandResultInput) {
+    if (input.marks !== undefined) assertMarksPossible(input.marks, input.maxMarks)
     const exam = await examsRepository.findExamById(input.examId)
     if (!exam) throw new NotFoundError(`Exam ${input.examId} not found`)
 
