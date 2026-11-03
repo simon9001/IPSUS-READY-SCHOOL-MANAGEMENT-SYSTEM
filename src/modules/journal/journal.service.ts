@@ -14,9 +14,16 @@ function assertBalanced(lines: JournalLineInput[]) {
   let totalDebit = 0
   let totalCredit = 0
   for (const line of lines) {
-    totalDebit += toAmount(line.debit)
-    totalCredit += toAmount(line.credit)
+    const debit = toAmount(line.debit)
+    const credit = toAmount(line.credit)
+    // A balanced total proves little if the lines themselves are nonsense:
+    // -500 on both sides balances, and would quietly reverse real balances.
+    if (!(debit >= 0) || !(credit >= 0)) throw new ValidationError('Journal amounts must be non-negative numbers')
+    if (debit > 0 && credit > 0) throw new ValidationError('A journal line cannot both debit and credit')
+    totalDebit += debit
+    totalCredit += credit
   }
+  if (Math.round(totalDebit * 100) === 0) throw new ValidationError('A journal entry must move a non-zero amount')
   if (Math.round(totalDebit * 100) !== Math.round(totalCredit * 100)) {
     throw new ValidationError(
       `Journal entry is not balanced: total debit ${totalDebit.toFixed(2)} != total credit ${totalCredit.toFixed(2)}`,
@@ -39,7 +46,9 @@ async function insertEntry(input: CreateJournalEntryInput, status: 'posted' | 'p
   assertBalanced(input.lines)
   await assertPeriodOpen(input.periodId)
 
-  const fiscalYear = new Date(input.entryDate).getFullYear()
+  // Parsed as UTC, so read back as UTC: getFullYear() puts 1 January in the
+  // previous year on any server west of Greenwich.
+  const fiscalYear = new Date(input.entryDate).getUTCFullYear()
   const entryNo = await nextEntryNo(fiscalYear)
 
   const created = await journalRepository.insertWithLines(

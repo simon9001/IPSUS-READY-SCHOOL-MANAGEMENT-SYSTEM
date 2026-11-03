@@ -105,3 +105,55 @@ describe('maker-checker on manual entries', () => {
     expect(res.status).toBe(403)
   })
 })
+
+describe('what counts as a valid entry', () => {
+  it('rejects an unbalanced entry', async () => {
+    const res = await api('POST', '/api/journal-entries', {
+      as: bursar,
+      body: entry(1000, {
+        lines: [
+          { accountId: refs.account('1010'), fundId: refs.fund('FUND-TUI'), debit: 1000 },
+          { accountId: refs.account('3000'), fundId: refs.fund('FUND-TUI'), credit: 999.99 },
+        ],
+      }),
+    })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/not balanced/)
+  })
+
+  it.each([
+    ['negative amounts that happen to balance', -500],
+    ['zero amounts', 0],
+    ['text that is not a number', 'abc'],
+  ])('rejects %s', async (_label, amount) => {
+    const res = await api('POST', '/api/journal-entries', { as: bursar, body: entry(amount) })
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a line that both debits and credits', async () => {
+    const res = await api('POST', '/api/journal-entries', {
+      as: bursar,
+      body: entry(1000, {
+        lines: [
+          { accountId: refs.account('1010'), fundId: refs.fund('FUND-TUI'), debit: 100, credit: 100 },
+          { accountId: refs.account('3000'), fundId: refs.fund('FUND-TUI'), debit: 100, credit: 100 },
+        ],
+      }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('refuses a posting into a closed period', async () => {
+    const admin = await userWithRole('system_admin')
+    const closed = await api('POST', `/api/periods/${refs.period(3)}/close`, { as: admin, body: {} })
+    expect(closed.status).toBe(200)
+
+    const res = await api('POST', '/api/journal-entries', { as: bursar, body: entry(1000, { periodId: refs.period(3) }) })
+    expect(res.status).toBe(409)
+  })
+
+  it('numbers entries by the year of their own date', async () => {
+    const pending = await pendingEntry()
+    expect(pending.entryNo).toMatch(/^JE-2026-\d{6}$/)
+  })
+})
