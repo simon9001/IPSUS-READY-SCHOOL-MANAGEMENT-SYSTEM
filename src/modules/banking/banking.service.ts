@@ -68,6 +68,10 @@ export const bankingService = {
       if (!request) throw new NotFoundError(`Imprest request ${imprestRequestId} not found`)
       if (request.status !== 'issued') throw new ConflictError(`Imprest request ${imprestRequestId} is not in 'issued' status`)
 
+      if (Number(input.balanceReturned) > 0 && !input.cashAccountId) {
+        throw new ValidationError('cashAccountId is required when part of the imprest is returned')
+      }
+
       const totalExpensed = input.expenseLines.reduce((sum, line) => sum + Number(line.amount), 0)
       const totalCleared = totalExpensed + Number(input.balanceReturned)
       if (Math.round(totalCleared * 100) > Math.round(Number(request.amountRequested) * 100)) {
