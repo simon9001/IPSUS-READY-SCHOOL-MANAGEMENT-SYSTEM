@@ -1,7 +1,7 @@
 import { procurementRepository } from './procurement.repository.js'
 import { withTransaction } from '../../db/client.js'
 import { journalService } from '../journal/journal.service.js'
-import { ConflictError, ForbiddenError, NotFoundError } from '../../common/errors.js'
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../common/errors.js'
 import { broadcastChange } from '../../common/events.js'
 import type {
   ApproveRequisitionInput,
@@ -189,6 +189,12 @@ export const procurementService = {
       const invoice = await procurementRepository.findSupplierInvoiceById(input.supplierInvoiceId)
       if (!invoice) throw new NotFoundError(`Supplier invoice ${input.supplierInvoiceId} not found`)
       if (invoice.status === 'paid') throw new ConflictError(`Supplier invoice ${input.supplierInvoiceId} is already paid`)
+
+      const paidSoFar = await procurementRepository.totalPaidForInvoice(input.supplierInvoiceId)
+      const outstanding = Number(invoice.amount) - paidSoFar
+      if (Math.round(Number(input.amount) * 100) > Math.round(outstanding * 100)) {
+        throw new ValidationError(`Payment exceeds the outstanding balance of ${outstanding.toFixed(2)} on invoice ${invoice.invoiceNo}`)
+      }
 
       const payment = await procurementRepository.createSupplierPayment({
         supplierInvoiceId: input.supplierInvoiceId,
